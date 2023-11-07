@@ -1,1 +1,1 @@
-# johnandrewcoding.github.io John Andrew Self
+# johnandrewcoding.github.io
