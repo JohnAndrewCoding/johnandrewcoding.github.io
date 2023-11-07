@@ -1,6 +1,6 @@
 body {
-  background-color: lightblue;
-  font-family: "Lucida Console";
+  background-color: rgb(96, 205, 245);
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 .title {
   text-align: center;
@@ -13,4 +13,19 @@ h1 {
 .emphasis {
   color: red;
   font-family: "Copperplate";
+}
+li {
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+}
+.current{
+ color:rgb(133, 7, 207); 
+}
+.expert{
+  color:red;
+}
+.intermeadiate{
+  color:darkgoldenrod
+}
+.beginner{
+  color:green;
 }
