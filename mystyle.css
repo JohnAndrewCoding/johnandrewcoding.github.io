@@ -9,3 +9,7 @@ h1 {
   color: navy;
   margin-left: 20px;
 }
+.emphasis{
+  color: red;
+  font-family: "Copperplate";
+}
