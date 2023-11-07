@@ -29,9 +29,10 @@ li {
 .beginner{
   color:green;
 }
-.italics{
-  font-style: italic;
+table, td, th{
+  border: 1px solid;
 }
-.underlined{
-  text-underline-position: below;
+table{
+  border-collapse: collapse;
+  width:100%;
 }
