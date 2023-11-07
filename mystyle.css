@@ -1,5 +1,5 @@
 body {
-  background-color: rgb(96, 205, 245);
+  background-color: rgba(255, 245, 236, 0.818);
   font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 .title {
@@ -7,18 +7,18 @@ body {
 }
 
 h1 {
-  color: navy;
+  color: rgb(197, 98, 0);
   margin-left: 20px;
 }
 .emphasis {
-  color: red;
+  color: rgb(255, 0, 0);
   font-family: "Copperplate";
 }
 li {
   font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
 }
 .current{
- color:rgb(133, 7, 207); 
+ color:rgb(197, 98, 0); 
 }
 .expert{
   color:red;
@@ -28,4 +28,10 @@ li {
 }
 .beginner{
   color:green;
+}
+.italics{
+  font-style: italic;
+}
+.underlined{
+  text-underline-position: below;
 }
