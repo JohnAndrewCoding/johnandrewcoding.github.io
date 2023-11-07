@@ -1,7 +1,8 @@
 body {
   background-color: lightblue;
+  font-family: "Lucida Console";
 }
-.title{
+.title {
   text-align: center;
 }
 
@@ -9,7 +10,7 @@ h1 {
   color: navy;
   margin-left: 20px;
 }
-.emphasis{
+.emphasis {
   color: red;
   font-family: "Copperplate";
 }
