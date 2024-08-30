@@ -7,54 +7,5 @@
     <title>John Andrew HomePage</title>
   </head>
   <body>
-    <h1 class="title">Graduation Countdown  
-      <div id ="demo" class="emphasis"></div></h1>
-    <h1 class="title">John Andrew</h1>
-    <h2 class="title">Graduation Date
-      <div class="emphasis">May 4th, 2024</div></h2>     
-      <script>
-        // Set the date we're counting down to
-        var countDownDate = new Date("May 4, 2024 19:00:00").getTime();
-        
-        // Update the count down every 1 second
-        var x = setInterval(function() {
-        
-          // Get today's date and time
-          var now = new Date().getTime();
-            
-          // Find the distance between now and the count down date
-          var distance = countDownDate - now;
-            
-          // Time calculations for days, hours, minutes and seconds
-          var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-          var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-          var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            
-          // Output the result in an element with id="demo"
-          document.getElementById("demo").innerHTML = days + "d " + hours + "h "
-          + minutes + "m " + seconds + "s ";
-            
-          // If the count down is over, write some text 
-          if (distance < 0) {
-            clearInterval(x);
-            document.getElementById("demo").innerHTML = "GRADUATED";
-          }
-        }, 1000);
-        </script>
-    
-    
-      <p3>Portfolio Links
-    <ul>
-      <li>Resume</li>
-      <li><a href ="https://www.linkedin.com/in/john-self-82910a20b/">LinkedIn</a></li>
-      <li><a href="projects.html">Projects</a></li>
-      </p3>
-    </ul>
-    <p>Computer Science Major , Mathematics Minor</p>
-    <p2>Valdosta State University<br></p2>
-    <p><a href="schedule.html" class="emphasis">Schedule</a></p>
-    <p><a href="programs.html" class="emphasis">Programs</a></p>
-    <p><a href="fantasysignin.html" class="emphasis">Programs</a></p>
   </body>
 </html>
