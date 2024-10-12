@@ -9,7 +9,7 @@
   </head>
   <body>
     <h1>My Bets</h1>
-    <h3>Week 7</h3>
+    <h3 id="weekNum">...Loading Bets....</h3>
     <table id="live_bets_table">
         <tr>
             <th>Bet</th>
@@ -40,6 +40,7 @@ function Get(yourUrl){
                     if(data[j].homeTeam == scoreboard.events[i]['competitions'][0]['competitors'][0]['team']['location']){
                         console.log(data[j].homeTeam)
                         console.log(scoreboard.events[i]['competitions'][0]['competitors'][0]['team']['location'])
+                        document.getElementById("weekNum").innerHTML = "Week 7"
                         var myBets = document.getElementById("live_bets_table")
                         var newRow = myBets.insertRow();
                         var cell1 = newRow.insertCell(0);
@@ -55,6 +56,7 @@ function Get(yourUrl){
 
                         cell1.innerHTML = data[j].bet
                         cell2.innerHTML = score;
+
 
 
             }
