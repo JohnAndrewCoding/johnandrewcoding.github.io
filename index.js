@@ -1,5 +1,5 @@
 async function launch(params) {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbxXIeYLGNAhJhZFfY_PggFSmSfQ9C79BuhSeAgxu75lvUyoaAfmNDjvYO6cZxfqUSeb-w/exec");
+    const res = await fetch("https://script.google.com/macros/s/AKfycbwYDT71e66xLFZh0v2aGLCgvTeLnc7FOLACUAvGaPLEDero1LqV07Xw3S_8M0_v27w7BA/exec");
 
     const { data } = await res.json();
     document.getElementById("pickerHeader").innerHTML= data[0].picker;
