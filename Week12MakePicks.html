@@ -28,11 +28,20 @@
     </form>
        <div id="gameslate"></div>
     <script>
+      function Get(yourUrl){
+            var Httpreq = new XMLHttpRequest();
+            Httpreq.open("GET",yourUrl,false);
+            Httpreq.send(null);
+            return Httpreq.responseText;
+        }
+      let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241113";
+      var scoreboard = JSON.parse(Get(espnUrl));
       const select = document.createElement("select");
+      let florida = scoreboard['events'][2]['competitions'][0]['competitors'][1]['team']['abbreviation'];
 
   const option1 = document.createElement("option");
-  option1.value = "value1";
-  option1.text = "Option 1";
+  option1.value = florida;
+  option1.text = florida;
   select.appendChild(option1);
 
   const option2 = document.createElement("option");
