@@ -53,7 +53,7 @@
 
        let awayTeamimg = document.createElement('img');
         awayTeamimg.src = scoreboard['events'][i]['competitions'][0]['odds'][0]['awayTeamOdds']['team']['logo'];
-       const container = document.getElementById('gameslate');
+      
       
 
         let awayTeamimg = document.createElement('img');
@@ -83,7 +83,7 @@
       option3.text = awayTeam;
       select.appendChild(option3);
 
-
+      const container = document.getElementbyId("gameslate");
       container.appendChild(select);
       linebreak1 = document.createElement("br");
       linebreak2 = document.createElement("br");
