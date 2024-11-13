@@ -43,13 +43,23 @@
       console.log(scoreboard)
      for(let i = 0; scoreboard['events'].length; i++){
        
-      let gameName = scoreboard['events'][i]['name'];
-      const gamelabel = document.createElement("p");
-      gamelabel.textContent = gameName;
+      let awayTeamName = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['displayName']
+      const awayTeamlabel = document.createElement("p");
+      awayTeamlabel.textContent = awayTeamName;
 
-       let img = document.createElement('img');
-        img.src = scoreboard['events'][0]['competitions'][0]['odds'][0]['homeTeamOdds']['team']['logo'];
-        document.getElementById('gameslate').appendChild(img);
+        let homeTeamName = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['displayName']
+      const homeTeamlabel = document.createElement("p");
+      homeTeamlabel.textContent = homeTeamName;
+
+       let awayTeamimg = document.createElement('img');
+        awayTeamimg.src = scoreboard['events'][i]['competitions'][0]['odds'][0]['awayTeamOdds']['team']['logo'];
+       const container = document.getElementById('gameslate')
+        container.appendChild(awayTeamimg);
+        container.appendChild(awayTeamName); 
+
+        let awayTeamimg = document.createElement('img');
+        awayTeamimg.src = scoreboard['events'][i]['competitions'][0]['odds'][0]['awayTeamOdds']['team']['logo'];
+        document.getElementById('gameslate').appendChild(homeTeamimg);
 
       
       const select = document.createElement("select");
@@ -74,8 +84,7 @@
       option3.text = awayTeam;
       select.appendChild(option3);
 
-      const container = document.getElementById("gameslate");
-      container.appendChild(gamelabel);
+
       container.appendChild(select);
       linebreak1 = document.createElement("br");
       linebreak2 = document.createElement("br");
