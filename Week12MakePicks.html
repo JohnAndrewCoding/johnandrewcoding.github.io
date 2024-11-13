@@ -35,15 +35,15 @@
             Httpreq.send(null);
             return Httpreq.responseText;
         }
-      let wedespnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241113";
-      let thurespnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241114";
+      let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241113";
       
-      var scoreboard = JSON.parse(Get(wedespnUrl));
-      var thurscoreboard = JSON.parse(Get(thurespnUrl));
+      var scoreboard = JSON.parse(Get(espnUrl));
       
      for(let i = 0; scoreboard['events'].length; i++){
-       
+       let homeTeam = "yo"
+       let awayTeam = "yoy"
       const select = document.createElement("select");
+       
       const option1 = document.createElement("option");
       option1.value = "undecided";
       option1.text = "undecided";
