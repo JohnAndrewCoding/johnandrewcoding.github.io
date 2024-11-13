@@ -37,12 +37,13 @@
         }
       let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241113";
       var scoreboard = JSON.parse(Get(espnUrl));
+      console.log(scoreboard)
      for(let i = 0; scoreboard['events'].length; i++){ 
       const select = document.createElement("select");
       let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['abbreviation'];
       let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['abbreviation'];
 
-
+      
       const option1 = document.createElement("option");
       option1.value = "undecided";
       option1.text = "undecided";
