@@ -50,23 +50,15 @@
         let homeTeamName = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['displayName'];
       const homeTeamlabel = document.createElement("p");
       homeTeamlabel.textContent = homeTeamName;
-
-       let awayTeamimg = document.createElement('img');
-        awayTeamimg.src = scoreboard['events'][i]['competitions'][0]['odds'][0]['awayTeamOdds']['team']['logo'];
       
-      
-
         let awayTeamimg = document.createElement('img');
         awayTeamimg.src = scoreboard['events'][i]['competitions'][0]['odds'][0]['awayTeamOdds']['team']['logo'];
-        document.getElementById('gameslate').appendChild(homeTeamimg);
+        document.getElementById('gameslate').appendChild(awayTeamimg);
 
       
       const select = document.createElement("select");
       let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['abbreviation'];
       let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['abbreviation'];
-
-       let hometeamImage = scoreboard['events'][0]['competitions'][0]['odds'][0]['homeTeamOdds']['team']['logo'];
-
       
       const option1 = document.createElement("option");
       option1.value = "undecided";
