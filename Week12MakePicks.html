@@ -38,9 +38,8 @@
       let wedespnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241113";
       let thurespnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241114";
       
-      var wedscoreboard = JSON.parse(Get(wedespnUrl));
+      var scoreboard = JSON.parse(Get(wedespnUrl));
       var thurscoreboard = JSON.parse(Get(thurespnUrl));
-      scoreboard = wedscoreboard.concat(thurscoreboard);
       console.log(scoreboard)
      for(let i = 0; scoreboard['events'].length; i++){
        
