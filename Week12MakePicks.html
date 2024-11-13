@@ -47,10 +47,16 @@
       const gamelabel = document.createElement("p");
       gamelabel.textContent = gameName;
 
+       let img = document.createElement('img');
+        img.src = scoreboard['events'][0]['competitions'][0]['odds'][0]['homeTeamOdds']['team']['logo'];
+        document.getElementById('gameslate').appendChild(img);
+
       
       const select = document.createElement("select");
       let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['abbreviation'];
       let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['abbreviation'];
+
+       let hometeamImage = scoreboard['events'][0]['competitions'][0]['odds'][0]['homeTeamOdds']['team']['logo']
 
       
       const option1 = document.createElement("option");
