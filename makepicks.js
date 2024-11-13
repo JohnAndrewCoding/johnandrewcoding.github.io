@@ -12,3 +12,4 @@ const select = document.createElement("select");
 
   const container = document.getElementById("gameslate");
   container.appendChild(select);
+alert("JavaScript is working!");
