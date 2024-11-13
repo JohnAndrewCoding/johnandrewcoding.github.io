@@ -40,7 +40,7 @@
       
       var scoreboard = JSON.parse(Get(wedespnUrl));
       var thurscoreboard = JSON.parse(Get(thurespnUrl));
-      console.log(scoreboard)
+      
      for(let i = 0; scoreboard['events'].length; i++){
        
       const select = document.createElement("select");
@@ -59,7 +59,7 @@
       option3.text = awayTeam;
       select.appendChild(option3);
 
-      document.getElementbyId("gameslate").appendChild(select);
+       const container = document.getElementById("gameslate");
      const linebreak1 = document.createElement("br");
       const linebreak2 = document.createElement("br");
 
