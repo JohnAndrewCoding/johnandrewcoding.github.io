@@ -36,21 +36,24 @@
         }
       let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241113";
       var scoreboard = JSON.parse(Get(espnUrl));
+     for(let i = 0; scoreboard['events'].length; i++){ 
       const select = document.createElement("select");
-      let florida = scoreboard['events'][2]['competitions'][0]['competitors'][1]['team']['abbreviation'];
+      let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['abbreviation'];
+      let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['abbreviation'];
 
-  const option1 = document.createElement("option");
-  option1.value = florida;
-  option1.text = florida;
-  select.appendChild(option1);
+      const option1 = document.createElement("option");
+      option1.value = homeTeam;
+      option1.text = homeTeam;
+      select.appendChild(option1);
 
-  const option2 = document.createElement("option");
-  option2.value = "value2";
-  option2.text = "Option 2";
-  select.appendChild(option2);
+      const option2 = document.createElement("option");
+      option2.value = awayTeam;
+      option2.text = awayTeam;
+      select.appendChild(option2);
 
-  const container = document.getElementById("gameslate");
-  container.appendChild(select);
+      const container = document.getElementById("gameslate");
+      container.appendChild(select);
+     }
     </script>
   </body>
 </html>
