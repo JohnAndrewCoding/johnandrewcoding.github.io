@@ -38,6 +38,12 @@
       let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?";
       
       var scoreboard = JSON.parse(Get(espnUrl));
+     const para = document.createElement("p");
+    const node = document.createTextNode("This is new.");
+    para.appendChild(node);
+
+    const element = document.getElementById("gameslate");
+    element.appendChild(para);
     </script>
   </body>
 </html>
