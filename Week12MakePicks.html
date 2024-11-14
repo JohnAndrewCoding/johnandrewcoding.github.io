@@ -42,21 +42,20 @@
      for(let i = 0; scoreboard['events'].length; i++){
      
       const select = document.createElement("select");
-      var homeTeam = "byu";
-      var awayTeam = "sc";
       const option1 = document.createElement("option");
+      
       option1.value = "undecided";
       option1.text = "undecided";
       select.appendChild(option1);
        
       const option2 = document.createElement("option");
-      option2.value = homeTeam;
-      option2.text = homeTeam;
+      option2.value = "value";
+      option2.text = "text";
       select.appendChild(option2);
 
       const option3 = document.createElement("option");
-      option3.value = awayTeam;
-      option3.text = awayTeam;
+      option3.value = "value";
+      option3.text = "text";
       select.appendChild(option3);
 
        const container = document.getElementById("gameslate");
