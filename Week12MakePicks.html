@@ -38,35 +38,6 @@
       let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?";
       
       var scoreboard = JSON.parse(Get(espnUrl));
-      
-     for(let i = 0; scoreboard['events'].length; i++){
-     
-      const select = document.createElement("select");
-      const option1 = document.createElement("option");
-      
-      option1.value = "undecided";
-      option1.text = "undecided";
-      select.appendChild(option1);
-       
-      const option2 = document.createElement("option");
-      option2.value = "value";
-      option2.text = "text";
-      select.appendChild(option2);
-
-      const option3 = document.createElement("option");
-      option3.value = "value";
-      option3.text = "text";
-      select.appendChild(option3);
-
-       const container = document.getElementById("gameslate");
-       container.appendChild(select);
-     const linebreak1 = document.createElement("br");
-      const linebreak2 = document.createElement("br");
-       container.appendChild(linebreak1);
-       container.appendChild(linebreak2);
-
-       
-     }
     </script>
   </body>
 </html>
