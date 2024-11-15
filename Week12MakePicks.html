@@ -35,15 +35,58 @@
             Httpreq.send(null);
             return Httpreq.responseText;
         }
-      let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?";
+      let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241113-20241116";
       
       var scoreboard = JSON.parse(Get(espnUrl));
+      console.log(scoreboard);
      const para = document.createElement("p");
-    const node = document.createTextNode("This is new.");
-    para.appendChild(node);
+     for(let i = 0; i < scoreboard['events'].length; i++){
+      let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['location'];
+      let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['location'];
 
-    const element = document.getElementById("gameslate");
-    element.appendChild(para);
+      var select = document.createElement("select");
+      var gameName = document.createElement("p");
+
+      const awayImg = document.createElement("img");
+      awayImg.src = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['logo'];
+      awayImg.height = 50;
+      awayImg.width = 50;
+      gameName.appendChild(awayImg);
+      gameName.append(awayTeam + " @ ");
+
+      const homeImg = document.createElement("img");
+      homeImg.src = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['logo'];
+      homeImg.height = 50;
+      homeImg.width = 50;
+      gameName.appendChild(homeImg)
+      gameName.append(homeTeam);
+
+
+
+      var option1 = document.createElement("option");
+      option1.value = "undecided";
+      option1.text = "undecided";
+      select.appendChild(option1);
+
+      var option2 = document.createElement("option");
+      option2.value = homeTeam;
+      option2.text = homeTeam;
+      select.appendChild(option2);
+
+
+      var option3 = document.createElement("option");
+      option3.value = awayTeam;
+      option3.text = awayTeam;
+      select.appendChild(option3);
+
+      var container = document.getElementById("gameslate");
+      var linebreak1 = document.createElement("br");
+      var linebreak2 = document.createElement("br");
+      container.append(gameName);
+      container.appendChild(select);
+      container.append(linebreak1);
+      container.append(linebreak2);
+     }
     </script>
   </body>
 </html>
