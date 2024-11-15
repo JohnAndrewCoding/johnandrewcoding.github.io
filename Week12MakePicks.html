@@ -10,7 +10,7 @@
   <body>
     <h1>Week 12 Make Your Picks</h1>
      
-    <form>
+    <form id="gamesForm" >
       <p>Select who is making the picks:</p>
       <input type="radio" id="Andrew" name="pickers" value="Andrew">
       <label for="Andrew">Andrew</label>
@@ -18,7 +18,7 @@
       <label for="Samuel">Samuel</label>
        <input type="radio" id="Travis" name="pickers" value="Travis">
       <label for="Travis">Travis</label>
-       <input type="radio" id="Blayne" name="pickers" value=Blayne"">
+       <input type="radio" id="Blayne" name="pickers" value="Blayne">
       <label for="Blayne">Blayne</label>
       <br>
      <h4>Game slate for Week 12</h4><br>
@@ -26,7 +26,7 @@
 
    
 <br>
-<input type="submit" value="Save Picks">
+<button type="button" onclick="getFormData()">Submit</button>
     </form>
     <script>
       function Get(yourUrl){
@@ -86,7 +86,24 @@
       container.appendChild(select);
       container.append(linebreak1);
       container.append(linebreak2);
+
+      
      }
+    function getFormData() {
+     const gamesForm = document.getElementById("gamesForm");
+     const picks = []
+     const user = gamesForm.elements["pickers"].value;
+     for(let i = 0; i < scoreboard['events'].length; i++){
+      picks.push(gamesForm.querySelectorAll("select")[i].value);
+     }
+     localStorage.setItem('picks', JSON.stringify(picks));
+     localStorage.setItem('picker', user);
+     console.log("it worked");
+     console.log(picks[0]);
+     location.href = "PostPicks.html";
+    }
+
+
     </script>
   </body>
 </html>

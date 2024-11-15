@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content ="width=device-width, initial-scale=1">
+      <!--<link rel="stylesheet" href="mystyle.css">-->
+    <title>Your Picks</title>
+  </head>
+  <body>
+    <p id="postPicks"></p>
+
+    <script>
+        const paragraph = document.getElementById("postPicks");
+        const picks = JSON.parse(localStorage.getItem('picks'));
+        const userName = localStorage.getItem('picker');
+        paragraph.append(userName + "\n");
+        const linebreak = document.createElement("br");
+        paragraph.appendChild(linebreak);
+        for(let i = 0; i < picks.length; i++){
+            const linebreak1 = document.createElement("br");
+            paragraph.append(picks[i] + "\n");
+            paragraph.appendChild(linebreak1);
+        }
+    </script>
+  </body>
+</html>
