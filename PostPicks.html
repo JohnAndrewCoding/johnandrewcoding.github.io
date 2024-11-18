@@ -3,24 +3,25 @@
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content ="width=device-width, initial-scale=1">
-      <!--<link rel="stylesheet" href="mystyle.css">-->
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <title>Your Picks</title>
   </head>
-  <body>
-    <p id="postPicks"></p>
+  <body class="bg-secondary">
+    <table>
+      <tr>
+        <th id="AndrewsName">Andrew's Picks</th>
+        <th id="SamuelsName">Samuel's Picks</th>
+        <th id="TravisName">Travis' Picks</th>
+        <th id="BlaynesName">Blayne's Picks</th>
+      </tr>
+      <tr>
+        <td id="postPicksAndrew"></td>
+        <td id="postPicksSamuel"></td>
+        <td id="postPicksTravis"></td>
+        <td id="postPicksBlayne"></td>
+      </tr>
+    </table>
 
-    <script>
-        const paragraph = document.getElementById("postPicks");
-        const picks = JSON.parse(localStorage.getItem('picks'));
-        const userName = localStorage.getItem('picker');
-        paragraph.append(userName + "\n");
-        const linebreak = document.createElement("br");
-        paragraph.appendChild(linebreak);
-        for(let i = 0; i < picks.length; i++){
-            const linebreak1 = document.createElement("br");
-            paragraph.append(picks[i] + "\n");
-            paragraph.appendChild(linebreak1);
-        }
-    </script>
+    <script type="module" src="postpicks.mjs"></script>
   </body>
 </html>

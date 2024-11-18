@@ -116,7 +116,9 @@ function submitPicks(){
 
   set(userRef, {
     name: user,
-    picks: getFormData()
+    picks: {
+      week13: getFormData()
+    }
   })
     .then(() => {
       console.log('User data updated successfully!');
@@ -127,17 +129,8 @@ function submitPicks(){
 }
 
 
-
-// Read user data
-/*const userRef = ref(database, `users/${user}`);
-
-onValue(userRef, (snapshot) => {
-  const userData = snapshot.val();
-  console.log('User Data:', userData);
-}, (error) => {
-  console.error('Error reading data:', error);
-});*/
-
 document.getElementById("submitBtn").addEventListener("click",submitPicks);
+
+document.getElementById("postPicks").innerHTML = "Connor McGregor";
   
   
