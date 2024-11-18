@@ -131,6 +131,6 @@ function submitPicks(){
 
 document.getElementById("submitBtn").addEventListener("click",submitPicks);
 
-document.getElementById("postPicks").innerHTML = "Connor McGregor";
+
   
   
