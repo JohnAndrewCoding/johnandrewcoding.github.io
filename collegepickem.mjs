@@ -1,7 +1,8 @@
-// Import the functions you need from the SDKs you need
 
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, onValue } from 'firebase/database';
+// Import the functions you need from the SDKs you need
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+import { getDatabase, ref, set, onValue } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js';
+
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -15,36 +16,22 @@ const firebaseConfig = {
   measurementId: "G-50QRGBXTPE"
 };
 
-
-
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+// Define initial data
 const initialData = {
   users: {
     user1: {
       name: 'Blayne Butler',
-      age: [5,6,7,8],
+      age: [5, 6, 7, 8],
       city: 'Tifton'
-    },
-    user2: {
-      name: 'Jane Smith',
-      age: 25,
-      city: 'Los Angeles'
-    }
-  },
-  products: {
-    product1: {
-      name: 'Laptop',
-      price: 1200
-    },
-    product2: {
-      name: 'Smartphone',
-      price: 800
     }
   }
 };
 
+// Write initial data to the database
 set(ref(database), initialData)
   .then(() => {
     console.log('Data written successfully!');
@@ -53,20 +40,17 @@ set(ref(database), initialData)
     console.error('Error writing data:', error);
   });
 
-  // ... (Your Firebase initialization code)
+// Read user data
+const userRef = ref(database, 'users/user1');
 
-// Get a reference to the user's dat
-const userInputsRef = ref(database, 'users/user1');
-
-
-onValue(userInputsRef, (snapshot) => {
+onValue(userRef, (snapshot) => {
   const userData = snapshot.val();
   console.log('User Data:', userData);
 }, (error) => {
   console.error('Error reading data:', error);
 });
 
-
+document.getElementById("header").innerHTML = "We in there";
 
 
   
