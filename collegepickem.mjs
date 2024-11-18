@@ -20,36 +20,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// Define initial data
-const initialData = {
-  users: {
-    user1: {
-      name: 'Blayne Butler',
-      age: [5, 6, 7, 8],
-      city: 'Tifton'
-    }
-  }
-};
-
-// Write initial data to the database
-set(ref(database), initialData)
-  .then(() => {
-    console.log('Data written successfully!');
-  })
-  .catch((error) => {
-    console.error('Error writing data:', error);
-  });
-
-// Read user data
-const userRef = ref(database, 'users/user1');
-
-onValue(userRef, (snapshot) => {
-  const userData = snapshot.val();
-  console.log('User Data:', userData);
-}, (error) => {
-  console.error('Error reading data:', error);
-});
-
 document.getElementById("header").innerHTML = "We in there";
 
 
@@ -116,19 +86,58 @@ container.append(linebreak2);
 
 }
 function getFormData() {
-const gamesForm = document.getElementById("gamesForm");
-const picks = []
-const user = gamesForm.elements["pickers"].value;
-for(let i = 0; i < scoreboard['events'].length; i++){
-picks.push(gamesForm.querySelectorAll("select")[i].value);
+  const picks = [];
+  for(let i = 0; i < scoreboard['events'].length; i++){
+    picks.push(gamesForm.querySelectorAll("select")[i].value);
 }
-localStorage.setItem('picks', JSON.stringify(picks));
-localStorage.setItem('picker', user);
-console.log("it worked");
-console.log(picks[0]);
-location.href = "PostPicks.html";
+  return picks;
+}
+
+function getUserRef(user){
+  if (user == "Andrew"){
+    return "user1";
+  }
+  else if(user == "Samuel") {
+    return "user2";
+  }
+  else if(user == "Travis") {
+    return "user3";
+  }
+  else {
+    return "user4";
+  }
+}
+
+function submitPicks(){
+  const gamesForm = document.getElementById("gamesForm");
+  const user = gamesForm.elements["pickers"].value;
+  const userRef = ref(database, `users/${getUserRef(user)}`);
+
+
+  set(userRef, {
+    name: user,
+    picks: getFormData()
+  })
+    .then(() => {
+      console.log('User data updated successfully!');
+    })
+    .catch((error) => {
+      console.error('Error updating user data:', error);
+    });
 }
 
 
+
+// Read user data
+/*const userRef = ref(database, `users/${user}`);
+
+onValue(userRef, (snapshot) => {
+  const userData = snapshot.val();
+  console.log('User Data:', userData);
+}, (error) => {
+  console.error('Error reading data:', error);
+});*/
+
+document.getElementById("submitBtn").addEventListener("click",submitPicks);
   
   
