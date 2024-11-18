@@ -53,5 +53,82 @@ onValue(userRef, (snapshot) => {
 document.getElementById("header").innerHTML = "We in there";
 
 
+function Get(yourUrl){
+  var Httpreq = new XMLHttpRequest();
+  Httpreq.open("GET",yourUrl,false);
+  Httpreq.send(null);
+  return Httpreq.responseText;
+}
+let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241119-20241123";
+
+var scoreboard = JSON.parse(Get(espnUrl));
+console.log(scoreboard);
+const para = document.createElement("p");
+for(let i = 0; i < scoreboard['events'].length; i++){
+let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['location'];
+let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['location'];
+
+var select = document.createElement("select");
+var gameName = document.createElement("p");
+
+const awayImg = document.createElement("img");
+awayImg.src = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['logo'];
+awayImg.height = 50;
+awayImg.width = 50;
+gameName.appendChild(awayImg);
+gameName.append(awayTeam + " @ ");
+
+const homeImg = document.createElement("img");
+homeImg.src = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['logo'];
+homeImg.height = 50;
+homeImg.width = 50;
+gameName.appendChild(homeImg)
+gameName.append(homeTeam);
+
+
+
+var option1 = document.createElement("option");
+option1.value = "undecided";
+option1.text = "undecided";
+select.appendChild(option1);
+
+var option2 = document.createElement("option");
+option2.value = homeTeam;
+option2.text = homeTeam;
+select.appendChild(option2);
+
+
+var option3 = document.createElement("option");
+option3.value = awayTeam;
+option3.text = awayTeam;
+select.appendChild(option3);
+
+var container = document.getElementById("gameslate");
+var linebreak1 = document.createElement("br");
+var linebreak2 = document.createElement("br");
+container.append(gameName);
+select.name = `game${i+1}`;
+console.log(select.name);
+container.appendChild(select);
+container.append(linebreak1);
+container.append(linebreak2);
+
+
+}
+function getFormData() {
+const gamesForm = document.getElementById("gamesForm");
+const picks = []
+const user = gamesForm.elements["pickers"].value;
+for(let i = 0; i < scoreboard['events'].length; i++){
+picks.push(gamesForm.querySelectorAll("select")[i].value);
+}
+localStorage.setItem('picks', JSON.stringify(picks));
+localStorage.setItem('picker', user);
+console.log("it worked");
+console.log(picks[0]);
+location.href = "PostPicks.html";
+}
+
+
   
   
