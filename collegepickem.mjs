@@ -79,7 +79,7 @@ var linebreak2 = document.createElement("br");
 container.append(gameName);
 select.name = `game${i+1}`;
 console.log(select.name);
-select.selectedIndex = 1;
+select.selectedIndex = setSelectedIndex(homeTeam, awayTeam);
 container.appendChild(select);
 container.append(linebreak1);
 container.append(linebreak2);
@@ -94,22 +94,22 @@ function getFormData() {
   return picks;
 }
 
-function populateSelectedPicks(select,homeTeam, awayTeam){
+function setSelectedIndex(homeTeam, awayTeam){
   const picksRef = ref(database, "users/user1/picks/week13");
   document.getElementById("header").innerHTML = picksRef[0];
   for(let i=0; i<picksRef.length; i++){
     if(picksRef[i] == homeTeam){
-      select.selectedIndex = 1;
+      return 1;
     }
     else if(picksRef[i] == awayTeam){
-      select.selectedIndex = 2; 
+      return 2; 
     }
     else{
-        select.selectedIndex = 0;
-    }
+        return 0;
+    } 
   }
-  return select;
 }
+
 
 function getUserRef(user){
   if (user == "Andrew"){
