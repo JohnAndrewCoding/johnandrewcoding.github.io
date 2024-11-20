@@ -99,13 +99,13 @@ function populateSelectedPicks(select,homeTeam, awayTeam){
   const picksRef = ref(database, "users/user1/picks/week13");
   for(let i=0; i<picksRef.length; i++){
     if(picksRef[i] == homeTeam){
-      select.selectedIndex == 1;
+      select.selectedIndex = 1;
     }
     else if(picksRef[i] == awayTeam){
-      select.selectedIndex == 2; 
+      select.selectedIndex = 2; 
     }
     else{
-        select.selectedIndex == 0;
+        select.selectedIndex = 0;
     }
   }
   return select;
