@@ -79,6 +79,7 @@ var linebreak2 = document.createElement("br");
 container.append(gameName);
 select.name = `game${i+1}`;
 console.log(select.name);
+select.value = option2.value;
 container.appendChild(select);
 container.append(linebreak1);
 container.append(linebreak2);
