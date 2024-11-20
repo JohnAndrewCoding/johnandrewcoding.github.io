@@ -20,7 +20,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-document.getElementById("header").innerHTML = "We in there";
+document.getElementById("header").innerHTML = "Under Construction";
 
 
 function Get(yourUrl){
