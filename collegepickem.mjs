@@ -29,6 +29,25 @@ function Get(yourUrl){
   Httpreq.send(null);
   return Httpreq.responseText;
 }
+
+function setSelectedIndex(homeTeam, awayTeam, database){
+  const picksRef = ref(database, "users");
+  document.getElementById("header").innerHTML = picksRef['user1']['name'];
+  var picks = picksRef['user1']['picks']['week13'];
+  for(let i=0; i<picks.length; i++){
+    if(picks[i] == homeTeam){
+      return 1;
+    }
+    else if(picks[i] == awayTeam){
+      return 2; 
+    }
+    else{
+        return 0;
+    } 
+  }
+}
+
+
 let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241119-20241123";
 
 var scoreboard = JSON.parse(Get(espnUrl));
@@ -94,22 +113,6 @@ function getFormData() {
   return picks;
 }
 
-function setSelectedIndex(homeTeam, awayTeam, database){
-  const picksRef = ref(database, "users");
-  document.getElementById("header").innerHTML = picksRef['user1']['name'];
-  var picks = picksRef['user1']['picks']['week13'];
-  for(let i=0; i<picks.length; i++){
-    if(picks[i] == homeTeam){
-      return 1;
-    }
-    else if(picks[i] == awayTeam){
-      return 2; 
-    }
-    else{
-        return 0;
-    } 
-  }
-}
 
 
 function getUserRef(user){
