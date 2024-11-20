@@ -96,7 +96,7 @@ function getFormData() {
 
 function populateSelectedPicks(select,homeTeam, awayTeam){
   const userRef = 'user1';
-  const picksRef = ref(database, `users/$(`users/user1/picks/week13`);
+  const picksRef = ref(database, "users/user1/picks/week13");
   for(let i=0; i<picksRef.length; i++){
     if(picksRef[i] == homeTeam){
       select.selectedIndex == 1;
