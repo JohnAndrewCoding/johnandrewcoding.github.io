@@ -79,8 +79,8 @@ var linebreak2 = document.createElement("br");
 container.append(gameName);
 select.name = `game${i+1}`;
 console.log(select.name);
-select = populateSelectedPicks(select, homeTeam, awayTeam);
-container.appendChild(select);
+
+container.appendChild(populateSelectedPicks(select, homeTeam, awayTeam));
 container.append(linebreak1);
 container.append(linebreak2);
 
