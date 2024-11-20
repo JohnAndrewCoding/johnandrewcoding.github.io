@@ -80,7 +80,7 @@ container.append(gameName);
 select.name = `game${i+1}`;
 console.log(select.name);
 select.selectedIndex = 1;
-container.appendChild(populateSelectedPicks(select, homeTeam, awayTeam));
+container.appendChild(select);
 container.append(linebreak1);
 container.append(linebreak2);
 
