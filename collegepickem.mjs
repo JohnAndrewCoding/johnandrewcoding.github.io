@@ -79,7 +79,7 @@ var linebreak2 = document.createElement("br");
 container.append(gameName);
 select.name = `game${i+1}`;
 console.log(select.name);
-
+select.selectedIndex = 1;
 container.appendChild(populateSelectedPicks(select, homeTeam, awayTeam));
 container.append(linebreak1);
 container.append(linebreak2);
@@ -95,7 +95,6 @@ function getFormData() {
 }
 
 function populateSelectedPicks(select,homeTeam, awayTeam){
-  const userRef = 'user1';
   const picksRef = ref(database, "users/user1/picks/week13");
   document.getElementById("header").innerHTML = picksRef[0];
   for(let i=0; i<picksRef.length; i++){
