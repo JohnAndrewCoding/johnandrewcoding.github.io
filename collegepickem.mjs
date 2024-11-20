@@ -97,11 +97,12 @@ function getFormData() {
 function setSelectedIndex(homeTeam, awayTeam){
   const picksRef = ref(database, "users");
   document.getElementById("header").innerHTML = picksRef['user1]['picks']['week13'][0];
-  for(let i=0; i<picksRef.length; i++){
-    if(picksRef[i] == homeTeam){
+  var picks = picksRef['user1]['picks']['week13'];
+  for(let i=0; i<picks.length; i++){
+    if(picks[i] == homeTeam){
       return 1;
     }
-    else if(picksRef[i] == awayTeam){
+    else if(picks[i] == awayTeam){
       return 2; 
     }
     else{
