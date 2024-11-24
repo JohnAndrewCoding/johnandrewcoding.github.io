@@ -100,6 +100,17 @@ select.name = `game${i+1}`;
 console.log(select.name);
 select.selectedIndex = setSelectedIndex(homeTeam, awayTeam, database);
 container.appendChild(select);
+
+var btnTest = document.createElement("button");
+const btnImg = document.createElement("img");
+btnImg.src = scoreboard['events'][0]['competitions'][0]['competitors'][1]['team']['logo'];
+btnImg.height = 50;
+btnImg.width = 50;
+btnTest.appendChild(awayImg);
+btnTest.appendChild(homeImg);
+document.body.appendChild(btnTest);
+
+
 container.append(linebreak1);
 container.append(linebreak2);
 
