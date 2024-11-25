@@ -47,9 +47,13 @@ function setSelectedIndex(homeTeam, awayTeam, database){
   }
 }
 
-
+function setSelections(userRef){
+  
+  onValue(userRef, (snapshot) => {
+  const userData = snapshot.val();
+ 
 let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241119-20241123";
-
+var user = "user1";
 var scoreboard = JSON.parse(Get(espnUrl));
 console.log(scoreboard);
 const para = document.createElement("p");
@@ -97,8 +101,18 @@ var linebreak1 = document.createElement("br");
 var linebreak2 = document.createElement("br");
 container.append(gameName);
 select.name = `game${i+1}`;
-console.log(select.name);
-select.selectedIndex = setSelectedIndex(homeTeam, awayTeam, database);
+if(userData[user]['picks']['week13'][i] == homeTeam){
+select.selectedIndex = 1;
+
+}
+  else if(userData[user]['picks']['week13'] == awayTeam){
+select.selectedIndex = 2;
+
+  }
+  else{
+select.selectedIndex = 0;
+  
+  }
 container.appendChild(select);
 
 var btnTest = document.createElement("button");
@@ -115,6 +129,7 @@ container.append(linebreak1);
 container.append(linebreak2);
 
 
+}
 }
 function getFormData() {
   const picks = [];
@@ -139,6 +154,9 @@ function getUserRef(user){
   else {
     return "user4";
   }
+}, (error) => {
+  console.error('Error reading data:', error);
+});
 }
 
 function submitPicks(){
