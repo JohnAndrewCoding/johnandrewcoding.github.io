@@ -1,2 +1,1 @@
-const divdiv = document.getElementByID("test");
-divdiv.innerHTML = "working?";
+document.getElementByID("test").innerHTML = "working?";
