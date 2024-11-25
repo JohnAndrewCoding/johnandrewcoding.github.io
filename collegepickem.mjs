@@ -128,7 +128,7 @@ document.body.appendChild(btnTest);
 container.append(linebreak1);
 container.append(linebreak2);
 
-
+}
 }
 }
 function getFormData() {
