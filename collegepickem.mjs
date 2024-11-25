@@ -178,8 +178,8 @@ function submitPicks(){
       console.error('Error updating user data:', error);
     });
 }
-
-
+ const userRef2 = ref(database, `users`)
+setSelections(userRef2);
 document.getElementById("submitBtn").addEventListener("click",submitPicks);
 
 
