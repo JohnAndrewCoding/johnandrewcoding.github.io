@@ -32,6 +32,8 @@ newsList.appendChild(li);
 
 }
 }
+
+sportsGames()
 // Check the ticker on window load and resize
 window.addEventListener('load', checkTicker);
 window.addEventListener('resize', checkTicker);
