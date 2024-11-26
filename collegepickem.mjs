@@ -30,28 +30,25 @@ function Get(yourUrl){
   return Httpreq.responseText;
 }
 
-function setSelectedIndex(homeTeam, awayTeam, database){
-  const picksRef = ref(database, "users");
-  document.getElementById("header").innerHTML = picksRef['user1']['name'];
-  var picks = picksRef['user1']['picks']['week13'];
-  for(let i=0; i<picks.length; i++){
-    if(picks[i] == homeTeam){
-      return 1;
-    }
-    else if(picks[i] == awayTeam){
-      return 2; 
-    }
-    else{
-        return 0;
-    } 
-  }
+function getPicks(picksRef){
+  var name = "";
+  onValue(picksRef, (snapshot) => {
+    const userData = snapshot.val();
+    name = userData['user1']['name'];
+    console.log(name)
+  }, (error) => {
+    console.error('Error reading data:', error);
+  });
+  return name;
 }
 
-function setSelections(userRef){
-  
-  onValue(userRef, (snapshot) => {
-  const userData = snapshot.val();
- 
+function setSelectedIndex(homeTeam, awayTeam,picks, gameNum){
+    
+}
+
+
+
+
 let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241119-20241123";
 var user = "user1";
 var scoreboard = JSON.parse(Get(espnUrl));
@@ -101,18 +98,11 @@ var linebreak1 = document.createElement("br");
 var linebreak2 = document.createElement("br");
 container.append(gameName);
 select.name = `game${i+1}`;
-if(userData[user]['picks']['week13'][i] == homeTeam){
-select.selectedIndex = 1;
-
-}
-  else if(userData[user]['picks']['week13'] == awayTeam){
-select.selectedIndex = 2;
-
-  }
-  else{
-select.selectedIndex = 0;
-  
-  }
+//console.log(select.name);
+const picksRef = ref(database, "users");
+console.log(getPicks(picksRef));
+//select.selectedIndex = setSelectedIndex(homeTeam, awayTeam, picksRef, i);
+console.log(setSelectedIndex(picksRef));
 container.appendChild(select);
 
 var btnTest = document.createElement("button");
