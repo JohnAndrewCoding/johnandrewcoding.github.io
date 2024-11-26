@@ -16,10 +16,6 @@ function Get(yourUrl){
   Httpreq.send(null);
   return Httpreq.responseText;
 }
-
-function sportsGames(){
-
-}
 // Check the ticker on window load and resize
 window.addEventListener('load', checkTicker);
 window.addEventListener('resize', checkTicker);
