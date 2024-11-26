@@ -7,7 +7,16 @@ function checkTicker() {
     const clone = firstItem.cloneNode(true);
     ticker.appendChild(clone);
   }
+
 }
+
+function Get(yourUrl){
+  var Httpreq = new XMLHttpRequest();
+  Httpreq.open("GET",yourUrl,false);
+  Httpreq.send(null);
+  return Httpreq.responseText;
+}
+
 function sportsGames(){
 
 }
