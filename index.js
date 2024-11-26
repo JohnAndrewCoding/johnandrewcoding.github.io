@@ -1,1 +1,14 @@
-//document.getElementByID("test").innerHTML = "working?";
+// Check if the ticker is fully visible, if not, clone the first item and append it to the end of the list
+function checkTicker() {
+  const ticker = document.getElementById('news-ticker').querySelector('ul');
+  const firstItem = ticker.querySelector('li:first-child');
+
+  if (firstItem.offsetWidth + firstItem.offsetLeft < ticker.offsetWidth) {
+    const clone = firstItem.cloneNode(true);
+    ticker.appendChild(clone);
+  }
+}
+
+// Check the ticker on window load and resize
+window.addEventListener('load', checkTicker);
+window.addEventListener('resize', checkTicker);
