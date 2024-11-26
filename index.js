@@ -31,9 +31,6 @@ li.textContent = gameString;
 newsList.appendChild(li);
 
 }
-
-
-
 }
 // Check the ticker on window load and resize
 window.addEventListener('load', checkTicker);
