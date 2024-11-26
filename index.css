@@ -11,7 +11,7 @@
   padding: 0;
   white-space: nowrap;
   animation: ticker 10s linear infinite;
-  animation-duration: 30s;
+  animation-duration: 120s;
 }
 
 #news-ticker li {
