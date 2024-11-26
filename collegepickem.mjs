@@ -119,8 +119,8 @@ container.append(linebreak1);
 container.append(linebreak2);
 
 }
-}
-}
+
+
 function getFormData() {
   const picks = [];
   for(let i = 0; i < scoreboard['events'].length; i++){
@@ -144,10 +144,8 @@ function getUserRef(user){
   else {
     return "user4";
   }
-}, (error) => {
-  console.error('Error reading data:', error);
-});
 }
+
 
 function submitPicks(){
   const gamesForm = document.getElementById("gamesForm");

@@ -7,16 +7,18 @@ function Get(yourUrl){
 
 
 
-let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241119-20241123";
+let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241126-20241130";
 var scoreboard = JSON.parse(Get(espnUrl));
-const newsList = document.getElementByID("news-list");
+
 for(let i = 0; i < scoreboard['events'].length; i++){
 let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['location'];
 let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['location'];
 let gameString = `${homeTeam} vs ${awayTeam}`;
 const li = document.createElement("li");
 li.textContent = gameString;
+const newsList = document.getElementById("news-list");
 newsList.appendChild(li);
+document.getElementById("news-ticker").appendChild(newsList);
 
 }
 
@@ -31,6 +33,7 @@ function checkTicker() {
   }
 
 }
+//}
 // Check the ticker on window load and resize
 window.addEventListener('load', checkTicker);
 window.addEventListener('resize', checkTicker);
