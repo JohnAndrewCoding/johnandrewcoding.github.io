@@ -1,15 +1,3 @@
-
-function checkTicker() {
-  const ticker = document.getElementById('news-ticker').querySelector('ul');
-  const firstItem = ticker.querySelector('li:first-child');
-
-  if (firstItem.offsetWidth + firstItem.offsetLeft < ticker.offsetWidth) {
-    const clone = firstItem.cloneNode(true);
-    ticker.appendChild(clone);
-  }
-
-}
-
 function Get(yourUrl){
   var Httpreq = new XMLHttpRequest();
   Httpreq.open("GET",yourUrl,false);
@@ -29,6 +17,18 @@ let gameString = `${homeTeam} vs ${awayTeam}`;
 const li = document.createElement("li");
 li.textContent = gameString;
 newsList.appendChild(li);
+
+}
+
+
+function checkTicker() {
+  const ticker = document.getElementById('news-ticker').querySelector('ul');
+  const firstItem = ticker.querySelector('li:first-child');
+
+  if (firstItem.offsetWidth + firstItem.offsetLeft < ticker.offsetWidth) {
+    const clone = firstItem.cloneNode(true);
+    ticker.appendChild(clone);
+  }
 
 }
 // Check the ticker on window load and resize
