@@ -17,7 +17,7 @@ function Get(yourUrl){
   return Httpreq.responseText;
 }
 
-function sportsGames(){
+
 
 let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241119-20241123";
 var scoreboard = JSON.parse(Get(espnUrl));
@@ -31,9 +31,6 @@ li.textContent = gameString;
 newsList.appendChild(li);
 
 }
-}
-
-sportsGames()
 // Check the ticker on window load and resize
 window.addEventListener('load', checkTicker);
 window.addEventListener('resize', checkTicker);
