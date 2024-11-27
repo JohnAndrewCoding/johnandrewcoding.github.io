@@ -10,7 +10,7 @@ function Get(yourUrl){
 let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241126-20241130";
 var scoreboard = JSON.parse(Get(espnUrl));
 
-for(let i = 0; i < scoreboard['events'].length; i++){
+for(let i = 0; i < 100; i++){
 let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['location'];
 let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['location'];
 let gameString = `${homeTeam} vs ${awayTeam}`;
