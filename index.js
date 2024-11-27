@@ -34,7 +34,7 @@ const favoriteTeams = document.getElementById("favorite-teams");
 const texasImg = cfbData[47]['competitions'][0]['competitors'][1]['team']['logo'];
 const bucsImg =  nflData[9]['competitions'][0]['competitors'][1]['team']['logo'];
 const lakersImg = nbaData[10]['competitions'][0]['competitors'][1]['team']['logo'];
-
+var gameName = document.createElement("p");
 favoriteteams.appendChild(texasImg);
 favoriteteams.appendChild(bucsImg);
 favoriteteams.appendChild(lakersImg);
