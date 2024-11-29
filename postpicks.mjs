@@ -21,25 +21,36 @@ const database = getDatabase(app);
 
 // Read user data
 const userRef = ref(database, `users`);
-const picksRef = ref(database, `users/user1/picks/week13`);
+
 
 
 function postAllPicks(userData){
    for(let j =0; j<4; j++){
     var picksString = '';
-    for(let i = 0; i<userData[`user${j+1}`]['picks']['week13'].length; i++){
-        picksString += `<br> ${userData[`user${j+1}`]['picks']['week13'][i]}`;
+    for(let i = 0; i<userData[`user${j+1}`]['picks']['week14'].length; i++){
+        picksString += `<br> ${userData[`user${j+1}`]['picks']['week14'][i]}`;
     }
     document.getElementById(`postPicks${userData[`user${j+1}`]['name']}`).innerHTML = picksString;
 }
 }
 
+
+
 onValue(userRef, (snapshot) => {
   const userData = snapshot.val();
   postAllPicks(userData);
-  console.log(postAllPicks(userData));
+  //console.log(postAllPicks(userData));
 }, (error) => {
   console.error('Error reading data:', error);
+});
+
+const buttons = document.querySelectorAll('button');
+
+buttons.forEach(button => {
+  button.addEventListener('click', () => {
+    const user = button.value;
+    localStorage.setItem("user", user);
+  });
 });
 
 

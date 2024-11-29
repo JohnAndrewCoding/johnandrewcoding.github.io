@@ -20,7 +20,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-document.getElementById("header").innerHTML = "Under Construction";
+document.getElementById("header").innerHTML = "Rivalry week";
 
 
 function Get(yourUrl){
@@ -30,31 +30,22 @@ function Get(yourUrl){
   return Httpreq.responseText;
 }
 
-function getPicks(picksRef){
-  var name = "";
-  onValue(picksRef, (snapshot) => {
-    const userData = snapshot.val();
-    name = userData['user1']['name'];
-    console.log(name)
-  }, (error) => {
-    console.error('Error reading data:', error);
-  });
-  return name;
-}
 
-function setSelectedIndex(homeTeam, awayTeam,picks, gameNum){
-    
-}
+var user = localStorage.getItem("user");
 
+const picksRef = ref(database, `users`);
+var name = "";
+onValue(picksRef, (snapshot) => {
+const userData = snapshot.val();
+name = userData[user]['name'];
 
+let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241126-20241130";
 
-
-let espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20241119-20241123";
-var user = "user1";
 var scoreboard = JSON.parse(Get(espnUrl));
 console.log(scoreboard);
 const para = document.createElement("p");
 for(let i = 0; i < scoreboard['events'].length; i++){
+console.log(name);
 let homeTeam = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['location'];
 let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['location'];
 
@@ -65,14 +56,14 @@ const awayImg = document.createElement("img");
 awayImg.src = scoreboard['events'][i]['competitions'][0]['competitors'][1]['team']['logo'];
 awayImg.height = 50;
 awayImg.width = 50;
-gameName.appendChild(awayImg);
+gameName.append(awayImg);
 gameName.append(awayTeam + " @ ");
 
 const homeImg = document.createElement("img");
 homeImg.src = scoreboard['events'][i]['competitions'][0]['competitors'][0]['team']['logo'];
 homeImg.height = 50;
 homeImg.width = 50;
-gameName.appendChild(homeImg)
+gameName.append(homeImg)
 gameName.append(homeTeam);
 
 
@@ -98,27 +89,38 @@ var linebreak1 = document.createElement("br");
 var linebreak2 = document.createElement("br");
 container.append(gameName);
 select.name = `game${i+1}`;
-//console.log(select.name);
-const picksRef = ref(database, "users");
-console.log(getPicks(picksRef));
-//select.selectedIndex = setSelectedIndex(homeTeam, awayTeam, picksRef, i);
-console.log(setSelectedIndex(picksRef));
+const userPick = userData[user]['picks']['week14'][i]
+
+if (homeTeam == userPick ){
+ select.selectedIndex = 1;
+}
+else if(awayTeam == userPick){
+  select.selectedIndex = 2;
+}
+else{
+  select.selectedIndex = 0;
+}
+
 container.appendChild(select);
 
-var btnTest = document.createElement("button");
+/*var btnTest = document.createElement("button");
 const btnImg = document.createElement("img");
 btnImg.src = scoreboard['events'][0]['competitions'][0]['competitors'][1]['team']['logo'];
 btnImg.height = 50;
 btnImg.width = 50;
 btnTest.appendChild(awayImg);
 btnTest.appendChild(homeImg);
-document.body.appendChild(btnTest);
+document.body.appendChild(btnTest);*/
 
 
 container.append(linebreak1);
 container.append(linebreak2);
 
 }
+
+}, (error) => {
+  console.error('Error reading data:', error);
+});
 
 
 function getFormData() {
@@ -132,31 +134,31 @@ function getFormData() {
 
 
 function getUserRef(user){
-  if (user == "Andrew"){
-    return "user1";
+  if (user == "user1"){
+    return "Andrew";
   }
-  else if(user == "Samuel") {
-    return "user2";
+  else if(user == "user2") {
+    return "Samuel";
   }
-  else if(user == "Travis") {
-    return "user3";
+  else if(user == "user3") {
+    return "Travis";
   }
   else {
-    return "user4";
+    return "Blayne";
   }
 }
 
 
 function submitPicks(){
   const gamesForm = document.getElementById("gamesForm");
-  const user = gamesForm.elements["pickers"].value;
-  const userRef = ref(database, `users/${getUserRef(user)}`);
+  const user = localStorage.getItem("user");
+  const userRef = ref(database, `users/${user}`);
 
 
   set(userRef, {
-    name: user,
+    name: getUserRef(user),
     picks: {
-      week13: getFormData()
+      week14: getFormData()
     }
   })
     .then(() => {
@@ -166,8 +168,6 @@ function submitPicks(){
       console.error('Error updating user data:', error);
     });
 }
- const userRef2 = ref(database, `users`)
-setSelections(userRef2);
 document.getElementById("submitBtn").addEventListener("click",submitPicks);
 
 

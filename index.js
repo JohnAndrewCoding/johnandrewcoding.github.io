@@ -16,6 +16,7 @@ let awayTeam = scoreboard['events'][i]['competitions'][0]['competitors'][1]['tea
 let gameString = `${homeTeam} vs ${awayTeam}`;
 const li = document.createElement("li");
 li.textContent = gameString;
+console.log(gameString);
 const newsList = document.getElementById("news-list");
 newsList.appendChild(li);
 document.getElementById("news-ticker").appendChild(newsList);
