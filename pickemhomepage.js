@@ -31,6 +31,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     awayImg.width = 50;
     awayImg.height = 50;
     //homeImg.alt = homeTeamName;
+    
     const gameName = document.createElement('p');
     
     gameName.appendChild(homeImg);
