@@ -20,8 +20,8 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     
     const homeImg = document.createElement('img');
     homeImg.src = data.events[i].competitions[0].competitors[0].team.logo;
-    homeImg.width = 100;
-    homeImg.height = 100;
+    homeImg.width = 50;
+    homeImg.height = 50;
     //homeImg.alt = homeTeamName;
 
     
