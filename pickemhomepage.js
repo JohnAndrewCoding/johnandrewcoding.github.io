@@ -36,7 +36,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     
     gameName.appendChild(homeImg);
     gameName.appendChild(homeTeam);
-    gamename.appendChild(versus);
+    gameName.appendChild(versus);
     gameName.appendChild(awayImg);
     gameName.appendChild(awayTeam);
     
