@@ -1,5 +1,3 @@
-document.getElementById("content").innerHTML = "Javascript file";
-
 const apiUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250829';
 
 // Make a GET request
