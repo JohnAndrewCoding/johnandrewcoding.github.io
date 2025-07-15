@@ -1,25 +1,19 @@
 
-const apiUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250829';
-
-
-// Make a GET request
-fetch(apiUrl)
+fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250829') // Replace with your API endpoint
   .then(response => {
-    // Check if the network response was successful
+    // Check if the request was successful (status code 200-299)
     if (!response.ok) {
-      throw new Error('Network response was not ok');
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    // Parse the JSON data from the response
+    // Parse the JSON response
     return response.json();
   })
   .then(data => {
-    
-     alert(data['events'][47]['competitions'][0]['status']['type']['detail']);
-    alert("[alert]-=-==-");
     // Handle the retrieved data
+    alert(data);
     console.log(data);
   })
   .catch(error => {
-    // Handle any errors that occurred during the fetch operation
-    console.error('Error:', error);
+    // Handle any errors during the fetch operation
+    console.error('Error fetching data:', error);
   });
