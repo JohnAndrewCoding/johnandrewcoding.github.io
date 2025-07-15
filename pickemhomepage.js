@@ -10,7 +10,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
   })
   .then(data => {
     // Handle the retrieved data
-    alert(data);
+    alert(datadata['events'][0]['competitions'][0]['status']['type']['detail']);
     console.log(data);
   })
   .catch(error => {
