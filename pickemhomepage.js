@@ -13,6 +13,9 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     var pickemStr = "";
     for(let i = 0; i < data.events.length; i ++) {
     pickemStr += data.events[i].name + "<br>";
+
+    const homeTeam = document.createElement('p');
+    homeTeam.textContent = data.events[i].competitions[0].competitors[0].team.location;
     
     const homeImg = document.createElement('img');
     homeImg.src = data.events[i].competitions[0].competitors[0].team.logo;
@@ -26,10 +29,14 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     awayImg.height = 100;
     //homeImg.alt = homeTeamName;
 
-    document.getElementByID("content").appendChild(homeImg);
-    document.getElementByID("content").appendChild(awayImg);
+    document.getElementById("content").appendChild(homeImg);
+    document.getElementById("content").appendChild(homeTeam);
+    document.getElementById("content").appendChild(awayImg);
+    document.getElementById("content").appendChild(awayTeam);
+
+    const linebreak = document.createElement('br');
+    document.getElementById("content").appendChild(linebreak);
     }
-    document.getElementById("content").innerHTML = pickemStr;
     console.log(data);
   })
   .catch(error => {
