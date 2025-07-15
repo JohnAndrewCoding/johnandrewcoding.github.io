@@ -1,4 +1,4 @@
-alert("2. alert");
+
 const apiUrl = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250829';
 
 
