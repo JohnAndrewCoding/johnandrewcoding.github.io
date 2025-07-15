@@ -10,7 +10,11 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
   })
   .then(data => {
     // Handle the retrieved data
-    document.getElementById("content").innerHTML = data.events[0].name;
+    var pickemStr = "";
+    for(let i = 0; i < data.events.length; i ++) {
+    pickemStr += data.events[i] + "<br>";
+    }
+    document.getElementById("content").innerHTML = pickemStr;
     console.log(data);
   })
   .catch(error => {
