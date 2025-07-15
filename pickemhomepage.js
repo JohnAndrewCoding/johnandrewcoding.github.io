@@ -13,7 +13,7 @@ fetch(apiUrl)
     return response.json();
   })
   .then(data => {
-    document.getElementById("content").innerHTML = data['events'][47]['competitions'][0]['status']['type']['detail']
+    document.getElementById("content").innerHTML = data['events'][47]['competitions'][0]['status']['type']['detail'];
     // Handle the retrieved data
     console.log(data);
   })
