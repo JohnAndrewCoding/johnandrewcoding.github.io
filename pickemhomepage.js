@@ -14,8 +14,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     for(let i = 0; i < data.events.length; i ++) {
     pickemStr += data.events[i].name + "<br>";
 
-    const homeTeam = document.createElement('p');
-    homeTeam.textContent = data.events[i].competitions[0].competitors[0].team.location;
+    const homeTeam = document.createTextNode(data.events[i].competitions[0].competitors[0].team.location);
     
     const homeImg = document.createElement('img');
     homeImg.src = data.events[i].competitions[0].competitors[0].team.logo;
@@ -23,20 +22,21 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     homeImg.height = 100;
     //homeImg.alt = homeTeamName;
 
-    const awayTeam = document.createElement('p');
-    awayTeam.textContent = data.events[i].competitions[0].competitors[1].team.location;
+    const awayTeam = document.createTextNode(data.events[i].competitions[0].competitors[1].team.location);
       
     const awayImg = document.createElement('img');
     awayImg.src = data.events[i].competitions[0].competitors[1].team.logo;
     awayImg.width = 100;
     awayImg.height = 100;
     //homeImg.alt = homeTeamName;
-
-    document.getElementById("content").appendChild(homeImg);
-    document.getElementById("content").appendChild(homeTeam);
-    document.getElementById("content").appendChild(awayImg);
-    document.getElementById("content").appendChild(awayTeam);
-
+    const gameName = document.createElement('p');
+    
+    gameName.appendChild(homeImg);
+    gameName.appendChild(homeTeam);
+    gameName.appendChild(awayImg);
+    gameName.appendChild(awayTeam);
+    
+    document.getElementById("content").appendChild(gameName);
     const linebreak = document.createElement('br');
     document.getElementById("content").appendChild(linebreak);
     }
