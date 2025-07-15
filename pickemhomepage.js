@@ -13,6 +13,21 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     var pickemStr = "";
     for(let i = 0; i < data.events.length; i ++) {
     pickemStr += data.events[i].name + "<br>";
+    
+    const homeImg = document.createElement('img');
+    homeImg.src = data.events[i].competitions[0].competitors[0].team.logo;
+    homeImg.width = 100;
+    homeImg.height = 100;
+    //homeImg.alt = homeTeamName;
+    
+    const awayImg = document.createElement('img');
+    awayImg.src = data.events[i].competitions[0].competitors[1].team.logo;
+    awayImg.width = 100;
+    awayImg.height = 100;
+    //homeImg.alt = homeTeamName;
+
+    document.getElementByID("content").appendChild(homeImg);
+    document.getElementByID("content").appendChild(awayImg);
     }
     document.getElementById("content").innerHTML = pickemStr;
     console.log(data);
