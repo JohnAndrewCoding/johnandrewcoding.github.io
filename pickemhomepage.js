@@ -13,8 +13,9 @@ fetch(apiUrl)
     return response.json();
   })
   .then(data => {
-    alert("alert");
+    
      alert(data['events'][47]['competitions'][0]['status']['type']['detail']);
+    alert("[alert]-=-==-");
     // Handle the retrieved data
     console.log(data);
   })
