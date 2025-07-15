@@ -12,7 +12,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     // Handle the retrieved data
     var pickemStr = "";
     for(let i = 0; i < data.events.length; i ++) {
-    pickemStr += data.events[i] + "<br>";
+    pickemStr += data.events[i].name + "<br>";
     }
     document.getElementById("content").innerHTML = pickemStr;
     console.log(data);
