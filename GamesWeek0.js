@@ -1,4 +1,4 @@
-fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823') // Replace with your API endpoint
+fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823') // Replace with your APIendpoint
   .then(response => {
     // Check if the request was successful (status code 200-299)
     if (!response.ok) {
