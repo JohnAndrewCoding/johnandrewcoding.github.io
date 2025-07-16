@@ -9,7 +9,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
   })
   .then(data => {
     // Handle the retrieved data
-    for(let i = 0; i < data.events.length; i ++) {
+    for(let i = 0; i < 3; i ++) {
     const homeTeam = document.createTextNode(data.events[i].competitions[0].competitors[0].team.location);
     const versus = document.createTextNode(" vs. ");
     const awayTeam = document.createTextNode(data.events[i].competitions[0].competitors[1].team.location);
