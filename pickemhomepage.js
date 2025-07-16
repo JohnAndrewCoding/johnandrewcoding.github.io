@@ -20,16 +20,16 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     
     const homeImg = document.createElement('img');
     homeImg.src = data.events[i].competitions[0].competitors[0].team.logo;
-    homeImg.width = 50;
-    homeImg.height = 50;
+    homeImg.width = 25;
+    homeImg.height = 25;
     //homeImg.alt = homeTeamName;
 
     
       
     const awayImg = document.createElement('img');
     awayImg.src = data.events[i].competitions[0].competitors[1].team.logo;
-    awayImg.width = 50;
-    awayImg.height = 50;
+    awayImg.width = 25;
+    awayImg.height = 25;
     //homeImg.alt = homeTeamName;
     
     const gameName = document.createElement('p');
