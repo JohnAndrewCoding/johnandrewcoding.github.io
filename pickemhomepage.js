@@ -23,15 +23,10 @@ const db = firebase.firestore();
     age:25
 }); */
 
-  function selectButton(button) {
-    const buttons = document.querySelectorAll('.btn-group .btn');
-    buttons.forEach(btn => btn.classList.remove('active'));
-
-    button.classList.add('active');
 
     //newnew
 
-    const options = ['Option 1', 'Option 2'];
+const options = ['Option 1', 'Option 2'];
 
   // Get container where buttons will be placed
   const container = document.getElementById('buttonContainer');
