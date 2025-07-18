@@ -25,7 +25,7 @@ const db = firebase.firestore();
 
 
     //newnew
-
+//the two teams playing
 const options = ['Texas', 'Ohio State'];
 
   // Get container where buttons will be placed
@@ -33,12 +33,14 @@ const options = ['Texas', 'Ohio State'];
 
   // Create Bootstrap button group div
   const btnGroup = document.createElement('div');
+  //name of game
   btnGroup.className = 'btn-group';
   btnGroup.setAttribute('role', 'group');
   btnGroup.setAttribute('aria-label', 'Toggle buttons');
 
   // Create and append buttons
   options.forEach(option => {
+    //add an image to the buttons
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn btn-outline-primary';

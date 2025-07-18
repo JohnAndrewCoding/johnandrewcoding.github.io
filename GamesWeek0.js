@@ -39,6 +39,45 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     document.getElementById("week0games").appendChild(gameName);
     }
     console.log(data);
+
+    const options = ['Texas', 'Ohio State'];
+
+  // Get container where buttons will be placed
+  const container = document.getElementById('week0games');
+
+  // Create Bootstrap button group div
+  const btnGroup = document.createElement('div');
+  //name of game
+  btnGroup.className = 'btn-group';
+  btnGroup.setAttribute('role', 'group');
+  btnGroup.setAttribute('aria-label', 'Toggle buttons');
+
+  // Create and append buttons
+  options.forEach(option => {
+    //add an image to the buttons
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-outline-primary';
+    button.textContent = option;
+
+    // Add click event listener
+    button.onclick = function () {
+      // Remove active class from all buttons
+      const allButtons = btnGroup.querySelectorAll('button');
+      allButtons.forEach(btn => btn.classList.remove('active'));
+
+      // Add active class to the clicked one
+      button.classList.add('active');
+
+      // Log or use the selected value
+      console.log('Selected:', button.textContent);
+    };
+
+    btnGroup.appendChild(button);
+  });
+
+  // Append the entire button group to the container
+  container.appendChild(btnGroup);
   })
   .catch(error => {
     // Handle any errors during the fetch operation
