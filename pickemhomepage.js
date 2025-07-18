@@ -62,7 +62,7 @@ const options = ['Option 1', 'Option 2'];
 
   // Append the entire button group to the container
   container.appendChild(btnGroup);
-  }
+  
 
 
 
