@@ -26,7 +26,7 @@ const db = firebase.firestore();
 
     //newnew
 
-const options = ['Option 1', 'Option 2'];
+const options = ['Texas', 'Ohio State'];
 
   // Get container where buttons will be placed
   const container = document.getElementById('buttonContainer');
