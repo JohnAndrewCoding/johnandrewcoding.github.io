@@ -17,11 +17,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-db.collection('userInfo').add({
+/*db.collection('userInfo').add({
     user: 'Andrew',
     team: 'Texas',
     age:25
-});
+}); */
 
 
 
