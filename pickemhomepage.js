@@ -28,6 +28,45 @@ const db = firebase.firestore();
     buttons.forEach(btn => btn.classList.remove('active'));
 
     button.classList.add('active');
+
+    //newnew
+
+    const options = ['Option 1', 'Option 2'];
+
+  // Get container where buttons will be placed
+  const container = document.getElementById('buttonContainer');
+
+  // Create Bootstrap button group div
+  const btnGroup = document.createElement('div');
+  btnGroup.className = 'btn-group';
+  btnGroup.setAttribute('role', 'group');
+  btnGroup.setAttribute('aria-label', 'Toggle buttons');
+
+  // Create and append buttons
+  options.forEach(option => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-outline-primary';
+    button.textContent = option;
+
+    // Add click event listener
+    button.onclick = function () {
+      // Remove active class from all buttons
+      const allButtons = btnGroup.querySelectorAll('button');
+      allButtons.forEach(btn => btn.classList.remove('active'));
+
+      // Add active class to the clicked one
+      button.classList.add('active');
+
+      // Log or use the selected value
+      console.log('Selected:', button.textContent);
+    };
+
+    btnGroup.appendChild(button);
+  });
+
+  // Append the entire button group to the container
+  container.appendChild(btnGroup);
   }
 
 
