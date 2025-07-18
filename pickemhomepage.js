@@ -23,5 +23,12 @@ const db = firebase.firestore();
     age:25
 }); */
 
+  function selectButton(button) {
+    const buttons = document.querySelectorAll('.btn-group .btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    button.classList.add('active');
+  }
+
 
 
