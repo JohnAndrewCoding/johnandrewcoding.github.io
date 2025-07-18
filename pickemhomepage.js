@@ -1,2 +1,27 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+  authDomain: "college-football-pickem-68eed.firebaseapp.com",
+  projectId: "college-football-pickem-68eed",
+  storageBucket: "college-football-pickem-68eed.firebasestorage.app",
+  messagingSenderId: "650202039805",
+  appId: "1:650202039805:web:70e51177aab22e4d614594"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = firestore();
+
+db.collection("userInfo").add({
+    user: "Andrew",
+    team: "Texas",
+    age:25
+});
+
 
 
