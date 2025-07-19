@@ -19,7 +19,8 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     homeImg.width = 25;
     homeImg.height = 25;
     //homeImg.alt = homeTeamName;
-
+    const homeTeamName = data.events[i].competitions[0].competitors[0].team.location;
+    const awayTeamName = data.events[i].competitions[0].competitors[1].team.location;
     
       
     const awayImg = document.createElement('img');
@@ -35,12 +36,8 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     gameName.appendChild(versus);
     gameName.appendChild(awayImg);
     gameName.appendChild(awayTeam);
-    
-    document.getElementById("week0games").appendChild(gameName);
-    }
-    console.log(data);
 
-    const options = ['Texas', 'Ohio State'];
+    const options = [homeTeamName, awayTeamName];
 
   // Get container where buttons will be placed
   const container = document.getElementById('week0games');
@@ -59,6 +56,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     button.type = 'button';
     button.className = 'btn btn-outline-primary';
     button.textContent = option;
+    //button.appendChild(homeImg);
 
     // Add click event listener
     button.onclick = function () {
@@ -75,11 +73,9 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
 
     btnGroup.appendChild(button);
   });
-
-  // Append the entire button group to the container
-  container.appendChild(btnGroup);
+    
+    document.getElementById("week0games").appendChild(gameName);
+    document.getElementById("week0games").appendChild(btnGroup);
+    }
+    console.log(data);
   })
-  .catch(error => {
-    // Handle any errors during the fetch operation
-    console.error('Error fetching data:', error);
-  });
