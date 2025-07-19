@@ -10,6 +10,9 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
   .then(data => {
     // Handle the retrieved data
     for(let i = 0; i < data.events.length; i ++) {
+    const homeTeamColor = data.events[i].competitions[0].competitors[0].team.color;
+    const awayTeamColor = data.events[i].competitions[0].competitors[1].team.color;
+
     const homeTeam = document.createTextNode(data.events[i].competitions[0].competitors[0].team.location);
     const versus = document.createTextNode(" vs. ");
     const awayTeam = document.createTextNode(data.events[i].competitions[0].competitors[1].team.location);
@@ -56,6 +59,8 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     button.type = 'button';
     button.className = 'btn btn-outline-primary';
     button.textContent = option;
+    button.style.backgroundColor = homeTeamColor;
+    button.style.color = homeTeamColor;
     //button.appendChild(homeImg);
 
     // Add click event listener
