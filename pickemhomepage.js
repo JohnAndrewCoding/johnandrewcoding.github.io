@@ -4,7 +4,7 @@
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
-const firebaseConfig = {
+/*const firebaseConfig = {
   apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
   authDomain: "college-football-pickem-68eed.firebaseapp.com",
   projectId: "college-football-pickem-68eed",
@@ -17,7 +17,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-/*db.collection('userInfo').add({
+db.collection('userInfo').add({
     user: 'Andrew',
     team: 'Texas',
     age:25
