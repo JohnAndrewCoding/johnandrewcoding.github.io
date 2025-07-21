@@ -1,3 +1,24 @@
+function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Get the user name from URL
+        const userName = getQueryParam('name');
+
+        // Display personalized content
+        if (userName) {
+            document.getElementById('welcomeMessage').innerText = + userName + 's Week 0 Picks';
+        }
+
+
+
+
+
+
+
+
+
 fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823') // Replace with your APIendpoint
   .then(response => {
     // Check if the request was successful (status code 200-299)
