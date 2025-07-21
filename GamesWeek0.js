@@ -8,7 +8,7 @@ function getQueryParam(param) {
 
         // Display personalized content
         if (userName) {
-            document.getElementById('welcomeMessage').innerText = + userName + 's Week 0 Picks';
+            document.getElementById('welcomeMessage').innerText = + userName + "'s Week 0 Picks";
         }
 
 
