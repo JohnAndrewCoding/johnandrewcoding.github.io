@@ -25,6 +25,12 @@ const row = document.createElement('tr');
   nameCell.textContent = gameName ;
 
   row.appendChild(nameCell);
+      for (let j = 0; j<4; j++){
+        const gameSelection = document.createElement('td');
+        const selection = "Not Selected";
+        gameSelection.textContent = selection;
+        row.appendChild(gameSelection);
+      }
 
 
 document.querySelector('#Week0pickstable tbody').appendChild(row);
