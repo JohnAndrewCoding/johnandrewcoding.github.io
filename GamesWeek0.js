@@ -79,8 +79,8 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     btnGroup.appendChild(button);
   });
     
-    document.getElementById("week0games").appendChild(gameName);
-    document.getElementById("week0games").appendChild(btnGroup);
+    document.getElementById("Week0picksform").appendChild(gameName);
+    document.getElementById("Week0picksform").appendChild(btnGroup);
     }
     console.log(data);
   })
