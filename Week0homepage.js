@@ -38,5 +38,7 @@ document.querySelector('#Week0pickstable tbody').appendChild(row);
     console.error('Error fetching data:', error);
   });
 
-
+function goToUserPage(userName) {
+  window.location.href = 'GamesWeek0.html?name=' + encodedURIComponent(userName);
+}
 
