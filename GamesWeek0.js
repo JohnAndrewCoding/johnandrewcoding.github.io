@@ -1,107 +1,139 @@
+// Firebase (v9 compat version)
+// Make sure you also load Firebase SDKs in your HTML before this script
+const firebaseConfig = {
+  apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+  authDomain: "college-football-pickem-68eed.firebaseapp.com",
+  projectId: "college-football-pickem-68eed",
+  storageBucket: "college-football-pickem-68eed.appspot.com",
+  messagingSenderId: "650202039805",
+  appId: "1:650202039805:web:70e51177aab22e4d614594"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+window.db = db;
+
+// Utility function to get query param (e.g., ?name=Andrew)
 function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
 
-        // Get the user name from URL
-        const userName = getQueryParam('name');
+// Global selections object
+const userSelections = {};
 
-        // Display personalized content
-        if (userName) {
-            document.getElementById('welcomeMessage').innerText = userName + "'s Week 0 Picks";
-        }
+// Function to save picks to Firestore
+function savePicks(userName, weekNum) {
+  document.getElementById('Week0picksform').addEventListener('submit', async function (e) {
+    e.preventDefault();
 
+    try {
+      const docRef = await db.collection("weekPicks").add({
+        name: userName,
+        week: weekNum,
+        picks: userSelections,
+        timestamp: new Date()
+      });
 
-
-
-
-
-
-
-
-fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823') // Replace with your APIendpoint
-  .then(response => {
-    // Check if the request was successful (status code 200-299)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      alert("Picks saved successfully! Document ID: " + docRef.id);
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert("Failed to save picks.");
     }
-    // Parse the JSON response
+  });
+}
+
+// Fetch ESPN API for Week 0 games
+fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823')
+  .then(response => {
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   })
   .then(data => {
-    // Handle the retrieved data
-    for(let i = 0; i < data.events.length; i ++) {
-    const homeTeamColor = data.events[i].competitions[0].competitors[0].team.color;
-    const awayTeamColor = data.events[i].competitions[0].competitors[1].team.color;
+    const form = document.getElementById('Week0picksform');
 
-    const homeTeam = document.createTextNode(data.events[i].competitions[0].competitors[0].team.location);
-    const versus = document.createTextNode(" vs. ");
-    const awayTeam = document.createTextNode(data.events[i].competitions[0].competitors[1].team.location);
-    
-    const homeImg = document.createElement('img');
-    homeImg.src = data.events[i].competitions[0].competitors[0].team.logo;
-    homeImg.width = 25;
-    homeImg.height = 25;
-    //homeImg.alt = homeTeamName;
-    const homeTeamName = data.events[i].competitions[0].competitors[0].team.location;
-    const awayTeamName = data.events[i].competitions[0].competitors[1].team.location;
-    
-      
-    const awayImg = document.createElement('img');
-    awayImg.src = data.events[i].competitions[0].competitors[1].team.logo;
-    awayImg.width = 25;
-    awayImg.height = 25;
-    //homeImg.alt = homeTeamName;
-    
-    const gameName = document.createElement('p');
-    
-    gameName.appendChild(homeImg);
-    gameName.appendChild(homeTeam);
-    gameName.appendChild(versus);
-    gameName.appendChild(awayImg);
-    gameName.appendChild(awayTeam);
+    data.events.forEach(event => {
+      const competition = event.competitions[0];
+      const home = competition.competitors[0].team;
+      const away = competition.competitors[1].team;
 
-    const options = [homeTeamName, awayTeamName];
+      const homeTeamName = home.location;
+      const awayTeamName = away.location;
+      const homeTeamColor = home.color || "#007bff"; // fallback blue
+      const awayTeamColor = away.color || "#6c757d"; // fallback gray
 
-  // Get container where buttons will be placed
-  const container = document.getElementById('week0games');
+      const matchupKey = `${homeTeamName}_vs_${awayTeamName}`;
 
-  // Create Bootstrap button group div
-  const btnGroup = document.createElement('div');
-  //name of game
-  btnGroup.className = 'btn-group';
-  btnGroup.setAttribute('role', 'group');
-  btnGroup.setAttribute('aria-label', 'Toggle buttons');
+      // Game label (with team logos)
+      const gameLabel = document.createElement('p');
 
-  // Create and append buttons
-  options.forEach(option => {
-    //add an image to the buttons
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'btn btn-outline-primary';
-    button.textContent = option;
-    button.style.backgroundColor = homeTeamColor;
-    button.style.color = homeTeamColor;
-    //button.appendChild(homeImg);
+      const homeImg = document.createElement('img');
+      homeImg.src = home.logo;
+      homeImg.width = 25;
+      homeImg.height = 25;
 
-    // Add click event listener
-    button.onclick = function () {
-      // Remove active class from all buttons
-      const allButtons = btnGroup.querySelectorAll('button');
-      allButtons.forEach(btn => btn.classList.remove('active'));
+      const awayImg = document.createElement('img');
+      awayImg.src = away.logo;
+      awayImg.width = 25;
+      awayImg.height = 25;
 
-      // Add active class to the clicked one
-      button.classList.add('active');
+      gameLabel.appendChild(homeImg);
+      gameLabel.appendChild(document.createTextNode(` ${homeTeamName} vs. `));
+      gameLabel.appendChild(awayImg);
+      gameLabel.appendChild(document.createTextNode(` ${awayTeamName}`));
 
-      // Log or use the selected value
-      console.log('Selected:', button.textContent);
-    };
+      // Button group
+      const btnGroup = document.createElement('div');
+      btnGroup.className = 'btn-group mb-3';
+      btnGroup.setAttribute('role', 'group');
+      btnGroup.setAttribute('aria-label', 'Game picks');
 
-    btnGroup.appendChild(button);
-  });
-    
-    document.getElementById("Week0picksform").appendChild(gameName);
-    document.getElementById("Week0picksform").appendChild(btnGroup);
+      // Options
+      [homeTeamName, awayTeamName].forEach(teamName => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-outline-primary';
+        button.textContent = teamName;
+        button.style.backgroundColor = teamName === homeTeamName ? `#${homeTeamColor}` : `#${awayTeamColor}`;
+        button.style.color = 'white';
+
+        button.onclick = () => {
+          // Remove 'active' from other buttons
+          // Remove styles from all buttons in this group
+          btnGroup.querySelectorAll('button').forEach(btn => {
+          btn.classList.remove('active');
+          btn.style.outline = 'none';
+          btn.style.boxShadow = 'none';
+          });
+
+// Add styles to selected button
+          button.classList.add('active');
+          button.style.outline = '2px solid white';
+          button.style.boxShadow = '0 0 10px white';
+
+          // Save selection
+          userSelections[matchupKey] = teamName;
+          console.log(`Selected for ${matchupKey}: ${teamName}`);
+        };
+
+        btnGroup.appendChild(button);
+      });
+
+      // Add to form
+      form.appendChild(gameLabel);
+      form.appendChild(btnGroup);
+    });
+
+    // Handle user & form submit
+    const userName = getQueryParam('name');
+    const weekNum = 0;
+
+    if (userName) {
+      document.getElementById('welcomeMessage').innerText = `${userName}'s Week 0 Picks`;
+      savePicks(userName, weekNum);
     }
-    console.log(data);
   })
+  .catch(error => {
+    console.error("Failed to fetch games:", error);
+  });
