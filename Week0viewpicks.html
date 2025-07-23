@@ -38,25 +38,52 @@
       const users = allDocs.map(doc => doc.name);
 
       // Step 3: Build HTML table
-      const table = document.createElement('table');
-      table.className = "table table-bordered table-striped table-dark";
+// Create table
+const table = document.createElement('table');
+table.className = "table table-bordered table-striped table-dark";
 
-      // Header row
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
+// ========== HEADER ROW 1: Edit Buttons ==========
+const headerRow1 = document.createElement('tr');
 
-      const gameHeader = document.createElement('th');
-      gameHeader.textContent = 'Matchup';
-      headerRow.appendChild(gameHeader);
+// Empty top-left cell (above "Matchup")
+const emptyCell1 = document.createElement('th');
+headerRow1.appendChild(emptyCell1);
 
-      users.forEach(user => {
-        const th = document.createElement('th');
-        th.textContent = user;
-        headerRow.appendChild(th);
-      });
+// Add edit buttons
+users.forEach(user => {
+  const th = document.createElement('th');
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-sm btn-warning';
+  btn.textContent = 'Edit Picks';
+  btn.onclick = () => {
+    // You can use query param or localStorage. Here's query param version:
+    window.location.href = `GamesWeek0.html?name=${encodeURIComponent(user)}`;
+  };
+  th.appendChild(btn);
+  headerRow1.appendChild(th);
+});
 
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
+// ========== HEADER ROW 2: Column Names ==========
+const headerRow2 = document.createElement('tr');
+
+// Matchup column header
+const matchupHeader = document.createElement('th');
+matchupHeader.textContent = 'Matchup';
+headerRow2.appendChild(matchupHeader);
+
+// User name headers
+users.forEach(user => {
+  const th = document.createElement('th');
+  th.textContent = user;
+  headerRow2.appendChild(th);
+});
+
+// Build <thead>
+const thead = document.createElement('thead');
+thead.appendChild(headerRow1);
+thead.appendChild(headerRow2);
+table.appendChild(thead);
+
 
       // Body
       const tbody = document.createElement('tbody');
