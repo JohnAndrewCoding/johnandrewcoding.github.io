@@ -30,7 +30,9 @@ function savePicks(userName, weekNum) {
 
     const docId = `${userName}_week${weekNum}`; // e.g. "Andrew_week0"
 
-db.collection("weekPicks")
+const dbName = `${weekNum}Picks`;
+
+db.collection(dbName)
   .doc(docId)
   .set({
     name: userName,
