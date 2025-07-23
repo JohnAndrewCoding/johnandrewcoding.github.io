@@ -28,19 +28,24 @@ function savePicks(userName, weekNum) {
   document.getElementById('Week0picksform').addEventListener('submit', async function (e) {
     e.preventDefault();
 
-    try {
-      const docRef = await db.collection("weekPicks").add({
-        name: userName,
-        week: weekNum,
-        picks: userSelections,
-        timestamp: new Date()
-      });
+    const docId = `${userName}_week${weekNum}`; // e.g. "Andrew_week0"
 
-      alert("Picks saved successfully! Document ID: " + docRef.id);
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("Failed to save picks.");
-    }
+db.collection("weekPicks")
+  .doc(docId)
+  .set({
+    name: userName,
+    week: weekNum,
+    picks: userSelections,
+    timestamp: new Date()
+  })
+  .then(() => {
+    alert("Picks saved successfully!");
+  })
+  .catch((error) => {
+    console.error("Error saving document: ", error);
+    alert("Failed to save picks.");
+  });
+
   });
 }
 
