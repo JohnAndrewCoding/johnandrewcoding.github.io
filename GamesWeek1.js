@@ -52,7 +52,7 @@ db.collection(dbName)
 }
 
 // Fetch ESPN API for Week 0 games
-fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823')
+fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250828-20250901')
   .then(response => {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
