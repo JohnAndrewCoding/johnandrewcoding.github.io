@@ -12,3 +12,19 @@ add logic for sorting based on difference in picks
 add preseason pickem
 try and add a rivalry games section
 if two players have the exact same pick after the end of the week there will be a tie breaker of some sort
+
+Note:
+-*
+for spread
+    events[#]competitions[0]odds[0]details
+for date
+    events[#]competitions[0]date
+for nuetral site
+    events[#]competitions[0]neutralSite (boolean)
+for stadium
+    events[#]competitions[0]venue.fullname
+for scoreboard
+    events[#]competitions[0]status
+for broadcast
+    events[#]competitions[0]broadcast
+-*

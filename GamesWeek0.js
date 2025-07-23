@@ -104,6 +104,19 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
     return response.json();
   })
   .then(async data => {
+    console.log(data);
+    //odds
+    console.log(data.events[2].competitions[0].odds[0].details);
+    //date in weird format
+    console.log(data.events[2].competitions[0].date);
+    // boolean nuetral site
+    console.log(data.events[2].competitions[0].neutralSite);
+    // stadium
+    console.log(data.events[2].competitions[0].venue.fullName);
+    //scoreboard
+    console.log(data.events[2].competitions[0].status);
+    // channel
+    console.log(data.events[2].competitions[0].broadcast);
     const form = document.getElementById('Week0picksform');
 
     data.events.forEach(event => {
@@ -135,7 +148,13 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
       gameLabel.appendChild(document.createTextNode(` ${homeTeamName} vs. `));
       gameLabel.appendChild(awayImg);
       gameLabel.appendChild(document.createTextNode(` ${awayTeamName}`));
+      try{
+      const odds = document.createTextNode(`  ${event.competitions[0].odds[0].details}`);
+      gameLabel.appendChild(odds);
+      }
+      catch {
 
+      }
       // Button group with matchup data attribute for easy querying later
       const btnGroup = document.createElement('div');
       btnGroup.className = 'btn-group mb-3';
