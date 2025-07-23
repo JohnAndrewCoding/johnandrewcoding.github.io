@@ -136,6 +136,13 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
       gameLabel.appendChild(awayImg);
       gameLabel.appendChild(document.createTextNode(` ${awayTeamName}`));
 
+      try{
+      const odds = document.createTextNode(`  ${event.competitions[0].odds[0].details}`);
+      gameLabel.appendChild(odds);
+      }
+      catch {
+
+      }
       // Button group with matchup data attribute for easy querying later
       const btnGroup = document.createElement('div');
       btnGroup.className = 'btn-group mb-3';
