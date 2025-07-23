@@ -70,7 +70,7 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
       const homeTeamColor = home.color || "#007bff"; // fallback blue
       const awayTeamColor = away.color || "#6c757d"; // fallback gray
 
-      const matchupKey = `${homeTeamName}_vs_${awayTeamName}`;
+      const matchupKey = `${homeTeamName} vs ${awayTeamName}`;
 
       // Game label (with team logos)
       const gameLabel = document.createElement('p');
