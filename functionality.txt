@@ -1,0 +1,14 @@
+Seperate games based on time
+lock games based on time
+Auto populate rows even when users dont have that game selected yet
+Make webpages fit for copy and paste
+add in sign in 
+add customizations for accounts(favorite, badges earned, etc)
+add logic for when games are completed
+add full game stats beside the games
+add a live scoreboard with who picked who for the game next to it
+add logic for the leaderboard
+add logic for sorting based on difference in picks
+add preseason pickem
+try and add a rivalry games section
+if two players have the exact same pick after the end of the week there will be a tie breaker of some sort
