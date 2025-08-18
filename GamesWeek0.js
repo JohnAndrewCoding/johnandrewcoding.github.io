@@ -13,6 +13,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 window.db = db;
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
 
 // Utility function to get query param (e.g., ?name=Andrew)
 // ... your existing firebase config and initialization ...
