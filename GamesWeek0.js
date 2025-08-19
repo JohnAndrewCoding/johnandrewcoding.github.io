@@ -242,7 +242,6 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
       form.appendChild(gameLabel);
       form.appendChild(btnGroup);
     });
-}
 
   })
   .catch(error => {
