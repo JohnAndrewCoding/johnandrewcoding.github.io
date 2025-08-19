@@ -98,6 +98,42 @@ async function loadUserPicks(userName, weekNum) {
     console.error("Error loading picks:", error);
   }
 }
+// Google Sign-In
+document.getElementById("googleSignInBtn").addEventListener("click", () => {
+  auth.signInWithPopup(provider)
+    .then((result) => {
+      const user = result.user;
+      document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
+      document.getElementById("googleSignInBtn").style.display = "none";
+      document.getElementById("googleSignOutBtn").style.display = "inline-block";
+
+      // Reload picks for this user
+      const userName = user.displayName.replace(/\s+/g, ''); // remove spaces for doc ID
+      initPicks(userName);
+    })
+    .catch((error) => {
+      console.error("Sign-in error:", error);
+    });
+});
+
+// Sign Out
+document.getElementById("googleSignOutBtn").addEventListener("click", () => {
+  auth.signOut().then(() => {
+    document.getElementById("authStatus").innerText = "Not signed in";
+    document.getElementById("googleSignInBtn").style.display = "inline-block";
+    document.getElementById("googleSignOutBtn").style.display = "none";
+  });
+});
+
+// Detect if user is already signed in
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
+    document.getElementById("googleSignInBtn").style.display = "none";
+    document.getElementById("googleSignOutBtn").style.display = "inline-block";
+    initPicks(user.displayName.replace(/\s+/g, ''));
+  }
+});
 
 // Fetch ESPN API for Week 0 games
 fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823')
