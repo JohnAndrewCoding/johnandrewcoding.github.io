@@ -135,6 +135,14 @@ auth.onAuthStateChanged((user) => {
   }
 });
 
+async function initPicks(userName) {
+  const weekNum = 0;
+  document.getElementById('welcomeMessage').innerText = `${userName}'s Week ${weekNum} Picks`;
+  savePicks(userName, weekNum);
+  await loadUserPicks(userName, weekNum);
+}
+
+
 // Fetch ESPN API for Week 0 games
 fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823')
   .then(response => {
@@ -234,12 +242,6 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
       form.appendChild(gameLabel);
       form.appendChild(btnGroup);
     });
-
-async function initPicks(userName) {
-  const weekNum = 0;
-  document.getElementById('welcomeMessage').innerText = `${userName}'s Week ${weekNum} Picks`;
-  savePicks(userName, weekNum);
-  await loadUserPicks(userName, weekNum);
 }
 
   })
