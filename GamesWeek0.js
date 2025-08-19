@@ -113,6 +113,7 @@ auth.onAuthStateChanged(user => {
 async function loadGames(weekNum) {
   const form = document.getElementById('week0games');
   form.innerHTML = '';
+
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823');
     const data = await res.json();
@@ -123,36 +124,54 @@ async function loadGames(weekNum) {
       const away = comp.competitors[1].team;
       const matchupKey = `${home.location} vs ${away.location}`;
 
+      // Container div: flex row, space-between
       const rowDiv = document.createElement('div');
       rowDiv.className = 'd-flex justify-content-between align-items-center mb-2';
 
       // Game info (left)
       const infoDiv = document.createElement('div');
-      infoDiv.innerHTML = `<img src="${home.logo}" width="25"> ${home.location} vs <img src="${away.logo}" width="25"> ${away.location}`;
+      infoDiv.className = 'd-flex align-items-center';
+      infoDiv.innerHTML = `
+        <img src="${home.logo}" width="25" height="25" class="me-1">
+        ${home.location} vs
+        <img src="${away.logo}" width="25" height="25" class="mx-1">
+        ${away.location}
+      `;
 
-      // Buttons (right)
+      // Button group (right, close to info)
       const btnGroup = document.createElement('div');
       btnGroup.className = 'btn-group';
+      btnGroup.setAttribute('role', 'group');
+      btnGroup.setAttribute('aria-label', 'Game picks');
       btnGroup.setAttribute('data-matchup', matchupKey);
-      [home.location, away.location].forEach(team => {
+
+      [home, away].forEach(team => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn btn-outline-light';
-        btn.textContent = team;
+        btn.textContent = team.location;
+        btn.style.backgroundColor = `#${team.color || (team === home ? "007bff" : "6c757d")}`;
+        btn.style.color = 'white';
+
         btn.onclick = () => {
+          // Clear previous active
           btnGroup.querySelectorAll('button').forEach(b => {
             b.classList.remove('active');
             b.style.outline = 'none';
             b.style.boxShadow = 'none';
           });
+          // Set active styles
           btn.classList.add('active');
           btn.style.outline = '2px solid white';
           btn.style.boxShadow = '0 0 10px white';
-          userSelections[matchupKey] = team;
+
+          userSelections[matchupKey] = team.location;
         };
+
         btnGroup.appendChild(btn);
       });
 
+      // Append info + buttons
       rowDiv.appendChild(infoDiv);
       rowDiv.appendChild(btnGroup);
       form.appendChild(rowDiv);
@@ -161,3 +180,4 @@ async function loadGames(weekNum) {
     console.error("Error fetching games:", err);
   }
 }
+
