@@ -100,7 +100,7 @@ document.getElementById("googleSignInBtn").onclick = () => {
     document.getElementById("authStatus").innerText = `Signed in as ${result.user.displayName}`;
     document.getElementById("googleSignInBtn").style.display = "none";
     document.getElementById("googleSignOutBtn").style.display = "inline-block";
-    initPicks(0);
+    initPicks(user);
   });
 };
 
