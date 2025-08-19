@@ -235,14 +235,13 @@ fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/s
       form.appendChild(btnGroup);
     });
 
-    const userName = getQueryParam('name');
-    const weekNum = 0;
+async function initPicks(userName) {
+  const weekNum = 0;
+  document.getElementById('welcomeMessage').innerText = `${userName}'s Week ${weekNum} Picks`;
+  savePicks(userName, weekNum);
+  await loadUserPicks(userName, weekNum);
+}
 
-    if (userName) {
-      document.getElementById('welcomeMessage').innerText = `${userName}'s Week 0 Picks`;
-      savePicks(userName, weekNum);
-      await loadUserPicks(userName, weekNum); // <-- load saved picks & mark buttons
-    }
   })
   .catch(error => {
     console.error("Failed to fetch games:", error);
