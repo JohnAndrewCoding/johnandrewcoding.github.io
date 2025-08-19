@@ -17,66 +17,80 @@ const userSelections = {};
 let currentUser = null;  // Store signed-in user UID
 
 // Save picks
-function savePicks(weekNum) {
-  document.getElementById('Week0picksform').addEventListener('submit', async (e) => {
+function savePicks(user, weekNum) {
+  document.getElementById('Week0picksform').addEventListener('submit', async function (e) {
     e.preventDefault();
-    if (!currentUser) return alert("Sign in first!");
 
-    const docId = `${currentUser}_week${weekNum}`;
+    const docId = `${user.uid}_week${weekNum}`; // use UID as doc ID
     const dbName = `week${weekNum}Picks`;
 
-    try {
-      await db.collection(dbName).doc(docId).set({
-        uid: currentUser,
+    db.collection(dbName)
+      .doc(docId)
+      .set({
+        uid: user.uid,            // store the UID
+        name: user.displayName,   // store the display name
         week: weekNum,
         picks: userSelections,
         timestamp: new Date()
+      })
+      .then(() => {
+        alert("Picks saved successfully!");
+      })
+      .catch((error) => {
+        console.error("Error saving document: ", error);
+        alert("Failed to save picks.");
       });
-      alert("Picks saved successfully!");
-    } catch (error) {
-      console.error("Error saving document:", error);
-      alert("Failed to save picks.");
-    }
   });
 }
 
+
 // Load picks
-async function loadUserPicks(weekNum) {
-  if (!currentUser) return;
-  const docId = `${currentUser}_week${weekNum}`;
-  const dbName = `week${weekNum}Picks`;
-
+async function loadUserPicks(user, weekNum) {
   try {
+    const docId = `${user.uid}_week${weekNum}`; // use UID
+    const dbName = `week${weekNum}Picks`;
     const docRef = await db.collection(dbName).doc(docId).get();
-    if (!docRef.exists) return;
 
-    const picks = docRef.data().picks || {};
+    if (!docRef.exists) {
+      console.log("No saved picks found for", user.displayName);
+      return;
+    }
+
+    const savedData = docRef.data();
+    const picks = savedData.picks || {};
+
     Object.entries(picks).forEach(([matchupKey, selectedTeam]) => {
       const btnGroup = document.querySelector(`div.btn-group[data-matchup="${matchupKey}"]`);
       if (!btnGroup) return;
-      btnGroup.querySelectorAll('button').forEach(btn => {
-        btn.classList.remove('active');
-        btn.style.outline = 'none';
-        btn.style.boxShadow = 'none';
-        if (btn.textContent.trim() === selectedTeam) {
-          btn.classList.add('active');
-          btn.style.outline = '2px solid white';
-          btn.style.boxShadow = '0 0 10px white';
+
+      btnGroup.querySelectorAll('button').forEach(button => {
+        if (button.textContent.trim() === selectedTeam) {
+          btnGroup.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.outline = 'none';
+            btn.style.boxShadow = 'none';
+          });
+
+          button.classList.add('active');
+          button.style.outline = '2px solid white';
+          button.style.boxShadow = '0 0 10px white';
           userSelections[matchupKey] = selectedTeam;
         }
       });
     });
-  } catch (err) {
-    console.error("Error loading picks:", err);
+
+  } catch (error) {
+    console.error("Error loading picks:", error);
   }
 }
 
+
 // Initialize picks page
-async function initPicks(weekNum) {
-  document.getElementById('welcomeMessage').innerText = `Week ${weekNum} Picks`;
-  savePicks(weekNum);
-  await loadGames(weekNum);
-  await loadUserPicks(weekNum);
+function initPicks(user) {
+  const weekNum = 0;
+  document.getElementById('welcomeMessage').innerText = `${user.displayName}'s Week ${weekNum} Picks`;
+  savePicks(user, weekNum);
+  loadUserPicks(user, weekNum);
 }
 
 // Google Sign-In / Sign-Out
@@ -105,7 +119,7 @@ auth.onAuthStateChanged(user => {
     document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
     document.getElementById("googleSignInBtn").style.display = "none";
     document.getElementById("googleSignOutBtn").style.display = "inline-block";
-    initPicks(0);
+    initPicks(user);
   }
 });
 
