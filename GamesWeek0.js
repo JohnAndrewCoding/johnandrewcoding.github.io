@@ -161,9 +161,3 @@ async function loadGames(weekNum) {
     console.error("Error fetching games:", err);
   }
 }
-
-  })
-  .catch(error => {
-    console.error("Failed to fetch games:", error);
-  });
-
