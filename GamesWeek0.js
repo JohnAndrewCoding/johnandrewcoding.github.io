@@ -70,8 +70,9 @@ async function loadGames(weekNum, user) {
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250823');
     const data = await res.json();
+    const gameSlate = [data.events[0], data.events[2]]
 
-    data.events.forEach(event => {
+    gameSlate.forEach(event => {
       const comp = event.competitions[0];
       const home = comp.competitors[0].team;
       const away = comp.competitors[1].team;
