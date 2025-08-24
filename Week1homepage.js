@@ -16,6 +16,18 @@ document.body.style.backgroundColor = '#004d00'; // deep green
 document.body.style.color = 'white';
 document.body.style.fontFamily = 'Arial, sans-serif';
 
+
+// Returns 'black' or 'white' depending on background color brightness
+function getContrastYIQ(hexcolor){
+  hexcolor = hexcolor.replace("#", "");
+  const r = parseInt(hexcolor.substr(0,2),16);
+  const g = parseInt(hexcolor.substr(2,2),16);
+  const b = parseInt(hexcolor.substr(4,2),16);
+  const yiq = ((r*299)+(g*587)+(b*114))/1000;
+  return (yiq >= 128) ? 'black' : 'white';
+}
+
+
 // Load games + picks (only games that exist in Firestore)
 async function loadGamesAndPicks(weekNum) {
   const container = document.getElementById('picksContainer');
