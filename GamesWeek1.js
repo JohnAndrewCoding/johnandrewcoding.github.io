@@ -114,12 +114,29 @@ async function loadGames(weekNum, user) {
 [home, away].forEach(team => {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'btn btn-outline-light';
-  btn.textContent = team.location;
-
+  btn.className = 'btn';
+  
   const bgColor = `#${team.color || (team === home ? "007bff" : "6c757d")}`;
   btn.style.backgroundColor = bgColor;
-  btn.style.color = getContrastYIQ(bgColor); // ensures readable font
+  btn.style.border = '2px solid white';
+  btn.style.borderRadius = '8px';
+  btn.style.padding = '0.5rem';
+  btn.style.margin = '0 0.2rem';
+  btn.style.minWidth = '60px';
+  btn.style.height = '60px';
+  btn.style.display = 'flex';
+  btn.style.justifyContent = 'center';
+  btn.style.alignItems = 'center';
+
+  // Add team logo
+  const img = document.createElement('img');
+  img.src = team.logo;
+  img.alt = team.location;
+  img.style.maxWidth = '80%';
+  img.style.maxHeight = '80%';
+  img.style.objectFit = 'contain';
+
+  btn.appendChild(img);
 
   btn.onclick = () => {
     btnGroup.querySelectorAll('button').forEach(b => {
@@ -135,6 +152,7 @@ async function loadGames(weekNum, user) {
 
   btnGroup.appendChild(btn);
 });
+
 
 // Display odds (if available)
 const oddsText = comp.odds && comp.odds.length > 0 ? comp.odds[0].details : 'N/A';
