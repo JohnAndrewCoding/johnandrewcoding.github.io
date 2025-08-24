@@ -11,49 +11,59 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-
-// Load games + picks
+// Load games + picks (only games that exist in Firestore)
 async function loadGamesAndPicks(weekNum) {
   const container = document.getElementById('picksContainer');
   container.innerHTML = '<p>Loading games...</p>';
 
   try {
-    // 1. Fetch ESPN scoreboard data
+    // 1. Get all picks from Firestore
+    const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
+    const allPicks = {};
+    const gamesInDB = new Set(); // keep track of matchups in the DB
+
+    picksSnapshot.forEach(doc => {
+      const { picks, name } = doc.data();
+      for (const [matchup, teamPick] of Object.entries(picks)) {
+        if (!allPicks[matchup]) allPicks[matchup] = [];
+        allPicks[matchup].push({ name, pick: teamPick });
+        gamesInDB.add(matchup); // only render games in DB
+      }
+    });
+
+    if (gamesInDB.size === 0) {
+      container.innerHTML = '<p>No games/picks available.</p>';
+      return;
+    }
+
+    // 2. Fetch ESPN scoreboard data
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902');
     const data = await res.json();
     const games = data.events;
 
-    // 2. Get all picks from Firestore
-    const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
-    const allPicks = {};
-    picksSnapshot.forEach(doc => {
-      const { name, picks } = doc.data();
-      for (const [matchup, teamPick] of Object.entries(picks)) {
-        if (!allPicks[matchup]) allPicks[matchup] = [];
-        allPicks[matchup].push({ name, pick: teamPick });
-      }
-    });
+    container.innerHTML = ''; // clear loading message
 
-    container.innerHTML = ''; // Clear loading message
-
-    // 3. Render each game with live data + user picks
+    // 3. Render only games in Firestore
     games.forEach(event => {
       const comp = event.competitions[0];
       const home = comp.competitors[0];
       const away = comp.competitors[1];
-
       const matchupKey = `${home.team.location} vs ${away.team.location}`;
-      const status = event.status.type.description; // e.g., Scheduled, In Progress, Final
+
+      if (!gamesInDB.has(matchupKey)) return; // skip games not in DB
+
+      const status = event.status.type.description;
       const scoreHome = home.score || '0';
       const scoreAway = away.score || '0';
       const startTime = new Date(event.date).toLocaleString();
 
-      // Create game container
+      // Game container
       const gameDiv = document.createElement('div');
-      gameDiv.className = 'game-block mb-4 p-3 border rounded text-light';
-      gameDiv.style.backgroundColor = '#222';
+      gameDiv.className = 'game-block mb-4 p-3 border rounded';
+      gameDiv.style.backgroundColor = '#006400'; // dark green
+      gameDiv.style.color = 'white'; // white text
 
-      // Game header with logos and score
+      // Header
       gameDiv.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-2">
           <div>
@@ -65,7 +75,7 @@ async function loadGamesAndPicks(weekNum) {
         </div>
       `;
 
-      // Picks section
+      // Picks
       const picksDiv = document.createElement('div');
       picksDiv.className = 'picks-list ps-3';
       const picksForGame = allPicks[matchupKey] || [];
@@ -92,9 +102,10 @@ async function loadGamesAndPicks(weekNum) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  const weekNum = 1; // Change dynamically if needed
+  const weekNum = 1;
   loadGamesAndPicks(weekNum);
 
-  // Optional: Refresh every 30 seconds for live scores
+  // Optional: refresh every 30 seconds
   setInterval(() => loadGamesAndPicks(weekNum), 30000);
 });
+
