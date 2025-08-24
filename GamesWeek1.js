@@ -25,6 +25,30 @@ function getContrastYIQ(hexcolor) {
   const yiq = ((r*299)+(g*587)+(b*114))/1000;
   return (yiq >= 128) ? 'black' : 'white';
 }
+function adjustColor(color, amount) {
+  let usePound = false;
+
+  if (color[0] === "#") {
+    color = color.slice(1);
+    usePound = true;
+  }
+
+  let num = parseInt(color, 16);
+
+  let r = (num >> 16) + amount;
+  if (r > 255) r = 255;
+  else if (r < 0) r = 0;
+
+  let g = ((num >> 8) & 0x00FF) + amount;
+  if (g > 255) g = 255;
+  else if (g < 0) g = 0;
+
+  let b = (num & 0x0000FF) + amount;
+  if (b > 255) b = 255;
+  else if (b < 0) b = 0;
+
+  return (usePound ? "#" : "") + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+}
 
 
 // Save picks
@@ -116,7 +140,7 @@ async function loadGames(weekNum, user) {
   btn.type = 'button';
   btn.className = 'btn';
   
-  const bgColor = `#${team.color || (team === home ? "007bff" : "6c757d")}`;
+  const bgColor = `#${adjustColor(team.color,40) || (team === home ? "007bff" : "6c757d")}`;
   btn.style.backgroundColor = bgColor;
   btn.style.border = '2px solid white';
   btn.style.borderRadius = '8px';
