@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // Apply global page styles
-document.body.style.backgroundColor = '#004d00'; // deep green
+document.body.style.backgroundColor = '#1c1c1c'; 
 document.body.style.color = 'white';
 document.body.style.fontFamily = 'Arial, sans-serif';
 
