@@ -1,4 +1,4 @@
-/const firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
   authDomain: "college-football-pickem-68eed.firebaseapp.com",
   projectId: "college-football-pickem-68eed",
