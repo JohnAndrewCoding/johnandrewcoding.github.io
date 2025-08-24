@@ -77,7 +77,7 @@ async function loadGamesAndPicks(weekNum) {
       // Game container
       const gameDiv = document.createElement('div');
       gameDiv.className = 'game-block mb-4 p-3 border rounded';
-      gameDiv.style.backgroundColor = '#006400'; // dark green for each game
+      gameDiv.style.backgroundColor = '#d3d3d3'; // dark green for each game
       gameDiv.style.color = 'white';
 
       // Game header
