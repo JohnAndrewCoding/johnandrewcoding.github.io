@@ -15,6 +15,8 @@ const provider = new firebase.auth.GoogleAuthProvider();
 const userSelections = {};
 let currentUser = null;
 
+document.body.style.backgroundColor = '#1c1c1c'; 
+
 // Save picks
 function savePicks(user, weekNum) {
   document.getElementById('Week1picksform').addEventListener('submit', async function (e) {
