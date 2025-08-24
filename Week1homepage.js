@@ -11,6 +11,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// Apply global page styles
+document.body.style.backgroundColor = '#004d00'; // deep green
+document.body.style.color = 'white';
+document.body.style.fontFamily = 'Arial, sans-serif';
+
 // Load games + picks (only games that exist in Firestore)
 async function loadGamesAndPicks(weekNum) {
   const container = document.getElementById('picksContainer');
@@ -20,14 +25,14 @@ async function loadGamesAndPicks(weekNum) {
     // 1. Get all picks from Firestore
     const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
     const allPicks = {};
-    const gamesInDB = new Set(); // keep track of matchups in the DB
+    const gamesInDB = new Set(); // track matchups in DB
 
     picksSnapshot.forEach(doc => {
       const { picks, name } = doc.data();
       for (const [matchup, teamPick] of Object.entries(picks)) {
         if (!allPicks[matchup]) allPicks[matchup] = [];
         allPicks[matchup].push({ name, pick: teamPick });
-        gamesInDB.add(matchup); // only render games in DB
+        gamesInDB.add(matchup);
       }
     });
 
@@ -60,10 +65,10 @@ async function loadGamesAndPicks(weekNum) {
       // Game container
       const gameDiv = document.createElement('div');
       gameDiv.className = 'game-block mb-4 p-3 border rounded';
-      gameDiv.style.backgroundColor = '#006400'; // dark green
-      gameDiv.style.color = 'white'; // white text
+      gameDiv.style.backgroundColor = '#006400'; // dark green for each game
+      gameDiv.style.color = 'white';
 
-      // Header
+      // Game header
       gameDiv.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-2">
           <div>
@@ -105,7 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const weekNum = 1;
   loadGamesAndPicks(weekNum);
 
-  // Optional: refresh every 30 seconds
+  // Refresh every 30 seconds
   setInterval(() => loadGamesAndPicks(weekNum), 30000);
 });
-
