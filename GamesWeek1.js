@@ -19,7 +19,7 @@ let picksInitialized = false;
 
 document.body.style.backgroundColor = "#1c1c1c";
 
-// Utility functions
+// Utilities
 function adjustColor(color, amount) {
   let usePound = false;
   if (color[0] === "#") {
@@ -33,17 +33,25 @@ function adjustColor(color, amount) {
   return (usePound ? "#" : "") + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
 }
 
-// Save picks with listener cleanup
+function getContrastYIQ(hexcolor) {
+  hexcolor = hexcolor.replace("#", "");
+  const r = parseInt(hexcolor.substr(0, 2), 16);
+  const g = parseInt(hexcolor.substr(2, 2), 16);
+  const b = parseInt(hexcolor.substr(4, 2), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "black" : "white";
+}
+
+// Save picks
 function savePicks(user, weekNum) {
   const form = document.getElementById("Week1picksform");
-  const newForm = form.cloneNode(true); // remove old listeners
+  const newForm = form.cloneNode(true);
   form.parentNode.replaceChild(newForm, form);
 
   newForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const docId = `${user.uid}_week${weekNum}`;
     const dbName = `week${weekNum}Picks`;
-
     db.collection(dbName)
       .doc(docId)
       .set({
@@ -87,7 +95,7 @@ async function loadUserPicks(user, weekNum) {
   });
 }
 
-// Load games and render buttons
+// Load games
 async function loadGames(weekNum, user) {
   const container = document.getElementById("week1games");
   container.innerHTML = "";
@@ -111,48 +119,37 @@ async function loadGames(weekNum, user) {
       const away = comp.competitors[1].team;
       const matchupKey = `${home.location} vs ${away.location}`;
 
-      // Row container
-      const rowDiv = document.createElement("div");
-      rowDiv.className = "d-flex justify-content-between align-items-center mb-2";
-
-      // Info
-      const infoDiv = document.createElement("div");
-      infoDiv.className = "d-flex align-items-center";
-      infoDiv.innerHTML = `
-        <img src="${home.logo}" width="25" height="25" class="me-1" alt="${home.location}">
-        ${home.location} vs
-        <img src="${away.logo}" width="25" height="25" class="mx-1" alt="${away.location}">
-        ${away.location}
-      `;
-
       // Button group
       const btnGroup = document.createElement("div");
       btnGroup.className = "btn-group";
       btnGroup.setAttribute("role", "group");
       btnGroup.setAttribute("data-matchup", matchupKey);
-
-      const homeOdds = comp.odds && comp.odds.length > 0 ? comp.odds[0].details : "";
-      const awayOdds = homeOdds && homeOdds.startsWith("-") ? "" : ""; // simple placeholder
-      const favoriteTeam = homeOdds && homeOdds.startsWith("-") ? home : away;
+      btnGroup.style.display = "flex";
+      btnGroup.style.justifyContent = "center";
+      btnGroup.style.marginBottom = "1rem";
+      btnGroup.style.gap = "0.5rem";
 
       [home, away].forEach((team) => {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "btn";
         btn.dataset.teamLocation = team.location;
-        btn.style.backgroundColor = `#${adjustColor(team.color, 40) || "007bff"}`;
+
+        // Button styles
+        const bgColor = `#${adjustColor(team.color, 40)}`;
+        btn.style.backgroundColor = bgColor;
+        btn.style.color = getContrastYIQ(bgColor);
         btn.style.border = "2px solid white";
-        btn.style.borderRadius = "8px";
+        btn.style.borderRadius = "12px";
         btn.style.padding = "0.5rem";
-        btn.style.margin = "0 0.2rem";
-        btn.style.minWidth = "100px";
-        btn.style.height = "60px";
+        btn.style.width = "140px";
+        btn.style.height = "120px";
         btn.style.display = "flex";
         btn.style.flexDirection = "column";
         btn.style.justifyContent = "center";
         btn.style.alignItems = "center";
-        btn.style.color = "white";
         btn.style.fontWeight = "bold";
+        btn.style.fontSize = "0.85rem";
 
         // Logo
         const img = document.createElement("img");
@@ -166,14 +163,15 @@ async function loadGames(weekNum, user) {
         // Team name
         const nameDiv = document.createElement("div");
         nameDiv.textContent = team.location;
-        nameDiv.style.fontSize = "0.8rem";
         btn.appendChild(nameDiv);
 
         // Odds
         const oddsDiv = document.createElement("div");
         if (comp.odds && comp.odds.length > 0) {
           const oddsText = comp.odds[0].details || "";
-          if (oddsText.includes("-") && team === favoriteTeam) oddsDiv.textContent = oddsText;
+          if (oddsText.includes("-") && team === home) {
+            oddsDiv.textContent = oddsText;
+          }
         }
         oddsDiv.style.fontSize = "0.75rem";
         btn.appendChild(oddsDiv);
@@ -193,9 +191,7 @@ async function loadGames(weekNum, user) {
         btnGroup.appendChild(btn);
       });
 
-      rowDiv.appendChild(infoDiv);
-      rowDiv.appendChild(btnGroup);
-      container.appendChild(rowDiv);
+      container.appendChild(btnGroup);
     });
 
     if (user) await loadUserPicks(user, weekNum);
@@ -239,4 +235,5 @@ auth.onAuthStateChanged((user) => {
     initPicks(user);
   }
 });
+
 
