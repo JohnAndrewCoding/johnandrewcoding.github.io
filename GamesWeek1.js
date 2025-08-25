@@ -106,10 +106,13 @@ async function loadGames(weekNum, user) {
       const away = comp.competitors[1].team;
       const matchupKey = `${home.location} vs ${away.location}`;
 
-      const btnGroup = document.createElement('div');
-      btnGroup.className = 'btn-group mb-3';
-      btnGroup.setAttribute('role','group');
-      btnGroup.setAttribute('data-matchup', matchupKey);
+      const matchupDiv = document.createElement('div');
+      matchupDiv.style.display = 'flex';
+      matchupDiv.style.flexDirection = 'row';
+      matchupDiv.style.justifyContent = 'center';
+      matchupDiv.style.alignItems = 'center';
+      matchupDiv.style.marginBottom = '15px';
+      matchupDiv.style.flexWrap = 'wrap'; // allows wrapping on small screens
 
       const oddsInfo = comp.odds && comp.odds[0];
       let homeFav = false, awayFav = false;
@@ -118,7 +121,7 @@ async function loadGames(weekNum, user) {
         awayFav = !homeFav;
       }
 
-      [home, away].forEach(team=>{
+      [home, away].forEach((team, index)=>{
         const btn = document.createElement('button');
         btn.type='button';
         btn.className='btn';
@@ -130,8 +133,8 @@ async function loadGames(weekNum, user) {
         btn.style.border='2px solid white';
         btn.style.borderRadius='12px';
         btn.style.padding='0.5rem';
-        btn.style.margin='0 0.3rem';
-        btn.style.minWidth='140px';
+        btn.style.margin='5px';
+        btn.style.minWidth='120px';
         btn.style.height='100px';
         btn.style.display='flex';
         btn.style.flexDirection='column';
@@ -159,7 +162,7 @@ async function loadGames(weekNum, user) {
         btn.appendChild(oddsSpan);
 
         btn.onclick=()=>{
-          btnGroup.querySelectorAll('button').forEach(b=>{
+          matchupDiv.querySelectorAll('button').forEach(b=>{
             b.classList.remove('active');
             b.style.outline='none';
             b.style.boxShadow='none';
@@ -170,18 +173,29 @@ async function loadGames(weekNum, user) {
           userSelections[matchupKey] = btn.dataset.teamLocation;
         };
 
-        btnGroup.appendChild(btn);
+        matchupDiv.appendChild(btn);
+
+        // Insert "vs" text between buttons
+        if(index === 0){
+          const vsSpan = document.createElement('span');
+          vsSpan.textContent = 'vs';
+          vsSpan.style.margin = '0 10px';
+          vsSpan.style.fontWeight = 'bold';
+          vsSpan.style.fontSize = '1rem';
+          matchupDiv.appendChild(vsSpan);
+        }
       });
 
-      container.appendChild(btnGroup);
+      container.appendChild(matchupDiv);
     });
 
-    if (user) await loadUserPicks(user, weekNum);
+    if(user) await loadUserPicks(user, weekNum);
 
   } catch(err) {
     console.error("Error fetching games:",err);
   }
 }
+
 
 function initPicks(user) {
   if (picksInitialized) return;
