@@ -10,118 +10,228 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
 
-// Apply global page styles
-document.body.style.backgroundColor = '#1c1c1c'; 
-document.body.style.color = 'white';
-document.body.style.fontFamily = 'Arial, sans-serif';
+const userSelections = {};
+let currentUser = null;
+let picksInitialized = false;
 
+document.body.style.backgroundColor = "#1c1c1c";
 
-// Returns 'black' or 'white' depending on background color brightness
-function getContrastYIQ(hexcolor){
-  hexcolor = hexcolor.replace("#", "");
-  const r = parseInt(hexcolor.substr(0,2),16);
-  const g = parseInt(hexcolor.substr(2,2),16);
-  const b = parseInt(hexcolor.substr(4,2),16);
-  const yiq = ((r*299)+(g*587)+(b*114))/1000;
-  return (yiq >= 128) ? 'black' : 'white';
+// Utilities
+function adjustColor(color, amount) {
+  let usePound = false;
+  if (color[0] === "#") {
+    color = color.slice(1);
+    usePound = true;
+  }
+  let num = parseInt(color, 16);
+  let r = Math.min(255, Math.max(0, (num >> 16) + amount));
+  let g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+  let b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+  return (usePound ? "#" : "") + ((r << 16) | (g << 8) | b).toString(16).padStart(6, "0");
 }
 
+function getContrastYIQ(hexcolor) {
+  hexcolor = hexcolor.replace("#", "");
+  const r = parseInt(hexcolor.substr(0, 2), 16);
+  const g = parseInt(hexcolor.substr(2, 2), 16);
+  const b = parseInt(hexcolor.substr(4, 2), 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "black" : "white";
+}
 
-// Load games + picks (only games that exist in Firestore)
-async function loadGamesAndPicks(weekNum) {
-  const container = document.getElementById('picksContainer');
-  container.innerHTML = '<p>Loading games...</p>';
+// Save picks
+function savePicks(user, weekNum) {
+  const form = document.getElementById("Week1picksform");
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
+
+  newForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const docId = `${user.uid}_week${weekNum}`;
+    const dbName = `week${weekNum}Picks`;
+    db.collection(dbName)
+      .doc(docId)
+      .set({
+        uid: user.uid,
+        name: user.displayName,
+        week: weekNum,
+        picks: userSelections,
+        timestamp: new Date(),
+      })
+      .then(() => alert("Picks saved successfully!"))
+      .catch((err) => console.error("Error saving picks:", err));
+  });
+}
+
+// Load previous picks
+async function loadUserPicks(user, weekNum) {
+  const docId = `${user.uid}_week${weekNum}`;
+  const dbName = `week${weekNum}Picks`;
+  const docRef = await db.collection(dbName).doc(docId).get();
+  if (!docRef.exists) return;
+
+  const picks = docRef.data().picks || {};
+  Object.entries(picks).forEach(([matchupKey, selectedTeam]) => {
+    const btnGroup = document.querySelector(`div.btn-group[data-matchup="${matchupKey}"]`);
+    if (!btnGroup) return;
+
+    const matchBtn = Array.from(btnGroup.querySelectorAll("button")).find(
+      (b) => b.dataset.teamLocation === selectedTeam
+    );
+    if (matchBtn) {
+      btnGroup.querySelectorAll("button").forEach((b) => {
+        b.classList.remove("active");
+        b.style.outline = "none";
+        b.style.boxShadow = "none";
+      });
+      matchBtn.classList.add("active");
+      matchBtn.style.outline = "2px solid white";
+      matchBtn.style.boxShadow = "0 0 10px white";
+      userSelections[matchupKey] = selectedTeam;
+    }
+  });
+}
+
+// Load games
+async function loadGames(weekNum, user) {
+  const container = document.getElementById("week1games");
+  container.innerHTML = "";
 
   try {
-    // 1. Get all picks from Firestore
-    const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
-    const allPicks = {};
-    const gamesInDB = new Set(); // track matchups in DB
-
-    picksSnapshot.forEach(doc => {
-      const { picks, name } = doc.data();
-      for (const [matchup, teamPick] of Object.entries(picks)) {
-        if (!allPicks[matchup]) allPicks[matchup] = [];
-        allPicks[matchup].push({ name, pick: teamPick });
-        gamesInDB.add(matchup);
-      }
-    });
-
-    if (gamesInDB.size === 0) {
-      container.innerHTML = '<p>No games/picks available.</p>';
-      return;
-    }
-
-    // 2. Fetch ESPN scoreboard data
-    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902');
+    const res = await fetch(
+      "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902"
+    );
     const data = await res.json();
-    const games = data.events;
 
-    container.innerHTML = ''; // clear loading message
+    const gameSlate = [
+      data.events[0], data.events[7], data.events[14], data.events[20], data.events[24],
+      data.events[25], data.events[28], data.events[33], data.events[37], data.events[48],
+      data.events[67], data.events[72], data.events[81], data.events[84], data.events[86],
+      data.events[88], data.events[89], data.events[90]
+    ].filter(Boolean);
 
-    // 3. Render only games in Firestore
-    games.forEach(event => {
+    gameSlate.forEach((event) => {
       const comp = event.competitions[0];
-      const home = comp.competitors[0];
-      const away = comp.competitors[1];
-      const matchupKey = `${home.team.location} vs ${away.team.location}`;
+      const home = comp.competitors[0].team;
+      const away = comp.competitors[1].team;
+      const matchupKey = `${home.location} vs ${away.location}`;
 
-      if (!gamesInDB.has(matchupKey)) return; // skip games not in DB
+      // Button group
+      const btnGroup = document.createElement("div");
+      btnGroup.className = "btn-group";
+      btnGroup.setAttribute("role", "group");
+      btnGroup.setAttribute("data-matchup", matchupKey);
+      btnGroup.style.display = "flex";
+      btnGroup.style.justifyContent = "center";
+      btnGroup.style.marginBottom = "1rem";
+      btnGroup.style.gap = "0.5rem";
 
-      const status = event.status.type.description;
-      const scoreHome = home.score || '0';
-      const scoreAway = away.score || '0';
-      const startTime = new Date(event.date).toLocaleString();
+      [home, away].forEach((team) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn";
+        btn.dataset.teamLocation = team.location;
 
-      // Game container
-      const gameDiv = document.createElement('div');
-      gameDiv.className = 'game-block mb-4 p-3 border rounded';
-      gameDiv.style.backgroundColor = '#cccccc'; // dark green for each game
-      gameDiv.style.color = 'white';
+        // Button styles
+        const bgColor = `#${adjustColor(team.color, 40)}`;
+        btn.style.backgroundColor = bgColor;
+        btn.style.color = getContrastYIQ(bgColor);
+        btn.style.border = "2px solid white";
+        btn.style.borderRadius = "12px";
+        btn.style.padding = "0.5rem";
+        btn.style.width = "140px";
+        btn.style.height = "120px";
+        btn.style.display = "flex";
+        btn.style.flexDirection = "column";
+        btn.style.justifyContent = "center";
+        btn.style.alignItems = "center";
+        btn.style.fontWeight = "bold";
+        btn.style.fontSize = "0.85rem";
 
-      // Game header
-      gameDiv.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <div>
-            <img src="${home.team.logo}" width="25" height="25" class="me-1"> ${home.team.location} (${scoreHome})
-            vs
-            ${away.team.location} (${scoreAway}) <img src="${away.team.logo}" width="25" height="25" class="ms-1">
-          </div>
-          <small>${status} | ${startTime}</small>
-        </div>
-      `;
+        // Logo
+        const img = document.createElement("img");
+        img.src = team.logo;
+        img.alt = team.location;
+        img.style.maxWidth = "50%";
+        img.style.maxHeight = "50%";
+        img.style.objectFit = "contain";
+        btn.appendChild(img);
 
-      // Picks
-      const picksDiv = document.createElement('div');
-      picksDiv.className = 'picks-list ps-3';
-      const picksForGame = allPicks[matchupKey] || [];
+        // Team name
+        const nameDiv = document.createElement("div");
+        nameDiv.textContent = team.location;
+        btn.appendChild(nameDiv);
 
-      if (picksForGame.length === 0) {
-        picksDiv.innerHTML = '<p>No picks yet for this game.</p>';
-      } else {
-        picksForGame.forEach(userPick => {
-          const p = document.createElement('p');
-          p.textContent = `${userPick.name} → ${userPick.pick}`;
-          picksDiv.appendChild(p);
-        });
-      }
+        // Odds
+        const oddsDiv = document.createElement("div");
+        if (comp.odds && comp.odds.length > 0) {
+          const oddsText = comp.odds[0].details || "";
+          if (oddsText.includes("-") && team === home) {
+            oddsDiv.textContent = oddsText;
+          }
+        }
+        oddsDiv.style.fontSize = "0.75rem";
+        btn.appendChild(oddsDiv);
 
-      gameDiv.appendChild(picksDiv);
-      container.appendChild(gameDiv);
+        btn.onclick = () => {
+          btnGroup.querySelectorAll("button").forEach((b) => {
+            b.classList.remove("active");
+            b.style.outline = "none";
+            b.style.boxShadow = "none";
+          });
+          btn.classList.add("active");
+          btn.style.outline = "2px solid white";
+          btn.style.boxShadow = "0 0 10px white";
+          userSelections[matchupKey] = btn.dataset.teamLocation;
+        };
+
+        btnGroup.appendChild(btn);
+      });
+
+      container.appendChild(btnGroup);
     });
 
+    if (user) await loadUserPicks(user, weekNum);
   } catch (err) {
-    console.error('Error loading games/picks:', err);
-    container.innerHTML = '<p>Error loading data. Check console.</p>';
+    console.error("Error fetching games:", err);
   }
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize picks
+function initPicks(user) {
+  if (picksInitialized) return;
+  picksInitialized = true;
   const weekNum = 1;
-  loadGamesAndPicks(weekNum);
+  document.getElementById("welcomeMessage").innerText = `${user.displayName}'s Week ${weekNum} Picks`;
+  savePicks(user, weekNum);
+  loadGames(weekNum, user);
+}
 
-  // Refresh every 30 seconds
-  setInterval(() => loadGamesAndPicks(weekNum), 30000);
+// Sign-in/out
+document.getElementById("googleSignInBtn").onclick = () => auth.signInWithPopup(provider);
+
+document.getElementById("googleSignOutBtn").onclick = () => {
+  auth.signOut().then(() => {
+    currentUser = null;
+    picksInitialized = false;
+    document.getElementById("authStatus").innerText = "Not signed in";
+    document.getElementById("googleSignInBtn").style.display = "inline-block";
+    document.getElementById("googleSignOutBtn").style.display = "none";
+    document.getElementById("week1games").innerHTML = "";
+    document.getElementById("welcomeMessage").innerText = "";
+  });
+};
+
+// Detect auth state
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    currentUser = user.uid;
+    document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
+    document.getElementById("googleSignInBtn").style.display = "none";
+    document.getElementById("googleSignOutBtn").style.display = "inline-block";
+    initPicks(user);
+  }
 });
