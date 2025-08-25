@@ -12,12 +12,15 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
+
 const userSelections = {};
 let currentUser = null;
 let picksInitialized = false;
 
+// Set body background
 document.body.style.backgroundColor = '#1c1c1c';
 
+// Utility to get readable text color based on background
 function getContrastYIQ(hexcolor) {
   hexcolor = hexcolor.replace('#', '');
   const r = parseInt(hexcolor.substr(0,2),16);
@@ -27,6 +30,7 @@ function getContrastYIQ(hexcolor) {
   return (yiq >= 128) ? 'black' : 'white';
 }
 
+// Adjust hex color brightness
 function adjustColor(color, amount) {
   let usePound = false;
   if (color[0] === "#") {
@@ -34,31 +38,22 @@ function adjustColor(color, amount) {
     usePound = true;
   }
   let num = parseInt(color, 16);
-  let r = (num >> 16) + amount;
-  if (r > 255) r = 255;
-  else if (r < 0) r = 0;
-  let g = ((num >> 8) & 0x00FF) + amount;
-  if (g > 255) g = 255;
-  else if (g < 0) g = 0;
-  let b = (num & 0x0000FF) + amount;
-  if (b > 255) b = 255;
-  else if (b < 0) b = 0;
+  let r = (num >> 16) + amount; r = Math.max(Math.min(255, r), 0);
+  let g = ((num >> 8) & 0x00FF) + amount; g = Math.max(Math.min(255, g), 0);
+  let b = (num & 0x0000FF) + amount; b = Math.max(Math.min(255, b), 0);
   return (usePound ? "#" : "") + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
 }
 
-// Save picks (with listener cleanup)
+// Save picks to Firestore
 function savePicks(user, weekNum) {
   const form = document.getElementById('Week1picksform');
-
-  // Remove previous submit listener to prevent duplicates
   const newForm = form.cloneNode(true);
   form.parentNode.replaceChild(newForm, form);
 
-  newForm.addEventListener('submit', async function (e) {
+  newForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     const docId = `${user.uid}_week${weekNum}`;
     const dbName = `week${weekNum}Picks`;
-
     db.collection(dbName).doc(docId).set({
       uid: user.uid,
       name: user.displayName,
@@ -70,12 +65,11 @@ function savePicks(user, weekNum) {
   });
 }
 
-// Load picks and apply to buttons
+// Load previous picks and mark active buttons
 async function loadUserPicks(user, weekNum) {
   const docId = `${user.uid}_week${weekNum}`;
   const dbName = `week${weekNum}Picks`;
   const docRef = await db.collection(dbName).doc(docId).get();
-
   if (!docRef.exists) return;
 
   const picks = docRef.data().picks || {};
@@ -83,9 +77,8 @@ async function loadUserPicks(user, weekNum) {
     const btnGroup = document.querySelector(`div.btn-group[data-matchup="${matchupKey}"]`);
     if (!btnGroup) return;
 
-    // Find the button by its data attribute instead of textContent
     const buttons = Array.from(btnGroup.querySelectorAll('button'));
-    const matchBtn = buttons.find(b => (b.dataset.teamLocation || '') === selectedTeam);
+    const matchBtn = buttons.find(b => b.dataset.teamLocation === selectedTeam);
 
     if (matchBtn) {
       buttons.forEach(b => {
@@ -101,10 +94,10 @@ async function loadUserPicks(user, weekNum) {
   });
 }
 
-// Load games and buttons
+// Load games and create buttons with logo, name, and odds
 async function loadGames(weekNum, user) {
   const container = document.getElementById('week1games');
-  container.innerHTML = ''; // Clear previous games
+  container.innerHTML = '';
 
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902');
@@ -114,64 +107,67 @@ async function loadGames(weekNum, user) {
       data.events[28], data.events[33], data.events[37], data.events[48], data.events[67],
       data.events[72], data.events[81], data.events[84], data.events[86], data.events[88],
       data.events[89], data.events[90]
-    ].filter(Boolean); // defensive: skip undefined
+    ].filter(Boolean);
 
     gameSlate.forEach(event => {
       const comp = event.competitions[0];
       const home = comp.competitors[0].team;
       const away = comp.competitors[1].team;
       const matchupKey = `${home.location} vs ${away.location}`;
+      const homeOdds = comp.odds && comp.odds.length > 0 ? comp.odds[0].details.split(' ')[0] : '';
+      const awayOdds = comp.odds && comp.odds.length > 0 ? comp.odds[0].details.split(' ')[2] : '';
 
       // Row container
       const rowDiv = document.createElement('div');
-      rowDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+      rowDiv.className = 'd-flex flex-column mb-3 p-2 bg-dark rounded';
 
-      // Game info (left)
+      // Matchup info
       const infoDiv = document.createElement('div');
-      infoDiv.className = 'd-flex align-items-center';
+      infoDiv.className = 'd-flex justify-content-center align-items-center mb-2 text-light';
+      infoDiv.style.fontWeight = 'bold';
       infoDiv.innerHTML = `
-        <img src="${home.logo}" width="25" height="25" class="me-1" alt="${home.location}">
+        <img src="${home.logo}" width="20" height="20" class="me-1" alt="${home.location}">
         ${home.location} vs
-        <img src="${away.logo}" width="25" height="25" class="mx-1" alt="${away.location}">
+        <img src="${away.logo}" width="20" height="20" class="mx-1" alt="${away.location}">
         ${away.location}
       `;
 
-      // Button group (right)
+      // Button group
       const btnGroup = document.createElement('div');
-      btnGroup.className = 'btn-group';
-      btnGroup.setAttribute('role', 'group');
+      btnGroup.className = 'd-flex justify-content-between gap-2';
       btnGroup.setAttribute('data-matchup', matchupKey);
 
-      [home, away].forEach(team => {
+      const teams = [
+        { ...home, odds: homeOdds, isFavorite: homeOdds.startsWith('-') },
+        { ...away, odds: awayOdds, isFavorite: awayOdds.startsWith('-') }
+      ];
+
+      teams.forEach(team => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn';
+        btn.dataset.teamLocation = team.location;
 
-        // NEW: attach identity for later matching
-        btn.dataset.teamLocation = team.location;    // what you currently save
-        btn.dataset.teamId = team.id;                // optional future-proofing
-        btn.title = team.displayName || team.location;
-
-        const bgColor = `#${adjustColor(team.color, 40) || (team === home ? "007bff" : "6c757d")}`;
-        btn.style.backgroundColor = bgColor;
-        btn.style.border = '2px solid white';
-        btn.style.borderRadius = '8px';
-        btn.style.padding = '0.5rem';
-        btn.style.margin = '0 0.2rem';
-        btn.style.minWidth = '60px';
-        btn.style.height = '60px';
+        // Style button
+        btn.style.flex = '1';
         btn.style.display = 'flex';
-        btn.style.justifyContent = 'center';
+        btn.style.flexDirection = 'column';
         btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.padding = '10px';
+        btn.style.border = '2px solid white';
+        btn.style.borderRadius = '10px';
+        btn.style.backgroundColor = adjustColor(team.color || '444444', 40);
+        btn.style.color = getContrastYIQ(team.color || '444444');
+        btn.style.fontWeight = 'bold';
+        btn.style.minHeight = '90px';
 
-        const img = document.createElement('img');
-        img.src = team.logo;
-        img.alt = team.location;
-        img.style.maxWidth = '80%';
-        img.style.maxHeight = '80%';
-        img.style.objectFit = 'contain';
-
-        btn.appendChild(img);
+        // Button inner HTML
+        btn.innerHTML = `
+          <img src="${team.logo}" alt="${team.location}" style="width:30px;height:30px;margin-bottom:5px;">
+          <span style="font-size:14px;">${team.location}</span>
+          <span style="font-size:12px;color:${team.isFavorite ? '#ffd700' : '#ccc'};">${team.odds || ''}</span>
+        `;
 
         btn.onclick = () => {
           btnGroup.querySelectorAll('button').forEach(b => {
@@ -182,27 +178,17 @@ async function loadGames(weekNum, user) {
           btn.classList.add('active');
           btn.style.outline = '2px solid white';
           btn.style.boxShadow = '0 0 10px white';
-          // Save by the same value we use to restore (location)
           userSelections[matchupKey] = btn.dataset.teamLocation;
         };
 
         btnGroup.appendChild(btn);
       });
 
-      // Odds
-      const oddsText = comp.odds && comp.odds.length > 0 ? comp.odds[0].details : 'N/A';
-      const oddsDiv = document.createElement('div');
-      oddsDiv.className = 'mt-1';
-      oddsDiv.style.fontSize = '0.9rem';
-      oddsDiv.textContent = `Odds: ${oddsText}`;
-
       rowDiv.appendChild(infoDiv);
       rowDiv.appendChild(btnGroup);
-      rowDiv.appendChild(oddsDiv);
       container.appendChild(rowDiv);
     });
 
-    // Apply previous picks after DOM is ready
     if (user) await loadUserPicks(user, weekNum);
 
   } catch (err) {
@@ -226,7 +212,7 @@ document.getElementById("googleSignInBtn").onclick = () => {
   auth.signInWithPopup(provider);
 };
 
-// Sign-out (reset everything)
+// Sign-out
 document.getElementById("googleSignOutBtn").onclick = () => {
   auth.signOut().then(() => {
     currentUser = null;
@@ -239,7 +225,7 @@ document.getElementById("googleSignOutBtn").onclick = () => {
   });
 };
 
-// Detect auth state
+// Auth state detection
 auth.onAuthStateChanged(user => {
   if (user) {
     currentUser = user.uid;
