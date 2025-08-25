@@ -114,8 +114,19 @@ async function loadGames(weekNum, user) {
       const home = comp.competitors[0].team;
       const away = comp.competitors[1].team;
       const matchupKey = `${home.location} vs ${away.location}`;
-      const homeOdds = comp.odds && comp.odds.length > 0 ? comp.odds[0].details.split(' ')[0] : '';
-      const awayOdds = comp.odds && comp.odds.length > 0 ? comp.odds[0].details.split(' ')[2] : '';
+      let homeOdds = '';
+      let awayOdds = '';
+
+if (comp.odds && comp.odds.length > 0 && comp.odds[0].details) {
+  const oddsParts = comp.odds[0].details.split(' ');
+  homeOdds = oddsParts[0] || '';
+  awayOdds = oddsParts[2] || '';
+}
+
+{ ...home, odds: homeOdds, isFavorite: homeFavorite },
+{ ...away, odds: awayOdds, isFavorite: awayFavorite }
+
+
 
       // Row container
       const rowDiv = document.createElement('div');
