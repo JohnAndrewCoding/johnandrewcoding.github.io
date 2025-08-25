@@ -226,6 +226,7 @@ document.getElementById("googleSignInBtn").onclick = () => {
 document.getElementById("googleSignOutBtn").onclick = () => {
   auth.signOut().then(() => {
     currentUser = null;
+    picksInitialized = false; 
     document.getElementById("authStatus").innerText = "Not signed in";
     document.getElementById("googleSignInBtn").style.display = "inline-block";
     document.getElementById("googleSignOutBtn").style.display = "none";
