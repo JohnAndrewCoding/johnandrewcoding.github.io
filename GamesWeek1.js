@@ -130,66 +130,71 @@ async function loadGames(weekNum, user) {
       btnGroup.style.gap = "0.5rem";
 
       [home, away].forEach((team) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn";
-        btn.dataset.teamLocation = team.location;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn";
+  btn.dataset.teamLocation = team.location;
 
-        // Button styles
-        const bgColor = `#${adjustColor(team.color, 40)}`;
-        btn.style.backgroundColor = bgColor;
-        btn.style.color = getContrastYIQ(bgColor);
-        btn.style.border = "2px solid white";
-        btn.style.borderRadius = "12px";
-        btn.style.padding = "0.5rem";
-        btn.style.width = "140px";
-        btn.style.height = "120px";
-        btn.style.display = "flex";
-        btn.style.flexDirection = "column";
-        btn.style.justifyContent = "center";
-        btn.style.alignItems = "center";
-        btn.style.fontWeight = "bold";
-        btn.style.fontSize = "0.85rem";
+  // Button styles
+  const bgColor = `#${adjustColor(team.color, 40)}`;
+  btn.style.backgroundColor = bgColor;
+  btn.style.color = getContrastYIQ(bgColor);
+  btn.style.border = "2px solid white";
+  btn.style.borderRadius = "12px";
+  btn.style.padding = "0.5rem";
+  btn.style.width = "140px";
+  btn.style.height = "120px";
+  btn.style.display = "flex";
+  btn.style.flexDirection = "column";
+  btn.style.justifyContent = "center";
+  btn.style.alignItems = "center";
+  btn.style.fontWeight = "bold";
+  btn.style.fontSize = "0.85rem";
 
-        // Logo
-        const img = document.createElement("img");
-        img.src = team.logo;
-        img.alt = team.location;
-        img.style.maxWidth = "50%";
-        img.style.maxHeight = "50%";
-        img.style.objectFit = "contain";
-        btn.appendChild(img);
+  // Logo
+  const img = document.createElement("img");
+  img.src = team.logo;
+  img.alt = team.location;
+  img.style.maxWidth = "50%";
+  img.style.maxHeight = "50%";
+  img.style.objectFit = "contain";
+  btn.appendChild(img);
 
-        // Team name
-        const nameDiv = document.createElement("div");
-        nameDiv.textContent = team.location;
-        btn.appendChild(nameDiv);
+  // Team name
+  const nameDiv = document.createElement("div");
+  nameDiv.textContent = team.location;
+  btn.appendChild(nameDiv);
 
-        // Odds
-        const oddsDiv = document.createElement("div");
-        if (comp.odds && comp.odds.length > 0) {
-          const oddsText = comp.odds[0].details || "";
-          if (oddsText.includes("-") && team === home) {
-            oddsDiv.textContent = oddsText;
-          }
-        }
-        oddsDiv.style.fontSize = "0.75rem";
-        btn.appendChild(oddsDiv);
+  // Odds (only on favored team)
+  const oddsDiv = document.createElement("div");
+  if (comp.odds && comp.odds.length > 0) {
+    const oddsText = comp.odds[0].details || "";
+    // Check if this team is the favored one
+    if (oddsText.includes("-")) {
+      const favoredTeam = oddsText.split(" ")[0]; // usually "Team -X"
+      if (favoredTeam.toLowerCase() === team.displayName.toLowerCase() || favoredTeam.toLowerCase() === team.location.toLowerCase()) {
+        oddsDiv.textContent = oddsText;
+      }
+    }
+  }
+  oddsDiv.style.fontSize = "0.75rem";
+  btn.appendChild(oddsDiv);
 
-        btn.onclick = () => {
-          btnGroup.querySelectorAll("button").forEach((b) => {
-            b.classList.remove("active");
-            b.style.outline = "none";
-            b.style.boxShadow = "none";
-          });
-          btn.classList.add("active");
-          btn.style.outline = "2px solid white";
-          btn.style.boxShadow = "0 0 10px white";
-          userSelections[matchupKey] = btn.dataset.teamLocation;
-        };
+  btn.onclick = () => {
+    btnGroup.querySelectorAll("button").forEach((b) => {
+      b.classList.remove("active");
+      b.style.outline = "none";
+      b.style.boxShadow = "none";
+    });
+    btn.classList.add("active");
+    btn.style.outline = "2px solid white";
+    btn.style.boxShadow = "0 0 10px white";
+    userSelections[matchupKey] = btn.dataset.teamLocation;
+  };
 
-        btnGroup.appendChild(btn);
-      });
+  btnGroup.appendChild(btn);
+});
+
 
       container.appendChild(btnGroup);
     });
