@@ -198,13 +198,18 @@ rowDiv.appendChild(oddsDiv);
   }
 }
 
-// Initialize picks page
+let picksInitialized = false;
+//initialize picks
 function initPicks(user) {
+  if (picksInitialized) return;
+  picksInitialized = true;
+
   const weekNum = 1;
   document.getElementById('welcomeMessage').innerText = `${user.displayName}'s Week ${weekNum} Picks`;
   savePicks(user, weekNum);
   loadGames(weekNum, user);
 }
+
 
 // Sign-in / Sign-out
 document.getElementById("googleSignInBtn").onclick = () => {
