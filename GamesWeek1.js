@@ -46,7 +46,7 @@ function adjustColor(color, amount) {
   return (usePound ? "#" : "") + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
 }
 
-// ✅ Save picks (with listener cleanup)
+// Save picks (with listener cleanup)
 function savePicks(user, weekNum) {
   const form = document.getElementById('Week1picksform');
 
@@ -70,7 +70,7 @@ function savePicks(user, weekNum) {
   });
 }
 
-// ✅ Load picks and apply to buttons
+// Load picks and apply to buttons
 async function loadUserPicks(user, weekNum) {
   const docId = `${user.uid}_week${weekNum}`;
   const dbName = `week${weekNum}Picks`;
@@ -83,23 +83,25 @@ async function loadUserPicks(user, weekNum) {
     const btnGroup = document.querySelector(`div.btn-group[data-matchup="${matchupKey}"]`);
     if (!btnGroup) return;
 
-    btnGroup.querySelectorAll('button').forEach(btn => {
-      if (btn.textContent.trim() === selectedTeam) {
-        btnGroup.querySelectorAll('button').forEach(b => {
-          b.classList.remove('active');
-          b.style.outline = 'none';
-          b.style.boxShadow = 'none';
-        });
-        btn.classList.add('active');
-        btn.style.outline = '2px solid white';
-        btn.style.boxShadow = '0 0 10px white';
-        userSelections[matchupKey] = selectedTeam;
-      }
-    });
+    // Find the button by its data attribute instead of textContent
+    const buttons = Array.from(btnGroup.querySelectorAll('button'));
+    const matchBtn = buttons.find(b => (b.dataset.teamLocation || '') === selectedTeam);
+
+    if (matchBtn) {
+      buttons.forEach(b => {
+        b.classList.remove('active');
+        b.style.outline = 'none';
+        b.style.boxShadow = 'none';
+      });
+      matchBtn.classList.add('active');
+      matchBtn.style.outline = '2px solid white';
+      matchBtn.style.boxShadow = '0 0 10px white';
+      userSelections[matchupKey] = selectedTeam;
+    }
   });
 }
 
-// ✅ Load games and buttons
+// Load games and buttons
 async function loadGames(weekNum, user) {
   const container = document.getElementById('week1games');
   container.innerHTML = ''; // Clear previous games
@@ -112,7 +114,7 @@ async function loadGames(weekNum, user) {
       data.events[28], data.events[33], data.events[37], data.events[48], data.events[67],
       data.events[72], data.events[81], data.events[84], data.events[86], data.events[88],
       data.events[89], data.events[90]
-    ];
+    ].filter(Boolean); // defensive: skip undefined
 
     gameSlate.forEach(event => {
       const comp = event.competitions[0];
@@ -128,9 +130,9 @@ async function loadGames(weekNum, user) {
       const infoDiv = document.createElement('div');
       infoDiv.className = 'd-flex align-items-center';
       infoDiv.innerHTML = `
-        <img src="${home.logo}" width="25" height="25" class="me-1">
+        <img src="${home.logo}" width="25" height="25" class="me-1" alt="${home.location}">
         ${home.location} vs
-        <img src="${away.logo}" width="25" height="25" class="mx-1">
+        <img src="${away.logo}" width="25" height="25" class="mx-1" alt="${away.location}">
         ${away.location}
       `;
 
@@ -144,6 +146,11 @@ async function loadGames(weekNum, user) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn';
+
+        // NEW: attach identity for later matching
+        btn.dataset.teamLocation = team.location;    // what you currently save
+        btn.dataset.teamId = team.id;                // optional future-proofing
+        btn.title = team.displayName || team.location;
 
         const bgColor = `#${adjustColor(team.color, 40) || (team === home ? "007bff" : "6c757d")}`;
         btn.style.backgroundColor = bgColor;
@@ -175,7 +182,8 @@ async function loadGames(weekNum, user) {
           btn.classList.add('active');
           btn.style.outline = '2px solid white';
           btn.style.boxShadow = '0 0 10px white';
-          userSelections[matchupKey] = team.location;
+          // Save by the same value we use to restore (location)
+          userSelections[matchupKey] = btn.dataset.teamLocation;
         };
 
         btnGroup.appendChild(btn);
@@ -194,7 +202,7 @@ async function loadGames(weekNum, user) {
       container.appendChild(rowDiv);
     });
 
-    // ✅ Apply previous picks after DOM is ready
+    // Apply previous picks after DOM is ready
     if (user) await loadUserPicks(user, weekNum);
 
   } catch (err) {
@@ -202,7 +210,7 @@ async function loadGames(weekNum, user) {
   }
 }
 
-// ✅ Initialize picks
+// Initialize picks
 function initPicks(user) {
   if (picksInitialized) return;
   picksInitialized = true;
@@ -213,12 +221,12 @@ function initPicks(user) {
   loadGames(weekNum, user);
 }
 
-// ✅ Sign-in
+// Sign-in
 document.getElementById("googleSignInBtn").onclick = () => {
   auth.signInWithPopup(provider);
 };
 
-// ✅ Sign-out (reset everything)
+// Sign-out (reset everything)
 document.getElementById("googleSignOutBtn").onclick = () => {
   auth.signOut().then(() => {
     currentUser = null;
@@ -231,7 +239,7 @@ document.getElementById("googleSignOutBtn").onclick = () => {
   });
 };
 
-// ✅ Detect auth state
+// Detect auth state
 auth.onAuthStateChanged(user => {
   if (user) {
     currentUser = user.uid;
