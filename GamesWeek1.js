@@ -106,7 +106,6 @@ async function loadUserPicks(user, weekNum) {
     }
   });
 }
-
 async function loadGames(weekNum, user) {
   const container = document.getElementById('week1games');
   container.innerHTML = '';
@@ -142,38 +141,32 @@ async function loadGames(weekNum, user) {
         awayFav = !homeFav;
       }
 
-      // Game lock logic
-      const gameStart = new Date(comp.date); // ISO date from ESPN
-      const now = new Date();
-      const isLocked = now >= gameStart;
-
       [home, away].forEach((team, index) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn';
         btn.dataset.teamLocation = team.location;
 
-        const bgColor = `#${adjustColor(team.color, 40) || (team===home ? "007bff" : "6c757d")}`;
-        btn.style.backgroundColor = isLocked ? '#555' : bgColor; // gray if locked
-        btn.style.color = isLocked ? '#ccc' : getContrastYIQ(bgColor);
+        const bgColor = `#${adjustColor(team.color, 40) || (team === home ? "007bff" : "6c757d")}`;
+        btn.style.backgroundColor = bgColor;
+        btn.style.color = getContrastYIQ(bgColor);
         btn.style.border = '2px solid white';
         btn.style.borderRadius = '12px';
         btn.style.padding = '0.5rem';
         btn.style.margin = '5px';
-        btn.style.minWidth = '120px';
-        btn.style.height = '100px';
+        btn.style.minWidth = '140px'; // slightly bigger
+        btn.style.height = '120px';    // slightly bigger
         btn.style.display = 'flex';
         btn.style.flexDirection = 'column';
         btn.style.justifyContent = 'center';
         btn.style.alignItems = 'center';
         btn.style.fontWeight = 'bold';
-        if (isLocked) btn.disabled = true; // disable button
 
         const img = document.createElement('img');
         img.src = team.logo;
         img.alt = team.location;
-        img.style.maxWidth = '60px';
-        img.style.maxHeight = '60px';
+        img.style.maxWidth = '70px';
+        img.style.maxHeight = '70px';
         img.style.objectFit = 'contain';
         btn.appendChild(img);
 
@@ -188,26 +181,17 @@ async function loadGames(weekNum, user) {
         }
         btn.appendChild(oddsSpan);
 
-        if (!isLocked) {
-          btn.onclick = () => {
-            matchupDiv.querySelectorAll('button').forEach(b => {
-              b.classList.remove('active');
-              b.style.outline = 'none';
-              b.style.boxShadow = 'none';
-            });
-            btn.classList.add('active');
-            btn.style.outline = '2px solid white';
-            btn.style.boxShadow = '0 0 10px white';
-            userSelections[matchupKey] = btn.dataset.teamLocation;
-          };
-        }
-        if (isLocked) {
-  // Auto-count loss if no pick was made
-  if (!userSelections[matchupKey]) {
-    updateRecordForLockedGame(user, matchupKey);
-  }
-}
-
+        btn.onclick = () => {
+          matchupDiv.querySelectorAll('button').forEach(b => {
+            b.classList.remove('active');
+            b.style.outline = 'none';
+            b.style.boxShadow = 'none';
+          });
+          btn.classList.add('active');
+          btn.style.outline = '2px solid white';
+          btn.style.boxShadow = '0 0 10px white';
+          userSelections[matchupKey] = btn.dataset.teamLocation;
+        };
 
         matchupDiv.appendChild(btn);
 
@@ -224,6 +208,7 @@ async function loadGames(weekNum, user) {
       container.appendChild(matchupDiv);
     });
 
+    // **Load previous picks AFTER buttons exist**
     if (user) await loadUserPicks(user, weekNum);
 
   } catch (err) {
