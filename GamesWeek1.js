@@ -27,6 +27,27 @@ function getContrastYIQ(hexcolor) {
   const yiq = ((r*299)+(g*587)+(b*114))/1000;
   return (yiq >= 128) ? 'black' : 'white';
 }
+async function updateRecordForLockedGame(user, matchupKey, correctTeam=null) {
+  const recordRef = db.collection('userRecords').doc(user.uid);
+  const recordDoc = await recordRef.get();
+
+  let record = { wins: 0, losses: 0 };
+  if (recordDoc.exists) {
+    record = recordDoc.data();
+  }
+
+  // If user has no pick for this matchup, count as loss
+  if (!userSelections[matchupKey]) {
+    record.losses += 1;
+  } else if (correctTeam && userSelections[matchupKey] === correctTeam) {
+    record.wins += 1;
+  } else if (correctTeam) {
+    record.losses += 1;
+  }
+
+  await recordRef.set(record, { merge: true });
+}
+
 
 function adjustColor(color, amount) {
   let usePound = false;
@@ -180,6 +201,13 @@ async function loadGames(weekNum, user) {
             userSelections[matchupKey] = btn.dataset.teamLocation;
           };
         }
+        if (isLocked) {
+  // Auto-count loss if no pick was made
+  if (!userSelections[matchupKey]) {
+    updateRecordForLockedGame(user, matchupKey);
+  }
+}
+
 
         matchupDiv.appendChild(btn);
 
