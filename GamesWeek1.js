@@ -100,7 +100,7 @@ async function loadGames(weekNum, user) {
       data.events[89], data.events[90]
     ].filter(Boolean);
 
-    gameSlate.forEach(event=>{
+    gameSlate.forEach(event => {
       const comp = event.competitions[0];
       const home = comp.competitors[0].team;
       const away = comp.competitors[1].team;
@@ -112,7 +112,7 @@ async function loadGames(weekNum, user) {
       matchupDiv.style.justifyContent = 'center';
       matchupDiv.style.alignItems = 'center';
       matchupDiv.style.marginBottom = '15px';
-      matchupDiv.style.flexWrap = 'wrap'; // allows wrapping on small screens
+      matchupDiv.style.flexWrap = 'wrap';
 
       const oddsInfo = comp.odds && comp.odds[0];
       let homeFav = false, awayFav = false;
@@ -121,33 +121,39 @@ async function loadGames(weekNum, user) {
         awayFav = !homeFav;
       }
 
-      [home, away].forEach((team, index)=>{
+      // Game lock logic
+      const gameStart = new Date(comp.date); // ISO date from ESPN
+      const now = new Date();
+      const isLocked = now >= gameStart;
+
+      [home, away].forEach((team, index) => {
         const btn = document.createElement('button');
-        btn.type='button';
-        btn.className='btn';
+        btn.type = 'button';
+        btn.className = 'btn';
         btn.dataset.teamLocation = team.location;
 
-        const bgColor = `#${adjustColor(team.color,40) || (team===home?"007bff":"6c757d")}`;
-        btn.style.backgroundColor = bgColor;
-        btn.style.color = getContrastYIQ(bgColor);
-        btn.style.border='2px solid white';
-        btn.style.borderRadius='12px';
-        btn.style.padding='0.5rem';
-        btn.style.margin='5px';
-        btn.style.minWidth='120px';
-        btn.style.height='100px';
-        btn.style.display='flex';
-        btn.style.flexDirection='column';
-        btn.style.justifyContent='center';
-        btn.style.alignItems='center';
-        btn.style.fontWeight='bold';
+        const bgColor = `#${adjustColor(team.color, 40) || (team===home ? "007bff" : "6c757d")}`;
+        btn.style.backgroundColor = isLocked ? '#555' : bgColor; // gray if locked
+        btn.style.color = isLocked ? '#ccc' : getContrastYIQ(bgColor);
+        btn.style.border = '2px solid white';
+        btn.style.borderRadius = '12px';
+        btn.style.padding = '0.5rem';
+        btn.style.margin = '5px';
+        btn.style.minWidth = '120px';
+        btn.style.height = '100px';
+        btn.style.display = 'flex';
+        btn.style.flexDirection = 'column';
+        btn.style.justifyContent = 'center';
+        btn.style.alignItems = 'center';
+        btn.style.fontWeight = 'bold';
+        if (isLocked) btn.disabled = true; // disable button
 
         const img = document.createElement('img');
         img.src = team.logo;
         img.alt = team.location;
-        img.style.maxWidth='60px';
-        img.style.maxHeight='60px';
-        img.style.objectFit='contain';
+        img.style.maxWidth = '60px';
+        img.style.maxHeight = '60px';
+        img.style.objectFit = 'contain';
         btn.appendChild(img);
 
         const nameSpan = document.createElement('span');
@@ -155,28 +161,29 @@ async function loadGames(weekNum, user) {
         btn.appendChild(nameSpan);
 
         const oddsSpan = document.createElement('span');
-        if ((team===home && homeFav) || (team===away && awayFav)) {
+        if ((team === home && homeFav) || (team === away && awayFav)) {
           oddsSpan.textContent = oddsInfo.details;
-          oddsSpan.style.fontSize='0.85rem';
+          oddsSpan.style.fontSize = '0.85rem';
         }
         btn.appendChild(oddsSpan);
 
-        btn.onclick=()=>{
-          matchupDiv.querySelectorAll('button').forEach(b=>{
-            b.classList.remove('active');
-            b.style.outline='none';
-            b.style.boxShadow='none';
-          });
-          btn.classList.add('active');
-          btn.style.outline='2px solid white';
-          btn.style.boxShadow='0 0 10px white';
-          userSelections[matchupKey] = btn.dataset.teamLocation;
-        };
+        if (!isLocked) {
+          btn.onclick = () => {
+            matchupDiv.querySelectorAll('button').forEach(b => {
+              b.classList.remove('active');
+              b.style.outline = 'none';
+              b.style.boxShadow = 'none';
+            });
+            btn.classList.add('active');
+            btn.style.outline = '2px solid white';
+            btn.style.boxShadow = '0 0 10px white';
+            userSelections[matchupKey] = btn.dataset.teamLocation;
+          };
+        }
 
         matchupDiv.appendChild(btn);
 
-        // Insert "vs" text between buttons
-        if(index === 0){
+        if (index === 0) {
           const vsSpan = document.createElement('span');
           vsSpan.textContent = 'vs';
           vsSpan.style.margin = '0 10px';
@@ -189,12 +196,13 @@ async function loadGames(weekNum, user) {
       container.appendChild(matchupDiv);
     });
 
-    if(user) await loadUserPicks(user, weekNum);
+    if (user) await loadUserPicks(user, weekNum);
 
-  } catch(err) {
-    console.error("Error fetching games:",err);
+  } catch (err) {
+    console.error("Error fetching games:", err);
   }
 }
+
 
 
 function initPicks(user) {
