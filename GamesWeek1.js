@@ -14,8 +14,9 @@ const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 const userSelections = {};
 let currentUser = null;
+let picksInitialized = false;
 
-document.body.style.backgroundColor = '#1c1c1c'; 
+document.body.style.backgroundColor = '#1c1c1c';
 
 function getContrastYIQ(hexcolor) {
   hexcolor = hexcolor.replace('#', '');
@@ -25,35 +26,35 @@ function getContrastYIQ(hexcolor) {
   const yiq = ((r*299)+(g*587)+(b*114))/1000;
   return (yiq >= 128) ? 'black' : 'white';
 }
+
 function adjustColor(color, amount) {
   let usePound = false;
-
   if (color[0] === "#") {
     color = color.slice(1);
     usePound = true;
   }
-
   let num = parseInt(color, 16);
-
   let r = (num >> 16) + amount;
   if (r > 255) r = 255;
   else if (r < 0) r = 0;
-
   let g = ((num >> 8) & 0x00FF) + amount;
   if (g > 255) g = 255;
   else if (g < 0) g = 0;
-
   let b = (num & 0x0000FF) + amount;
   if (b > 255) b = 255;
   else if (b < 0) b = 0;
-
   return (usePound ? "#" : "") + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
 }
 
-
-// Save picks
+// ✅ Save picks (with listener cleanup)
 function savePicks(user, weekNum) {
-  document.getElementById('Week1picksform').addEventListener('submit', async function (e) {
+  const form = document.getElementById('Week1picksform');
+
+  // Remove previous submit listener to prevent duplicates
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
+
+  newForm.addEventListener('submit', async function (e) {
     e.preventDefault();
     const docId = `${user.uid}_week${weekNum}`;
     const dbName = `week${weekNum}Picks`;
@@ -69,7 +70,7 @@ function savePicks(user, weekNum) {
   });
 }
 
-// Load picks and apply to buttons
+// ✅ Load picks and apply to buttons
 async function loadUserPicks(user, weekNum) {
   const docId = `${user.uid}_week${weekNum}`;
   const dbName = `week${weekNum}Picks`;
@@ -98,7 +99,7 @@ async function loadUserPicks(user, weekNum) {
   });
 }
 
-// Load games and buttons
+// ✅ Load games and buttons
 async function loadGames(weekNum, user) {
   const container = document.getElementById('week1games');
   container.innerHTML = ''; // Clear previous games
@@ -106,8 +107,12 @@ async function loadGames(weekNum, user) {
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902');
     const data = await res.json();
-    // EDIT THIS MANUALLY FOR EACH WEEK ----------------------------------------------------------
-    const gameSlate = [data.events[0], data.events[7],data.events[14],data.events[20],data.events[24],data.events[25],data.events[28],data.events[33],data.events[37],data.events[48], data.events[67],data.events[72],data.events[81],data.events[84],data.events[86],data.events[88],data.events[89],data.events[90]];
+    const gameSlate = [
+      data.events[0], data.events[7], data.events[14], data.events[20], data.events[24], data.events[25],
+      data.events[28], data.events[33], data.events[37], data.events[48], data.events[67],
+      data.events[72], data.events[81], data.events[84], data.events[86], data.events[88],
+      data.events[89], data.events[90]
+    ];
 
     gameSlate.forEach(event => {
       const comp = event.competitions[0];
@@ -135,62 +140,61 @@ async function loadGames(weekNum, user) {
       btnGroup.setAttribute('role', 'group');
       btnGroup.setAttribute('data-matchup', matchupKey);
 
-[home, away].forEach(team => {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'btn';
-  
-  const bgColor = `#${adjustColor(team.color,40) || (team === home ? "007bff" : "6c757d")}`;
-  btn.style.backgroundColor = bgColor;
-  btn.style.border = '2px solid white';
-  btn.style.borderRadius = '8px';
-  btn.style.padding = '0.5rem';
-  btn.style.margin = '0 0.2rem';
-  btn.style.minWidth = '60px';
-  btn.style.height = '60px';
-  btn.style.display = 'flex';
-  btn.style.justifyContent = 'center';
-  btn.style.alignItems = 'center';
+      [home, away].forEach(team => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn';
 
-  // Add team logo
-  const img = document.createElement('img');
-  img.src = team.logo;
-  img.alt = team.location;
-  img.style.maxWidth = '80%';
-  img.style.maxHeight = '80%';
-  img.style.objectFit = 'contain';
+        const bgColor = `#${adjustColor(team.color, 40) || (team === home ? "007bff" : "6c757d")}`;
+        btn.style.backgroundColor = bgColor;
+        btn.style.border = '2px solid white';
+        btn.style.borderRadius = '8px';
+        btn.style.padding = '0.5rem';
+        btn.style.margin = '0 0.2rem';
+        btn.style.minWidth = '60px';
+        btn.style.height = '60px';
+        btn.style.display = 'flex';
+        btn.style.justifyContent = 'center';
+        btn.style.alignItems = 'center';
 
-  btn.appendChild(img);
+        const img = document.createElement('img');
+        img.src = team.logo;
+        img.alt = team.location;
+        img.style.maxWidth = '80%';
+        img.style.maxHeight = '80%';
+        img.style.objectFit = 'contain';
 
-  btn.onclick = () => {
-    btnGroup.querySelectorAll('button').forEach(b => {
-      b.classList.remove('active');
-      b.style.outline = 'none';
-      b.style.boxShadow = 'none';
-    });
-    btn.classList.add('active');
-    btn.style.outline = '2px solid white';
-    btn.style.boxShadow = '0 0 10px white';
-    userSelections[matchupKey] = team.location;
-  };
+        btn.appendChild(img);
 
-  btnGroup.appendChild(btn);
-});
+        btn.onclick = () => {
+          btnGroup.querySelectorAll('button').forEach(b => {
+            b.classList.remove('active');
+            b.style.outline = 'none';
+            b.style.boxShadow = 'none';
+          });
+          btn.classList.add('active');
+          btn.style.outline = '2px solid white';
+          btn.style.boxShadow = '0 0 10px white';
+          userSelections[matchupKey] = team.location;
+        };
 
+        btnGroup.appendChild(btn);
+      });
 
-// Display odds (if available)
-const oddsText = comp.odds && comp.odds.length > 0 ? comp.odds[0].details : 'N/A';
-const oddsDiv = document.createElement('div');
-oddsDiv.className = 'mt-1';
-oddsDiv.style.fontSize = '0.9rem';
-oddsDiv.textContent = `Odds: ${oddsText}`;
-rowDiv.appendChild(oddsDiv);
+      // Odds
+      const oddsText = comp.odds && comp.odds.length > 0 ? comp.odds[0].details : 'N/A';
+      const oddsDiv = document.createElement('div');
+      oddsDiv.className = 'mt-1';
+      oddsDiv.style.fontSize = '0.9rem';
+      oddsDiv.textContent = `Odds: ${oddsText}`;
+
       rowDiv.appendChild(infoDiv);
       rowDiv.appendChild(btnGroup);
+      rowDiv.appendChild(oddsDiv);
       container.appendChild(rowDiv);
     });
 
-    // Once games are loaded, apply existing picks
+    // ✅ Apply previous picks after DOM is ready
     if (user) await loadUserPicks(user, weekNum);
 
   } catch (err) {
@@ -198,8 +202,7 @@ rowDiv.appendChild(oddsDiv);
   }
 }
 
-let picksInitialized = false;
-//initialize picks
+// ✅ Initialize picks
 function initPicks(user) {
   if (picksInitialized) return;
   picksInitialized = true;
@@ -210,31 +213,25 @@ function initPicks(user) {
   loadGames(weekNum, user);
 }
 
-
-// Sign-in / Sign-out
+// ✅ Sign-in
 document.getElementById("googleSignInBtn").onclick = () => {
-  auth.signInWithPopup(provider).then(result => {
-    const user = result.user;
-    currentUser = user.uid;
-    document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
-    document.getElementById("googleSignInBtn").style.display = "none";
-    document.getElementById("googleSignOutBtn").style.display = "inline-block";
-    initPicks(user);
-  });
+  auth.signInWithPopup(provider);
 };
 
+// ✅ Sign-out (reset everything)
 document.getElementById("googleSignOutBtn").onclick = () => {
   auth.signOut().then(() => {
     currentUser = null;
-    picksInitialized = false; 
+    picksInitialized = false;
     document.getElementById("authStatus").innerText = "Not signed in";
     document.getElementById("googleSignInBtn").style.display = "inline-block";
     document.getElementById("googleSignOutBtn").style.display = "none";
-    document.getElementById('week1games').innerHTML = ''; // clear games on sign-out
+    document.getElementById('week1games').innerHTML = '';
+    document.getElementById('welcomeMessage').innerText = '';
   });
 };
 
-// Detect auth state on page load
+// ✅ Detect auth state
 auth.onAuthStateChanged(user => {
   if (user) {
     currentUser = user.uid;
