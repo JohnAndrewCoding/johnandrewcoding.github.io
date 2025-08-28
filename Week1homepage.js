@@ -124,5 +124,5 @@ document.addEventListener('DOMContentLoaded', () => {
   loadGamesAndPicks(weekNum);
 
   // Refresh every 30 seconds
-  setInterval(() => loadGamesAndPicks(weekNum), 30000);
+ // setInterval(() => loadGamesAndPicks(weekNum), 30000);
 });
