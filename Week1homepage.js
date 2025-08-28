@@ -79,7 +79,6 @@ async function loadGamesAndPicks(weekNum) {
       gameDiv.className = 'game-block mb-4 p-3 border rounded';
       gameDiv.style.backgroundColor = '#d3d3d3'; // dark green for each game
       gameDiv.style.backgroundColor = '#cccccc'; // dark green for each game
-      gameDiv.style.backgroundColor = '#2a2a2a'; // dark green for each game
       gameDiv.style.color = 'white';
 
       // Game header
@@ -125,5 +124,5 @@ document.addEventListener('DOMContentLoaded', () => {
   loadGamesAndPicks(weekNum);
 
   // Refresh every 30 seconds
-  setInterval(() => loadGamesAndPicks(weekNum), 120000);
-}
+  setInterval(() => loadGamesAndPicks(weekNum), 30000);
+});
