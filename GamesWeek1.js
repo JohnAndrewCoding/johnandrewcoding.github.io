@@ -19,6 +19,7 @@ let picksInitialized = false;
 
 document.body.style.backgroundColor = '#1c1c1c';
 
+// Utility to get contrasting text color
 function getContrastYIQ(hexcolor) {
   hexcolor = hexcolor.replace('#','');
   const r = parseInt(hexcolor.substr(0,2),16);
@@ -27,28 +28,8 @@ function getContrastYIQ(hexcolor) {
   const yiq = ((r*299)+(g*587)+(b*114))/1000;
   return (yiq >= 128) ? 'black' : 'white';
 }
-async function updateRecordForLockedGame(user, matchupKey, correctTeam=null) {
-  const recordRef = db.collection('userRecords').doc(user.uid);
-  const recordDoc = await recordRef.get();
 
-  let record = { wins: 0, losses: 0 };
-  if (recordDoc.exists) {
-    record = recordDoc.data();
-  }
-
-  // If user has no pick for this matchup, count as loss
-  if (!userSelections[matchupKey]) {
-    record.losses += 1;
-  } else if (correctTeam && userSelections[matchupKey] === correctTeam) {
-    record.wins += 1;
-  } else if (correctTeam) {
-    record.losses += 1;
-  }
-
-  await recordRef.set(record, { merge: true });
-}
-
-
+// Adjust color brightness
 function adjustColor(color, amount) {
   let usePound = false;
   if (color[0] === "#") {
@@ -62,6 +43,7 @@ function adjustColor(color, amount) {
   return (usePound ? "#" : "") + (r << 16 | g << 8 | b).toString(16).padStart(6,'0');
 }
 
+// Save picks to Firestore
 function savePicks(user, weekNum) {
   const form = document.getElementById('Week1picksform');
   const newForm = form.cloneNode(true);
@@ -82,11 +64,13 @@ function savePicks(user, weekNum) {
   });
 }
 
+// Load user's previous picks from Firestore
 async function loadUserPicks(user, weekNum) {
   const docId = `${user.uid}_week${weekNum}`;
   const dbName = `week${weekNum}Picks`;
   const docRef = await db.collection(dbName).doc(docId).get();
-  if (!docRef.exists) return;
+  if (!docRef.exists) return; // No picks saved yet
+
   const picks = docRef.data().picks || {};
   Object.entries(picks).forEach(([matchupKey, selectedTeam]) => {
     const btnGroup = document.querySelector(`div.btn-group[data-matchup="${matchupKey}"]`);
@@ -106,6 +90,8 @@ async function loadUserPicks(user, weekNum) {
     }
   });
 }
+
+// Load games from ESPN API and generate buttons
 async function loadGames(weekNum, user) {
   const container = document.getElementById('week1games');
   container.innerHTML = '';
@@ -126,7 +112,10 @@ async function loadGames(weekNum, user) {
       const away = comp.competitors[1].team;
       const matchupKey = `${home.location} vs ${away.location}`;
 
+      // Create matchup div with data-matchup
       const matchupDiv = document.createElement('div');
+      matchupDiv.className = 'btn-group';          // ✅ Add class
+      matchupDiv.dataset.matchup = matchupKey;     // ✅ Add dataset
       matchupDiv.style.display = 'flex';
       matchupDiv.style.flexDirection = 'row';
       matchupDiv.style.justifyContent = 'center';
@@ -134,120 +123,5 @@ async function loadGames(weekNum, user) {
       matchupDiv.style.marginBottom = '15px';
       matchupDiv.style.flexWrap = 'wrap';
 
-      const oddsInfo = comp.odds && comp.odds[0];
-      let homeFav = false, awayFav = false;
-      if (oddsInfo && oddsInfo.homeTeamOdds) {
-        homeFav = oddsInfo.homeTeamOdds.favorite;
-        awayFav = !homeFav;
-      }
-
-      [home, away].forEach((team, index) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn';
-        btn.dataset.teamLocation = team.location;
-
-        const bgColor = `#${adjustColor(team.color, 40) || (team === home ? "007bff" : "6c757d")}`;
-        btn.style.backgroundColor = bgColor;
-        btn.style.color = getContrastYIQ(bgColor);
-        btn.style.border = '2px solid white';
-        btn.style.borderRadius = '12px';
-        btn.style.padding = '0.5rem';
-        btn.style.margin = '5px';
-        btn.style.minWidth = '140px'; // slightly bigger
-        btn.style.height = '120px';    // slightly bigger
-        btn.style.display = 'flex';
-        btn.style.flexDirection = 'column';
-        btn.style.justifyContent = 'center';
-        btn.style.alignItems = 'center';
-        btn.style.fontWeight = 'bold';
-
-        const img = document.createElement('img');
-        img.src = team.logo;
-        img.alt = team.location;
-        img.style.maxWidth = '70px';
-        img.style.maxHeight = '70px';
-        img.style.objectFit = 'contain';
-        btn.appendChild(img);
-
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = team.location;
-        btn.appendChild(nameSpan);
-
-        const oddsSpan = document.createElement('span');
-        if ((team === home && homeFav) || (team === away && awayFav)) {
-          oddsSpan.textContent = oddsInfo.details;
-          oddsSpan.style.fontSize = '0.85rem';
-        }
-        btn.appendChild(oddsSpan);
-
-        btn.onclick = () => {
-          matchupDiv.querySelectorAll('button').forEach(b => {
-            b.classList.remove('active');
-            b.style.outline = 'none';
-            b.style.boxShadow = 'none';
-          });
-          btn.classList.add('active');
-          btn.style.outline = '2px solid white';
-          btn.style.boxShadow = '0 0 10px white';
-          userSelections[matchupKey] = btn.dataset.teamLocation;
-        };
-
-        matchupDiv.appendChild(btn);
-
-        if (index === 0) {
-          const vsSpan = document.createElement('span');
-          vsSpan.textContent = 'vs';
-          vsSpan.style.margin = '0 10px';
-          vsSpan.style.fontWeight = 'bold';
-          vsSpan.style.fontSize = '1rem';
-          matchupDiv.appendChild(vsSpan);
-        }
-      });
-
-      container.appendChild(matchupDiv);
-    });
-
-    // **Load previous picks AFTER buttons exist**
-    if (user) await loadUserPicks(user, weekNum);
-
-  } catch (err) {
-    console.error("Error fetching games:", err);
-  }
-}
-
-
-
-function initPicks(user) {
-  if (picksInitialized) return;
-  picksInitialized = true;
-  const weekNum=1;
-  document.getElementById('welcomeMessage').innerText = `${user.displayName}'s Week ${weekNum} Picks`;
-  savePicks(user, weekNum);
-  loadGames(weekNum,user);
-}
-
-document.getElementById("googleSignInBtn").onclick = ()=>auth.signInWithPopup(provider);
-document.getElementById("googleSignOutBtn").onclick = ()=>{
-  auth.signOut().then(()=>{
-    currentUser=null;
-    picksInitialized=false;
-    document.getElementById("authStatus").innerText="Not signed in";
-    document.getElementById("googleSignInBtn").style.display="inline-block";
-    document.getElementById("googleSignOutBtn").style.display="none";
-    document.getElementById('week1games').innerHTML='';
-    document.getElementById('welcomeMessage').innerText='';
-  });
-};
-
-auth.onAuthStateChanged(user=>{
-  if(user){
-    currentUser=user.uid;
-    document.getElementById("authStatus").innerText=`Signed in as ${user.displayName}`;
-    document.getElementById("googleSignInBtn").style.display="none";
-    document.getElementById("googleSignOutBtn").style.display="inline-block";
-    initPicks(user);
-  }
-});
-
+      const oddsInfo
 
