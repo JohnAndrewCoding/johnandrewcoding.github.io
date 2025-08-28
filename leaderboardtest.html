@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>College Football Leaderboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <h1>Leaderboard</h1>
+  <ul id="leaderboard"></ul>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+    authDomain: "college-football-pickem-68eed.firebaseapp.com",
+    projectId: "college-football-pickem-68eed",
+    storageBucket: "college-football-pickem-68eed.appspot.com",
+    messagingSenderId: "650202039805",
+    appId: "1:650202039805:web:70e51177aab22e4d614594"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Lock games and update records automatically
+  async function updateRecordsAndLeaderboard(weekNum) {
+    // Fetch games from ESPN
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902');
+    const data = await res.json();
+    const gameSlate = [
+      data.events[0], data.events[7], data.events[14], data.events[20], data.events[24], data.events[25],
+      data.events[28], data.events[33], data.events[37], data.events[48], data.events[67],
+      data.events[72], data.events[81], data.events[84], data.events[86], data.events[88],
+      data.events[89], data.events[90]
+    ].filter(Boolean);
+
+    // Build matchup results and lock status
+    const results = {};
+    const now = new Date();
+
+    gameSlate.forEach(event => {
+      const comp = event.competitions[0];
+      const home = comp.competitors[0].team;
+      const away = comp.competitors[1].team;
+      const kickoff = new Date(comp.date); // scheduled kickoff
+
+      const matchupKey = `${home.location} vs ${away.location}`;
+
+      // Determine winner if game completed
+      const homeScore = parseInt(comp.competitors[0].score, 10);
+      const awayScore = parseInt(comp.competitors[1].score, 10);
+
+      if (!isNaN(homeScore) && !isNaN(awayScore)) {
+        const winner = homeScore > awayScore ? home.location : away.location;
+        results[matchupKey] = winner;
+      }
+
+      // Optional: mark game as locked if kickoff passed
+      results[matchupKey + "_locked"] = now >= kickoff;
+    });
+
+    // Update all user records
+    const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
+    for (const doc of picksSnapshot.docs) {
+      const data = doc.data();
+      const userId = data.uid;
+      const userPicks = data.picks || {};
+
+      const recordRef = db.collection('userRecords').doc(userId);
+      const recordDoc = await recordRef.get();
+      let record = { wins: 0, losses: 0 };
+      if (recordDoc.exists) record = recordDoc.data();
+
+      Object.entries(userPicks).forEach(([matchupKey, pickedTeam]) => {
+        if (results[matchupKey]) {
+          if (pickedTeam === results[matchupKey]) record.wins += 1;
+          else record.losses += 1;
+        }
+      });
+
+      await recordRef.set(record, { merge: true });
+    }
+
+    displayLeaderboard();
+  }
+
+  async function displayLeaderboard() {
+    const leaderboardEl = document.getElementById('leaderboard');
+    leaderboardEl.innerHTML = '';
+
+    const snapshot = await db.collection('userRecords').orderBy('wins', 'desc').get();
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const li = document.createElement('li');
+      li.textContent = `${data.name}: ${data.wins}W - ${data.losses}L`;
+      leaderboardEl.appendChild(li);
+    });
+  }
+
+  // Run automatically on page load
+  updateRecordsAndLeaderboard(1);
+</script>
+</body>
+</html>
