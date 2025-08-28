@@ -123,5 +123,119 @@ async function loadGames(weekNum, user) {
       matchupDiv.style.marginBottom = '15px';
       matchupDiv.style.flexWrap = 'wrap';
 
-      const oddsInfo
+      const oddsInfo = comp.odds && comp.odds[0];
+      let homeFav = false, awayFav = false;
+      if (oddsInfo && oddsInfo.homeTeamOdds) {
+        homeFav = oddsInfo.homeTeamOdds.favorite;
+        awayFav = !homeFav;
+      }
 
+      [home, away].forEach((team, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn';
+        btn.dataset.teamLocation = team.location;
+
+        const bgColor = `#${adjustColor(team.color, 40) || (team === home ? "007bff" : "6c757d")}`;
+        btn.style.backgroundColor = bgColor;
+        btn.style.color = getContrastYIQ(bgColor);
+        btn.style.border = '2px solid white';
+        btn.style.borderRadius = '12px';
+        btn.style.padding = '0.5rem';
+        btn.style.margin = '5px';
+        btn.style.minWidth = '140px';
+        btn.style.height = '120px';
+        btn.style.display = 'flex';
+        btn.style.flexDirection = 'column';
+        btn.style.justifyContent = 'center';
+        btn.style.alignItems = 'center';
+        btn.style.fontWeight = 'bold';
+
+        const img = document.createElement('img');
+        img.src = team.logo;
+        img.alt = team.location;
+        img.style.maxWidth = '70px';
+        img.style.maxHeight = '70px';
+        img.style.objectFit = 'contain';
+        btn.appendChild(img);
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = team.location;
+        btn.appendChild(nameSpan);
+
+        const oddsSpan = document.createElement('span');
+        if ((team === home && homeFav) || (team === away && awayFav)) {
+          oddsSpan.textContent = oddsInfo.details;
+          oddsSpan.style.fontSize = '0.85rem';
+        }
+        btn.appendChild(oddsSpan);
+
+        btn.onclick = () => {
+          matchupDiv.querySelectorAll('button').forEach(b => {
+            b.classList.remove('active');
+            b.style.outline = 'none';
+            b.style.boxShadow = 'none';
+          });
+          btn.classList.add('active');
+          btn.style.outline = '2px solid white';
+          btn.style.boxShadow = '0 0 10px white';
+          userSelections[matchupKey] = btn.dataset.teamLocation;
+        };
+
+        matchupDiv.appendChild(btn);
+
+        if (index === 0) {
+          const vsSpan = document.createElement('span');
+          vsSpan.textContent = 'vs';
+          vsSpan.style.margin = '0 10px';
+          vsSpan.style.fontWeight = 'bold';
+          vsSpan.style.fontSize = '1rem';
+          matchupDiv.appendChild(vsSpan);
+        }
+      });
+
+      container.appendChild(matchupDiv);
+    });
+
+    // ✅ Load previous picks AFTER buttons exist
+    if (user) await loadUserPicks(user, weekNum);
+
+  } catch (err) {
+    console.error("Error fetching games:", err);
+  }
+}
+
+// Initialize picks for logged-in user
+function initPicks(user) {
+  if (picksInitialized) return;
+  picksInitialized = true;
+  const weekNum = 1;
+  document.getElementById('welcomeMessage').innerText = `${user.displayName}'s Week ${weekNum} Picks`;
+  savePicks(user, weekNum);
+  loadGames(weekNum, user);
+}
+
+// Auth buttons
+document.getElementById("googleSignInBtn").onclick = () => auth.signInWithPopup(provider);
+document.getElementById("googleSignOutBtn").onclick = () => {
+  auth.signOut().then(() => {
+    currentUser = null;
+    picksInitialized = false;
+    document.getElementById("authStatus").innerText = "Not signed in";
+    document.getElementById("googleSignInBtn").style.display = "inline-block";
+    document.getElementById("googleSignOutBtn").style.display = "none";
+    document.getElementById('week1games').innerHTML = '';
+    document.getElementById('welcomeMessage').innerText = '';
+  });
+};
+
+// Auth state listener
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user.uid;
+    document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
+    document.getElementById("googleSignInBtn").style.display = "none";
+    document.getElementById("googleSignOutBtn").style.display = "inline-block";
+    initPicks(user);
+  }
+});
