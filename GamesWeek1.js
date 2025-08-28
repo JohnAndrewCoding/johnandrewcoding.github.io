@@ -1,3 +1,100 @@
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+  authDomain: "college-football-pickem-68eed.firebaseapp.com",
+  projectId: "college-football-pickem-68eed",
+  storageBucket: "college-football-pickem-68eed.appspot.com",
+  messagingSenderId: "650202039805",
+  appId: "1:650202039805:web:70e51177aab22e4d614594"
+};
+
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+const userSelections = {};
+let currentUser = null;
+let picksInitialized = false;
+
+document.body.style.backgroundColor = '#1c1c1c';
+
+// Utility to get contrasting text color
+function getContrastYIQ(hexcolor) {
+  hexcolor = hexcolor.replace('#','');
+  const r = parseInt(hexcolor.substr(0,2),16);
+  const g = parseInt(hexcolor.substr(2,2),16);
+  const b = parseInt(hexcolor.substr(4,2),16);
+  const yiq = ((r*299)+(g*587)+(b*114))/1000;
+  return (yiq >= 128) ? 'black' : 'white';
+}
+
+// Adjust color brightness
+function adjustColor(color, amount) {
+  let usePound = false;
+  if (color[0] === "#") {
+    color = color.slice(1);
+    usePound = true;
+  }
+  let num = parseInt(color,16);
+  let r = (num >> 16) + amount; r = Math.min(255, Math.max(0, r));
+  let g = ((num >> 8) & 0x00FF) + amount; g = Math.min(255, Math.max(0, g));
+  let b = (num & 0x0000FF) + amount; b = Math.min(255, Math.max(0, b));
+  return (usePound ? "#" : "") + (r << 16 | g << 8 | b).toString(16).padStart(6,'0');
+}
+
+// Save picks to Firestore
+function savePicks(user, weekNum) {
+  const form = document.getElementById('Week1picksform');
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
+
+  newForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const docId = `${user.uid}_week${weekNum}`;
+    const dbName = `week${weekNum}Picks`;
+    db.collection(dbName).doc(docId).set({
+      uid: user.uid,
+      name: user.displayName,
+      week: weekNum,
+      picks: userSelections,
+      timestamp: new Date()
+    }).then(()=>alert("Picks saved successfully!"))
+      .catch(err=>console.error("Error saving picks:",err));
+  });
+}
+
+// Load user's previous picks from Firestore
+async function loadUserPicks(user, weekNum) {
+  const docId = `${user.uid}_week${weekNum}`;
+  const dbName = `week${weekNum}Picks`;
+  const docRef = await db.collection(dbName).doc(docId).get();
+  if (!docRef.exists) return; // No picks saved yet
+
+  const picks = docRef.data().picks || {};
+  Object.entries(picks).forEach(([matchupKey, selectedTeam]) => {
+    const btnGroup = document.querySelector(`div.btn-group[data-matchup="${matchupKey}"]`);
+    if (!btnGroup) return;
+    const matchBtn = Array.from(btnGroup.querySelectorAll('button'))
+      .find(b => b.dataset.teamLocation === selectedTeam);
+    if (matchBtn) {
+      btnGroup.querySelectorAll('button').forEach(b => {
+        b.classList.remove('active');
+        b.style.outline = 'none';
+        b.style.boxShadow = 'none';
+      });
+      matchBtn.classList.add('active');
+      matchBtn.style.outline = '2px solid white';
+      matchBtn.style.boxShadow = '0 0 10px white';
+      userSelections[matchupKey] = selectedTeam;
+    }
+  });
+}
+
+// Load games from ESPN API and generate buttons
 async function loadGames(weekNum, user) {
   const container = document.getElementById('week1games');
   container.innerHTML = '';
@@ -115,3 +212,39 @@ async function loadGames(weekNum, user) {
     console.error("Error fetching games:", err);
   }
 }
+// Initialize picks for logged-in user
+function initPicks(user) {
+  if (picksInitialized) return;
+  picksInitialized = true;
+  const weekNum = 1;
+  document.getElementById('welcomeMessage').innerText = `${user.displayName}'s Week ${weekNum} Picks`;
+  savePicks(user, weekNum);
+  loadGames(weekNum, user);
+}
+
+// Auth buttons
+document.getElementById("googleSignInBtn").onclick = () => auth.signInWithPopup(provider);
+document.getElementById("googleSignOutBtn").onclick = () => {
+  auth.signOut().then(() => {
+    currentUser = null;
+    picksInitialized = false;
+    document.getElementById("authStatus").innerText = "Not signed in";
+    document.getElementById("googleSignInBtn").style.display = "inline-block";
+    document.getElementById("googleSignOutBtn").style.display = "none";
+    document.getElementById('week1games').innerHTML = '';
+    document.getElementById('welcomeMessage').innerText = '';
+  });
+};
+
+// Auth state listener
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user.uid;
+    document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
+    document.getElementById("googleSignInBtn").style.display = "none";
+    document.getElementById("googleSignOutBtn").style.display = "inline-block";
+    initPicks(user);
+  }
+});
+
+
