@@ -1,4 +1,4 @@
-<script type="module">
+
   // Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
@@ -120,5 +120,5 @@
 
   // Run on load
   window.addEventListener('DOMContentLoaded', renderLeaderboard);
-</script>
+
 
