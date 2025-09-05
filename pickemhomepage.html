@@ -1,18 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>College Pick'em Leaderboard</title>
+  <title>College Pick'em</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <style>
-    body { background: #1c1c1c; color: white; font-family: Arial, sans-serif; text-align: center; }
-    #leaderboard { margin-top: 30px; }
-    .entry { padding: 10px; margin: 5px auto; border-bottom: 1px solid #444; max-width: 400px; }
-    .first { font-weight: bold; font-size: 1.2rem; color: gold; }
-    .second { font-weight: bold; font-size: 1.1rem; color: silver; }
-    .third { font-weight: bold; font-size: 1.1rem; color: #cd7f32; }
-  </style>
 </head>
 <body>
   <a href="Week1homepage.html"><button>Week 1</button></a>
@@ -20,97 +12,13 @@
   <h1>Pick'em Leaderboard</h1>
   <button onclick="updateAndRenderLeaderboard()">Update Leaderboard</button>
   <div id="leaderboard"></div>
-
-  <script>
-    // ✅ Firebase config (your own values)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
-      authDomain: "college-football-pickem-68eed.firebaseapp.com",
-      projectId: "college-football-pickem-68eed",
-      storageBucket: "college-football-pickem-68eed.appspot.com",
-      messagingSenderId: "650202039805",
-      appId: "1:650202039805:web:70e51177aab22e4d614594"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // ✅ Step 1: Get Final Results from ESPN
-    async function getFinalResults(startDate, endDate) {
-      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${startDate}-${endDate}`);
-      const data = await res.json();
-
-      const results = {};
-      data.events.forEach(event => {
-        const comp = event.competitions[0];
-        const home = comp.competitors[0];
-        const away = comp.competitors[1];
-        if (home.winner) results[event.id] = home.team.location;
-        else if (away.winner) results[event.id] = away.team.location;
-      });
-      return results;
-    }
-
-    // ✅ Step 2: Compare Picks to Results and Save Records
-    async function updateLeaderboard(weekNum, startDate, endDate) {
-      const picksSnap = await db.collection(`week${weekNum}Picks`).get();
-      const results = await getFinalResults(startDate, endDate);
-
-      for (const doc of picksSnap.docs) {
-        const pickData = doc.data();
-        let wins = 0, losses = 0;
-
-        Object.entries(pickData.picks).forEach(([eventId, pickedTeam]) => {
-          if (results[eventId]) {
-            if (results[eventId] === pickedTeam) wins++;
-            else losses++;
-          }
-        });
-
-        await db.collection("userRecords").doc(pickData.uid).set({
-          uid: pickData.uid,
-          name: pickData.name,
-          week: weekNum,
-          wins,
-          losses
-        }, { merge: true });
-      }
-    }
-
-    // ✅ Step 3: Render Leaderboard
-    async function renderLeaderboard() {
-      const leaderboardDiv = document.getElementById("leaderboard");
-      leaderboardDiv.innerHTML = "";
-
-      const snap = await db.collection("userRecords").orderBy("wins", "desc").get();
-      let place = 1;
-
-      snap.forEach(doc => {
-        const data = doc.data();
-        const entry = document.createElement("div");
-        entry.classList.add("entry");
-
-        if (place === 1) entry.classList.add("first");
-        if (place === 2) entry.classList.add("second");
-        if (place === 3) entry.classList.add("third");
-
-        entry.textContent = `${place}. ${data.name} — ${data.wins} Wins / ${data.losses} Losses`;
-        leaderboardDiv.appendChild(entry);
-        place++;
-      });
-    }
-
-    // ✅ Step 4: Combined Function
-    async function updateAndRenderLeaderboard() {
-      const weekNum = 1; // change for future weeks
-      const startDate = "20250827"; // YYYYMMDD
-      const endDate = "20250902";   // YYYYMMDD
-      await updateLeaderboard(weekNum, startDate, endDate);
-      await renderLeaderboard();
-    }
-
-    // Auto-run when page loads
-    updateAndRenderLeaderboard();
-  </script>
+  <ol>
+    <li>Blayne Butler 14-4</li>
+    <li>Samuel Lawson 13-5</li>
+    <li>Andrew Self   12-6</li>
+    <li>Davis Ross    11-7</li>
+    <li>Travis Harper 9-9</li>
+  </ol>
 </body>
 </html>
 
