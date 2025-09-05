@@ -54,8 +54,9 @@ async function loadGamesAndPicks(weekNum) {
     }
 
     // 2. Fetch ESPN scoreboard data
-    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902');
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250906');
     const data = await res.json();
+    //change line below
     const games = data.events;
 
     container.innerHTML = ''; // clear loading message
@@ -120,7 +121,7 @@ async function loadGamesAndPicks(weekNum) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  const weekNum = 1;
+  const weekNum = 2;
   loadGamesAndPicks(weekNum);
 
   // Refresh every 30 seconds
