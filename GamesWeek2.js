@@ -7,7 +7,6 @@ const firebaseConfig = {
   appId: "1:650202039805:web:70e51177aab22e4d614594"
 };
 
-
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -70,14 +69,14 @@ async function loadUserPicks(user, weekNum) {
   const docId = `${user.uid}_week${weekNum}`;
   const dbName = `week${weekNum}Picks`;
   const docRef = await db.collection(dbName).doc(docId).get();
-  if (!docRef.exists) return; // No picks saved yet
+  if (!docRef.exists) return; 
 
   const picks = docRef.data().picks || {};
-  Object.entries(picks).forEach(([matchupKey, selectedTeam]) => {
-    const btnGroup = document.querySelector(`div.btn-group[data-matchup="${matchupKey}"]`);
+  Object.entries(picks).forEach(([eventId, pickedTeamId]) => {
+    const btnGroup = document.querySelector(`div.btn-group[data-event-id="${eventId}"]`);
     if (!btnGroup) return;
     const matchBtn = Array.from(btnGroup.querySelectorAll('button'))
-      .find(b => b.dataset.teamLocation === selectedTeam);
+      .find(b => b.dataset.teamId === pickedTeamId);
     if (matchBtn) {
       btnGroup.querySelectorAll('button').forEach(b => {
         b.classList.remove('active');
@@ -87,7 +86,7 @@ async function loadUserPicks(user, weekNum) {
       matchBtn.classList.add('active');
       matchBtn.style.outline = '2px solid white';
       matchBtn.style.boxShadow = '0 0 10px white';
-      userSelections[matchupKey] = selectedTeam;
+      userSelections[eventId] = pickedTeamId;
     }
   });
 }
@@ -102,19 +101,18 @@ async function loadGames(weekNum, user) {
     const data = await res.json();
     const targetEventIds = ["401752825","401752822","401754525","401754524","401754618","401757227","401752689","401752937","401761603","401762461","401756883","401757228","401757232","401752688","401752690","401752695","401752816","401752823","401757229","401752948","401757230"];
 
-// ✅ Filter events by ID
-const gameSlate = data.events.filter(event => targetEventIds.includes(event.id));
+    // ✅ Filter events by ID
+    const gameSlate = data.events.filter(event => targetEventIds.includes(event.id));
 
     gameSlate.forEach(event => {
       const comp = event.competitions[0];
       const home = comp.competitors[0].team;
       const away = comp.competitors[1].team;
-      const matchupKey = `${home.location} vs ${away.location}`;
-      const kickoffTime = new Date(event.date); // ✅ Parse kickoff
+      const kickoffTime = new Date(event.date);
 
       const matchupDiv = document.createElement('div');
       matchupDiv.className = 'btn-group';
-      matchupDiv.dataset.matchup = matchupKey;
+      matchupDiv.dataset.eventId = event.id; // ✅ store eventId
       matchupDiv.style.display = 'flex';
       matchupDiv.style.flexDirection = 'row';
       matchupDiv.style.justifyContent = 'center';
@@ -133,7 +131,9 @@ const gameSlate = data.events.filter(event => targetEventIds.includes(event.id))
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn';
-        btn.dataset.teamLocation = team.location;
+        btn.dataset.teamId = team.id;          // ✅ store teamId
+        btn.dataset.teamName = team.displayName;
+        btn.dataset.eventId = event.id;
 
         const bgColor = `#${adjustColor(team.color, 40) || (team === home ? "007bff" : "6c757d")}`;
         btn.style.backgroundColor = bgColor;
@@ -172,7 +172,7 @@ const gameSlate = data.events.filter(event => targetEventIds.includes(event.id))
         // Disable pick if kickoff has passed
         if (new Date() >= kickoffTime) {
           btn.disabled = true;
-          btn.style.opacity = '0.5'; // visually indicate disabled
+          btn.style.opacity = '0.5';
         } else {
           btn.onclick = () => {
             matchupDiv.querySelectorAll('button').forEach(b => {
@@ -183,7 +183,7 @@ const gameSlate = data.events.filter(event => targetEventIds.includes(event.id))
             btn.classList.add('active');
             btn.style.outline = '2px solid white';
             btn.style.boxShadow = '0 0 10px white';
-            userSelections[matchupKey] = btn.dataset.teamLocation;
+            userSelections[event.id] = btn.dataset.teamId; // ✅ save as {eventId: teamId}
           };
         }
 
@@ -208,6 +208,7 @@ const gameSlate = data.events.filter(event => targetEventIds.includes(event.id))
     console.error("Error fetching games:", err);
   }
 }
+
 // Initialize picks for logged-in user
 function initPicks(user) {
   if (picksInitialized) return;
