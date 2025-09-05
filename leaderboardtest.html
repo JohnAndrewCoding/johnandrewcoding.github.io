@@ -4,117 +4,158 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
-    authDomain: "college-football-pickem-68eed.firebaseapp.com",
-    projectId: "college-football-pickem-68eed",
-    storageBucket: "college-football-pickem-68eed.appspot.com",
-    messagingSenderId: "650202039805",
-    appId: "1:650202039805:web:70e51177aab22e4d614594"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+  authDomain: "college-football-pickem-68eed.firebaseapp.com",
+  projectId: "college-football-pickem-68eed",
+  storageBucket: "college-football-pickem-68eed.appspot.com",
+  messagingSenderId: "650202039805",
+  appId: "1:650202039805:web:70e51177aab22e4d614594"
+};
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  document.body.style.backgroundColor = '#1c1c1c'; 
-  document.body.style.color = 'white';
-  document.body.style.fontFamily = 'Arial, sans-serif';
+document.body.style.backgroundColor = '#1c1c1c';
+document.body.style.color = 'white';
+document.body.style.fontFamily = 'Arial, sans-serif';
 
-  async function loadLeaderboard(weekNum) {
-    const container = document.getElementById('leaderboardContainer');
-    container.innerHTML = '<p>Loading leaderboard...</p>';
+async function loadLeaderboard(selectedWeekNum) {
+  const container = document.getElementById('leaderboardContainer');
+  container.innerHTML = '<p>Loading leaderboard...</p>';
 
-    try {
-      // 1️⃣ Fetch all user picks from Firestore
-      const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
-      const userData = [];
-
-      picksSnapshot.forEach(doc => {
-        const { name, picks } = doc.data();
-        userData.push({ name, picks, wins: 0, losses: 0 });
-      });
-
-      if (userData.length === 0) {
-        container.innerHTML = '<p>No picks yet for this week.</p>';
-        return;
+  try {
+    // 1️⃣ Fetch all week collections
+    const weekCollections = await db.listCollections();
+    const weekDocs = [];
+    
+    for (const col of weekCollections) {
+      if (col.id.startsWith('week')) {
+        const docs = await col.get();
+        docs.forEach(d => weekDocs.push({ week: col.id, ...d.data() }));
       }
-
-      // 2️⃣ Fetch ESPN game results
-      const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250906');
-      const data = await res.json();
-
-      // Only include events that are final
-      const finalGames = data.events.filter(event => event.status.type.completed);
-
-      // Create a map of eventId -> winning teamId
-      const gameResults = {};
-      finalGames.forEach(event => {
-        const comp = event.competitions[0];
-        const home = comp.competitors[0];
-        const away = comp.competitors[1];
-
-        // Skip games that aren’t final
-        if (isNaN(home.score) || isNaN(away.score)) return;
-
-        const winnerTeamId = home.score > away.score ? home.team.id : away.team.id;
-        gameResults[event.id] = winnerTeamId;
-      });
-
-      // 3️⃣ Compare each user's picks with actual results
-      userData.forEach(user => {
-        for (const [eventId, teamId] of Object.entries(user.picks)) {
-          if (gameResults[eventId] === undefined) continue; // ignore unfinished games
-          if (teamId === gameResults[eventId]) user.wins += 1;
-          else user.losses += 1;
-        }
-      });
-
-      // 4️⃣ Sort leaderboard by wins descending
-      userData.sort((a, b) => b.wins - a.wins);
-
-      // 5️⃣ Render leaderboard
-      container.innerHTML = '<h2>Week ' + weekNum + ' Leaderboard</h2>';
-      const table = document.createElement('table');
-      table.style.width = '100%';
-      table.style.borderCollapse = 'collapse';
-
-      table.innerHTML = `
-        <thead>
-          <tr style="border-bottom:1px solid white;">
-            <th style="text-align:left;padding:8px;">Rank</th>
-            <th style="text-align:left;padding:8px;">Player</th>
-            <th style="text-align:left;padding:8px;">Wins</th>
-            <th style="text-align:left;padding:8px;">Losses</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-
-      const tbody = table.querySelector('tbody');
-      userData.forEach((user, index) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="padding:8px;">${index + 1}</td>
-          <td style="padding:8px;">${user.name}</td>
-          <td style="padding:8px;">${user.wins}</td>
-          <td style="padding:8px;">${user.losses}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      container.appendChild(table);
-
-    } catch (err) {
-      console.error('Error loading leaderboard:', err);
-      container.innerHTML = '<p>Error loading leaderboard. Check console.</p>';
     }
+
+    if (weekDocs.length === 0) {
+      container.innerHTML = '<p>No picks yet.</p>';
+      return;
+    }
+
+    // 2️⃣ Fetch all ESPN games needed
+    const allDates = ['20250827','20250906']; // adjust for your weeks
+    let allEvents = [];
+
+    for (const date of allDates) {
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${date}`);
+      const data = await res.json();
+      allEvents = allEvents.concat(data.events);
+    }
+
+    // Create a map: eventId -> {homeId, awayId, winnerTeamId, matchupString, completed}
+    const eventMap = {};
+    allEvents.forEach(event => {
+      const comp = event.competitions[0];
+      const home = comp.competitors[0];
+      const away = comp.competitors[1];
+      const completed = event.status.type.completed;
+      const winnerId = completed ? (home.score > away.score ? home.team.id : away.team.id) : null;
+      const matchupString = `${home.team.location} vs ${away.team.location}`;
+      eventMap[event.id] = { winnerId, homeId: home.team.id, awayId: away.team.id, matchupString, completed };
+    });
+
+    // 3️⃣ Compute scores for each user
+    const users = {};
+    weekDocs.forEach(doc => {
+      const userKey = doc.name;
+      if (!users[userKey]) users[userKey] = { name: doc.name, totalWins: 0, totalLosses: 0, weekWins: {}, weekLosses: {} };
+      
+      for (const [pickKey, pickValue] of Object.entries(doc.picks)) {
+        let eventData;
+        let correct = false;
+
+        // Detect old week 1 format
+        if (pickKey.includes(' vs ')) {
+          // old style, find eventId by matchupString
+          eventData = Object.values(eventMap).find(ev => ev.matchupString === pickKey);
+          if (!eventData || !eventData.completed) continue;
+          if (pickValue === (eventData.winnerId === eventData.homeId ? eventData.homeId : eventData.awayId)) correct = true;
+        } else {
+          // new format
+          eventData = eventMap[pickKey];
+          if (!eventData || !eventData.completed) continue;
+          if (pickValue === eventData.winnerId) correct = true;
+        }
+
+        // Update scores
+        const weekNum = doc.week.replace('week','');
+        if (!users[userKey].weekWins[weekNum]) users[userKey].weekWins[weekNum] = 0;
+        if (!users[userKey].weekLosses[weekNum]) users[userKey].weekLosses[weekNum] = 0;
+
+        if (correct) {
+          users[userKey].totalWins += 1;
+          users[userKey].weekWins[weekNum] += 1;
+        } else {
+          users[userKey].totalLosses += 1;
+          users[userKey].weekLosses[weekNum] += 1;
+        }
+      }
+    });
+
+    // 4️⃣ Sort leaderboard
+    const leaderboard = Object.values(users).sort((a,b)=>b.totalWins - a.totalWins);
+    const weekLeaderboard = Object.values(users).sort((a,b)=>(b.weekWins[selectedWeekNum]||0) - (a.weekWins[selectedWeekNum]||0));
+
+    // 5️⃣ Render
+    container.innerHTML = `<h2>Week ${selectedWeekNum} Leaderboard</h2>`;
+    renderTable(container, weekLeaderboard, selectedWeekNum, true);
+    container.innerHTML += `<h2>Overall Leaderboard</h2>`;
+    renderTable(container, leaderboard, selectedWeekNum, false);
+
+  } catch (err) {
+    console.error('Error loading leaderboard:', err);
+    container.innerHTML = '<p>Error loading leaderboard.</p>';
   }
+}
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const weekNum = 2;
-    loadLeaderboard(weekNum);
+// Helper to render a table
+function renderTable(container, data, weekNum, isWeek) {
+  const table = document.createElement('table');
+  table.style.width = '100%';
+  table.style.borderCollapse = 'collapse';
+  table.style.marginBottom = '20px';
 
-    // Optional: refresh every 30s
-    // setInterval(() => loadLeaderboard(weekNum), 30000);
+  table.innerHTML = `
+    <thead>
+      <tr style="border-bottom:1px solid white;">
+        <th style="text-align:left;padding:8px;">Rank</th>
+        <th style="text-align:left;padding:8px;">Player</th>
+        <th style="text-align:left;padding:8px;">Wins</th>
+        <th style="text-align:left;padding:8px;">Losses</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+
+  const tbody = table.querySelector('tbody');
+  data.forEach((user, index)=>{
+    const wins = isWeek ? (user.weekWins[weekNum]||0) : user.totalWins;
+    const losses = isWeek ? (user.weekLosses[weekNum]||0) : user.totalLosses;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:8px;">${index+1}</td>
+      <td style="padding:8px;">${user.name}</td>
+      <td style="padding:8px;">${wins}</td>
+      <td style="padding:8px;">${losses}</td>
+    `;
+    tbody.appendChild(tr);
   });
+
+  container.appendChild(table);
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const selectedWeek = 2; // change to week you want
+  loadLeaderboard(selectedWeek);
+});
 </script>
+
