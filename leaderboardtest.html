@@ -40,18 +40,8 @@
       appId: "1:650202039805:web:70e51177aab22e4d614594"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-
-    function getContrastYIQ(hexcolor){
-      hexcolor = hexcolor.replace("#", "");
-      const r = parseInt(hexcolor.substr(0,2),16);
-      const g = parseInt(hexcolor.substr(2,2),16);
-      const b = parseInt(hexcolor.substr(4,2),16);
-      const yiq = ((r*299)+(g*587)+(b*114))/1000;
-      return (yiq >= 128) ? 'black' : 'white';
-    }
 
     async function loadLeaderboard(selectedWeekNum) {
       const container = document.getElementById('leaderboardContainer');
@@ -59,7 +49,7 @@
 
       try {
         // 1️⃣ Hardcode all week collections you want
-        const allWeeks = ['week1Picks', 'week2Picks']; // add more weeks as needed
+        const allWeeks = ['week1Picks', 'week2Picks']; // add more as needed
         const weekDocs = [];
 
         for (const colName of allWeeks) {
@@ -96,6 +86,10 @@
 
         // 3️⃣ Calculate user scores
         const users = {};
+
+        function evHomeTeamName(ev){ return ev.matchupString.split(' vs ')[0]; }
+        function evAwayTeamName(ev){ return ev.matchupString.split(' vs ')[1]; }
+
         weekDocs.forEach(doc => {
           const userKey = doc.name;
           if (!users[userKey]) users[userKey] = { name: doc.name, totalWins: 0, totalLosses: 0, weekWins: {}, weekLosses: {} };
@@ -108,7 +102,14 @@
               // old Week 1 format
               eventData = Object.values(eventMap).find(ev => ev.matchupString === pickKey);
               if (!eventData || !eventData.completed) continue;
-              correct = (pickValue === (eventData.winnerId === eventData.homeId ? eventData.homeId : eventData.awayId));
+
+              let selectedTeamId = null;
+              if (pickValue === evHomeTeamName(eventData)) selectedTeamId = eventData.homeId;
+              else if (pickValue === evAwayTeamName(eventData)) selectedTeamId = eventData.awayId;
+              else continue;
+
+              correct = (selectedTeamId === eventData.winnerId);
+
             } else {
               // new format (eventId)
               eventData = eventMap[pickKey];
@@ -183,4 +184,5 @@
   </script>
 </body>
 </html>
+
 
