@@ -23,7 +23,7 @@
 </head>
 <body>
 
-  <h1>Leaderboard</h1>
+  <h1>Pick'em Leaderboard</h1>
   <div id="leaderboardContainer"></div>
 
   <!-- Firebase v8 -->
@@ -58,14 +58,14 @@
       container.innerHTML = '<p>Loading leaderboard...</p>';
 
       try {
-        // 1️⃣ Get all week collections
-        const weekCollections = await db.listCollections();
+        // 1️⃣ Hardcode all week collections you want
+        const allWeeks = ['week1Picks', 'week2Picks']; // add more weeks as needed
         const weekDocs = [];
-        for (const col of weekCollections) {
-          if (col.id.startsWith('week')) {
-            const docs = await col.get();
-            docs.forEach(d => weekDocs.push({ week: col.id, ...d.data() }));
-          }
+
+        for (const colName of allWeeks) {
+          const colRef = db.collection(colName);
+          const docs = await colRef.get();
+          docs.forEach(d => weekDocs.push({ week: colName.replace('Picks',''), ...d.data() }));
         }
 
         if (weekDocs.length === 0) {
@@ -73,8 +73,8 @@
           return;
         }
 
-        // 2️⃣ Fetch ESPN games
-        const allDates = ['20250827','20250906']; // adjust dates for your weeks
+        // 2️⃣ Fetch ESPN games for all weeks (update dates to match your schedule)
+        const allDates = ['20250827','20250906']; // Week 1 and Week 2 dates
         let allEvents = [];
         for (const date of allDates) {
           const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${date}`);
@@ -108,15 +108,15 @@
               // old Week 1 format
               eventData = Object.values(eventMap).find(ev => ev.matchupString === pickKey);
               if (!eventData || !eventData.completed) continue;
-              if (pickValue === (eventData.winnerId === eventData.homeId ? eventData.homeId : eventData.awayId)) correct = true;
+              correct = (pickValue === (eventData.winnerId === eventData.homeId ? eventData.homeId : eventData.awayId));
             } else {
-              // new format
+              // new format (eventId)
               eventData = eventMap[pickKey];
               if (!eventData || !eventData.completed) continue;
-              if (pickValue === eventData.winnerId) correct = true;
+              correct = (pickValue === eventData.winnerId);
             }
 
-            const weekNum = doc.week.replace('week','');
+            const weekNum = doc.week;
             if (!users[userKey].weekWins[weekNum]) users[userKey].weekWins[weekNum] = 0;
             if (!users[userKey].weekLosses[weekNum]) users[userKey].weekLosses[weekNum] = 0;
 
@@ -176,10 +176,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', ()=>{
-      const selectedWeek = 2; // choose the week you want
+      const selectedWeek = '2'; // change to the week you want to highlight
       loadLeaderboard(selectedWeek);
     });
-  </script>
 
+  </script>
 </body>
 </html>
+
