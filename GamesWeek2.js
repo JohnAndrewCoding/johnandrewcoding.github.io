@@ -98,14 +98,19 @@ async function loadGames(weekNum, user) {
   container.innerHTML = '';
 
   try {
-    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902');
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250906');
     const data = await res.json();
-    const gameSlate = [
-      data.events[0], data.events[7], data.events[14], data.events[20], data.events[24], data.events[25],
-      data.events[28], data.events[33], data.events[37], data.events[48], data.events[67],
-      data.events[72], data.events[81], data.events[84], data.events[86], data.events[88],
-      data.events[89], data.events[90]
-    ].filter(Boolean);
+    const targetEventIds = [
+  "401752825,401752822,401754525,401754524,
+401754618,401757227,401752689,401752937,
+401761603,401762461,401756883,401757228,
+401757232,401752688,401752690,401752695,
+401752816,401752823,401757229,401752948,
+401757230"
+];
+
+// ✅ Filter events by ID
+const gameSlate = data.events.filter(event => targetEventIds.includes(event.id));
 
     gameSlate.forEach(event => {
       const comp = event.competitions[0];
