@@ -100,14 +100,7 @@ async function loadGames(weekNum, user) {
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250906');
     const data = await res.json();
-    const targetEventIds = [
-  "401752825,401752822,401754525,401754524,
-401754618,401757227,401752689,401752937,
-401761603,401762461,401756883,401757228,
-401757232,401752688,401752690,401752695,
-401752816,401752823,401757229,401752948,
-401757230"
-];
+    const targetEventIds = ["401752825","401752822","401754525","401754524","401754618","401757227","401752689","401752937","401761603","401762461","401756883","401757228","401757232","401752688","401752690","401752695","401752816","401752823","401757229","401752948","401757230"];
 
 // ✅ Filter events by ID
 const gameSlate = data.events.filter(event => targetEventIds.includes(event.id));
