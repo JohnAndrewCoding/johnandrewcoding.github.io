@@ -29,6 +29,7 @@ function getContrastYIQ(hexcolor){
 
 
 // Load games + picks (only games that exist in Firestore)
+// Load games + picks (only games that exist in Firestore)
 async function loadGamesAndPicks(weekNum) {
   const container = document.getElementById('picksContainer');
   container.innerHTML = '<p>Loading games...</p>';
@@ -37,14 +38,14 @@ async function loadGamesAndPicks(weekNum) {
     // 1. Get all picks from Firestore
     const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
     const allPicks = {};
-    const gamesInDB = new Set(); // track matchups in DB
+    const gamesInDB = new Set(); // track eventIds in DB
 
     picksSnapshot.forEach(doc => {
       const { picks, name } = doc.data();
-      for (const [matchup, teamPick] of Object.entries(picks)) {
-        if (!allPicks[matchup]) allPicks[matchup] = [];
-        allPicks[matchup].push({ name, pick: teamPick });
-        gamesInDB.add(matchup);
+      for (const [eventId, teamPick] of Object.entries(picks)) {
+        if (!allPicks[eventId]) allPicks[eventId] = [];
+        allPicks[eventId].push({ name, pick: teamPick });
+        gamesInDB.add(eventId); // ✅ now tracking by eventId
       }
     });
 
@@ -56,19 +57,17 @@ async function loadGamesAndPicks(weekNum) {
     // 2. Fetch ESPN scoreboard data
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250906');
     const data = await res.json();
-    //change line below
     const games = data.events;
 
     container.innerHTML = ''; // clear loading message
 
     // 3. Render only games in Firestore
     games.forEach(event => {
+      if (!gamesInDB.has(event.id)) return; // ✅ skip games not picked
+
       const comp = event.competitions[0];
       const home = comp.competitors[0];
       const away = comp.competitors[1];
-      const matchupKey = `${home.team.location} vs ${away.team.location}`;
-
-      if (!gamesInDB.has(matchupKey)) return; // skip games not in DB
 
       const status = event.status.type.description;
       const scoreHome = home.score || '0';
@@ -78,8 +77,7 @@ async function loadGamesAndPicks(weekNum) {
       // Game container
       const gameDiv = document.createElement('div');
       gameDiv.className = 'game-block mb-4 p-3 border rounded';
-      gameDiv.style.backgroundColor = '#d3d3d3'; // dark green for each game
-      gameDiv.style.backgroundColor = '#282828'; // dark green for each game
+      gameDiv.style.backgroundColor = '#282828';
       gameDiv.style.color = 'white';
 
       // Game header
@@ -97,14 +95,18 @@ async function loadGamesAndPicks(weekNum) {
       // Picks
       const picksDiv = document.createElement('div');
       picksDiv.className = 'picks-list ps-3';
-      const picksForGame = allPicks[matchupKey] || [];
+      const picksForGame = allPicks[event.id] || []; // ✅ now keyed by event.id
 
       if (picksForGame.length === 0) {
         picksDiv.innerHTML = '<p>No picks yet for this game.</p>';
       } else {
         picksForGame.forEach(userPick => {
+          // Lookup team name from ESPN data
+          const pickedTeam = comp.competitors.find(c => c.team.id === userPick.pick);
+          const teamName = pickedTeam ? pickedTeam.team.location : userPick.pick;
+
           const p = document.createElement('p');
-          p.textContent = `${userPick.name} → ${userPick.pick}`;
+          p.textContent = `${userPick.name} → ${teamName}`;
           picksDiv.appendChild(p);
         });
       }
@@ -118,6 +120,7 @@ async function loadGamesAndPicks(weekNum) {
     container.innerHTML = '<p>Error loading data. Check console.</p>';
   }
 }
+
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
