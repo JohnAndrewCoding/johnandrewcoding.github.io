@@ -55,7 +55,7 @@ async function loadGamesAndPicks(weekNum) {
     }
 
     // 2. Fetch ESPN scoreboard data
-    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250906');
+    const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250911-20250914');
     const data = await res.json();
     const games = data.events;
 
