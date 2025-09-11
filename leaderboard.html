@@ -84,6 +84,75 @@
         leaderboardContainer.innerHTML = '<p style="color:red;">Error loading leaderboard. Check console.</p>';
       }
     }
+const userRecordsRef = db.collection("userRecords");
+const userPicksRef = db.collection("userPicks");
+
+// 🔑 ESPN API for college football scores (replace sport/league if needed)
+const ESPN_API_URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250911-20250914";
+
+async function fetchGameResults() {
+  const response = await fetch(ESPN_API_URL);
+  const data = await response.json();
+
+  const results = {};
+  data.events.forEach(event => {
+    const competition = event.competitions[0];
+    const gameId = event.id;
+    const status = competition.status.type.name; // STATUS_FINAL, STATUS_IN_PROGRESS, STATUS_SCHEDULED
+
+    if (status === "STATUS_FINAL") {
+      // Find winner team
+      const winner = competition.competitors.find(c => c.winner);
+      if (winner) {
+        results[gameId] = winner.id; // ESPN's team id (string)
+      }
+    }
+  });
+
+  return results;
+}
+
+async function autoScoreUsersForWeek(weekNumber) {
+  const [gameResults, usersSnap, picksSnap] = await Promise.all([
+    fetchGameResults(),
+    userRecordsRef.get(),
+    userPicksRef.where("week", "==", weekNumber).get()
+  ]);
+
+  // Build a map of picks for each user
+  const picksMap = {};
+  picksSnap.forEach(doc => picksMap[doc.data().uid] = doc.data().picks || {});
+
+  // Loop through users and calculate records
+  for (const userDoc of usersSnap.docs) {
+    const userData = userDoc.data();
+    const uid = userData.uid;
+    const picks = picksMap[uid] || {};
+
+    let wins = 0;
+    let losses = 0;
+
+    for (const [gameId, winnerId] of Object.entries(gameResults)) {
+      const userPick = picks[gameId];
+      if (!userPick) {
+        losses++;
+      } else if (userPick === winnerId) {
+        wins++;
+      } else {
+        losses++;
+      }
+    }
+
+    // Update only if changed
+    if (wins !== userData.wins || losses !== userData.losses) {
+      await userRecordsRef.doc(uid).update({ wins, losses });
+    }
+  }
+}
+
+// Run once when page loads
+autoScoreUsersForWeek(3);
+
 
     document.addEventListener('DOMContentLoaded', loadLeaderboard);
   </script>
