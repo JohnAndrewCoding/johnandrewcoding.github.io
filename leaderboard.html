@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Leaderboard</title>
+  <!-- Firebase SDK v8 (works with your existing code) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="leaderboard.js" defer></script>
   <style>
     body {
       background-color: #1c1c1c;
@@ -33,5 +33,59 @@
 <body>
   <h1>Pick'em Leaderboard</h1>
   <div id="leaderboard"></div>
+
+  <script>
+    // 🔑 Your Firebase Config (use the same one from your main JS file)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+      authDomain: "college-football-pickem-68eed.firebaseapp.com",
+      projectId: "college-football-pickem-68eed",
+      storageBucket: "college-football-pickem-68eed.appspot.com",
+      messagingSenderId: "650202039805",
+      appId: "1:650202039805:web:70e51177aab22e4d614594"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function loadLeaderboard() {
+      const leaderboardContainer = document.getElementById('leaderboard');
+      leaderboardContainer.innerHTML = '<p>Loading...</p>';
+
+      try {
+        console.log("Fetching users collection...");
+        const snapshot = await db.collection('userRecords').get();
+        console.log("Snapshot size:", snapshot.size);
+
+        if (snapshot.empty) {
+          leaderboardContainer.innerHTML = "<p>No users found.</p>";
+          return;
+        }
+
+        const users = [];
+        snapshot.forEach(doc => {
+          console.log("User doc:", doc.id, doc.data());
+          users.push(doc.data());
+        });
+
+        users.sort((a, b) => {
+          if (b.wins === a.wins) return a.losses - b.losses;
+          return b.wins - a.wins;
+        });
+
+        leaderboardContainer.innerHTML = ''; // Clear loading message
+        users.forEach((user, index) => {
+          const div = document.createElement('div');
+          div.textContent = `${index + 1}. ${user.name} — ${user.wins}W / ${user.losses}L`;
+          leaderboardContainer.appendChild(div);
+        });
+
+      } catch (error) {
+        console.error("Error loading leaderboard:", error);
+        leaderboardContainer.innerHTML = '<p style="color:red;">Error loading leaderboard. Check console.</p>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadLeaderboard);
+  </script>
 </body>
 </html>
