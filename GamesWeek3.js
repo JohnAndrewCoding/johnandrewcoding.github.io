@@ -45,7 +45,7 @@ function adjustColor(color, amount) {
 
 // Save picks to Firestore
 function savePicks(user, weekNum) {
-  const form = document.getElementById('Week2picksform');
+  const form = document.getElementById('Week3picksform');
   const newForm = form.cloneNode(true);
   form.parentNode.replaceChild(newForm, form);
 
@@ -93,7 +93,7 @@ async function loadUserPicks(user, weekNum) {
 
 // Load games from ESPN API and generate buttons
 async function loadGames(weekNum, user) {
-  const container = document.getElementById('week2games');
+  const container = document.getElementById('week3games');
   container.innerHTML = '';
 
   try {
