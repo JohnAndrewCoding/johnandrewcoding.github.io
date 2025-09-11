@@ -14,7 +14,7 @@ async function loadLeaderboard() {
   leaderboardContainer.innerHTML = '<p>Loading leaderboard...</p>';
 
   try {
-    const snapshot = await db.collection('users').get();
+    const snapshot = await db.collection('usersRecords').get();
     const users = [];
 
     snapshot.forEach(doc => {
