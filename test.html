@@ -40,6 +40,18 @@ const userPicksRef = db.collection("userPicks");
 
 const ESPN_API_BASE = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
 
+  async function testUpdate() {
+  try {
+    const docRef = db.collection("userRecords").doc("6GYhmt8edXVfAEHcWPEZ18ZYGr83");
+    await docRef.update({ wins: 99, losses: 0 });
+    console.log("Updated successfully!");
+  } catch (err) {
+    console.error("Manual update failed:", err);
+  }
+}
+testUpdate();
+
+
 // 1) Helper: get current ESPN week (optional: hardcode if you want)
 async function getCurrentWeek() {
   const res = await fetch(ESPN_API_BASE);
