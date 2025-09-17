@@ -34,184 +34,119 @@
   <h1>Pick'em Leaderboard</h1>
   <div id="leaderboard"></div>
 
- <script>
-  // 🔑 Your Firebase Config (use the same one from your main JS file)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
-    authDomain: "college-football-pickem-68eed.firebaseapp.com",
-    projectId: "college-football-pickem-68eed",
-    storageBucket: "college-football-pickem-68eed.appspot.com",
-    messagingSenderId: "650202039805",
-    appId: "1:650202039805:web:70e51177aab22e4d614594"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+<script>
+const userRecordsRef = db.collection("userRecords");
+const userPicksRef = db.collection("userPicks");
 
-  const userRecordsRef = db.collection("userRecords");
-  const userPicksRef = db.collection("userPicks");
+const ESPN_API_BASE = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard";
 
-  // ESPN API for college football scores
-  const ESPN_API_URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250911-20250914";
+// 1) Helper: get current ESPN week (optional: hardcode if you want)
+async function getCurrentWeek() {
+  const res = await fetch(ESPN_API_BASE);
+  const data = await res.json();
+  return data.week.number;  // ESPN's current week number
+}
 
-  async function fetchGameResults() {
-    try {
-      const response = await fetch(ESPN_API_URL);
-      if (!response.ok) throw new Error(`ESPN fetch failed: ${response.status}`);
-      const data = await response.json();
-      const results = {};
-      (data.events || []).forEach(event => {
-        const competition = event.competitions && event.competitions[0];
-        if (!competition) return;
-        const gameId = event.id; // ensure your picks use this same id format
-        const status = competition.status && competition.status.type && competition.status.type.name;
-        if (status === "STATUS_FINAL" || status === "FINAL") {
-          const winner = competition.competitors && competition.competitors.find(c => c.winner);
-          if (winner) results[gameId] = String(winner.id);
-        }
-      });
-      console.log("Fetched gameResults:", results);
-      return results;
-    } catch (err) {
-      console.error("fetchGameResults error:", err);
-      return {}; // empty -> nothing to score
+// 2) Fetch ESPN results for a week
+async function fetchGameResults(weekNumber) {
+  const url = `${ESPN_API_BASE}?week=${weekNumber}`;
+  const response = await fetch(url);
+  const data = await response.json();
+
+  const results = {};
+  data.events.forEach(event => {
+    const comp = event.competitions[0];
+    const status = comp.status.type.name;
+    if (status === "STATUS_FINAL" || status === "FINAL") {
+      const winner = comp.competitors.find(c => c.winner);
+      if (winner) results[event.id] = winner.id;
     }
-  }
-
-  async function autoScoreUsersForWeek(weekNumber) {
-    console.log("Starting autoScoreUsersForWeek for week", weekNumber);
-    try {
-      const [gameResults, usersSnap, picksSnap] = await Promise.all([
-        fetchGameResults(),
-        userRecordsRef.get(),
-        userPicksRef.where("week", "==", weekNumber).get()
-      ]);
-
-      console.log("usersSnap size:", usersSnap.size, "picksSnap size:", picksSnap.size);
-      const picksMap = {};
-      picksSnap.forEach(doc => {
-        const d = doc.data();
-        const key = d.uid || doc.id; // support either scheme
-        picksMap[key] = d.picks || {};
-      });
-      console.log("picksMap sample:", picksMap);
-
-      const gameIds = Object.keys(gameResults);
-      if (gameIds.length === 0) {
-        console.warn("No final games found in gameResults — nothing to score.");
-        return;
-      }
-
-      // Use a batch for atomic-ish updates (and less network churn)
-      const batch = db.batch();
-      let updatesCount = 0;
-
-      usersSnap.forEach(userDoc => {
-        const userData = userDoc.data();
-        const docId = userDoc.id;
-        const uid = userData.uid || docId;
-        const picks = picksMap[uid] || picksMap[docId] || {}; // flexible
-
-        let wins = 0, losses = 0;
-        for (const gameId of gameIds) {
-          const winnerId = String(gameResults[gameId]);
-          const userPick = picks[gameId];
-          if (!userPick) {
-            losses++;
-          } else if (String(userPick) === winnerId) {
-            wins++;
-          } else {
-            losses++;
-          }
-        }
-
-        const existingWins = Number(userData.wins || 0);
-        const existingLosses = Number(userData.losses || 0);
-        if (wins !== existingWins || losses !== existingLosses) {
-          // schedule update to that exact doc (userDoc.ref)
-          batch.update(userDoc.ref, { wins, losses });
-          updatesCount++;
-          console.log(`Will update ${docId}: ${existingWins}/${existingLosses} -> ${wins}/${losses}`);
-        } else {
-          console.log(`No change for ${docId}: remains ${existingWins}/${existingLosses}`);
-        }
-      });
-
-      if (updatesCount > 0) {
-        await batch.commit();
-        console.log("Batch commit complete. Updated", updatesCount, "documents.");
-      } else {
-        console.log("No updates needed.");
-      }
-    } catch (err) {
-      console.error("autoScoreUsersForWeek error:", err);
-    }
-  }
-
-  async function loadLeaderboard() {
-    const leaderboardContainer = document.getElementById('leaderboard');
-    leaderboardContainer.innerHTML = '<p>Loading...</p>';
-
-    try {
-      console.log("Fetching users collection...");
-      const snapshot = await db.collection('userRecords').get();
-      console.log("Snapshot size:", snapshot.size);
-
-      if (snapshot.empty) {
-        leaderboardContainer.innerHTML = "<p>No users found.</p>";
-        return;
-      }
-
-      const users = [];
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        users.push({
-          name: d.name || d.displayName || doc.id,
-          wins: Number(d.wins || 0),
-          losses: Number(d.losses || 0)
-        });
-      });
-
-      users.sort((a, b) => {
-        if (b.wins === a.wins) return a.losses - b.losses;
-        return b.wins - a.wins;
-      });
-
-      leaderboardContainer.innerHTML = ''; // Clear loading message
-      users.forEach((user, index) => {
-        const div = document.createElement('div');
-        div.textContent = `${index + 1}. ${user.name} — ${user.wins}W / ${user.losses}L`;
-        leaderboardContainer.appendChild(div);
-      });
-
-    } catch (error) {
-      console.error("Error loading leaderboard:", error);
-      leaderboardContainer.innerHTML = '<p style="color:red;">Error loading leaderboard. Check console.</p>';
-    }
-  }
-
-  // Run after DOM ready:
-  document.addEventListener('DOMContentLoaded', async () => {
-    // 1) Optionally auto-score (uncomment if you want it to run automatically)
-    // await autoScoreUsersForWeek(3);
-
-    // 2) Load leaderboard for the page
-    loadLeaderboard();
-
-    // 3) Add a manual rescore button (helpful for debugging)
-    const btn = document.createElement('button');
-    btn.textContent = "Rescore Week 3 (manual)";
-    btn.style.margin = "10px 0";
-    btn.onclick = async () => {
-      btn.disabled = true;
-      btn.textContent = "Rescoring...";
-      await autoScoreUsersForWeek(3);
-      await loadLeaderboard();
-      btn.textContent = "Rescore Week 3 (manual)";
-      btn.disabled = false;
-    };
-    document.body.insertBefore(btn, document.querySelector('h2')); // insert near top
   });
+
+  console.log(`Fetched ${Object.keys(results).length} results for week ${weekNumber}`);
+  return results;
+}
+
+// 3) Score each user for the week
+async function scoreUsersForWeek(weekNumber) {
+  console.log("Scoring users for week:", weekNumber);
+  const [results, usersSnap, picksSnap] = await Promise.all([
+    fetchGameResults(weekNumber),
+    userRecordsRef.get(),
+    userPicksRef.where("week", "==", weekNumber).get()
+  ]);
+
+  const picksMap = {};
+  picksSnap.forEach(doc => {
+    picksMap[doc.data().uid] = doc.data().picks || {};
+  });
+
+  const batch = db.batch();
+  let updates = 0;
+
+  usersSnap.forEach(userDoc => {
+    const userData = userDoc.data();
+    const uid = userData.uid || userDoc.id;
+    const userPicks = picksMap[uid] || {};
+
+    let wins = 0, losses = 0;
+    for (const [gameId, winnerId] of Object.entries(results)) {
+      const userPick = userPicks[gameId];
+      if (!userPick) {
+        losses++;
+      } else if (String(userPick) === String(winnerId)) {
+        wins++;
+      } else {
+        losses++;
+      }
+    }
+
+    if (wins !== userData.wins || losses !== userData.losses) {
+      batch.update(userDoc.ref, { wins, losses });
+      updates++;
+    }
+  });
+
+  if (updates > 0) {
+    await batch.commit();
+    console.log(`Updated ${updates} users for week ${weekNumber}`);
+  } else {
+    console.log("No updates needed");
+  }
+}
+
+// 4) Refresh leaderboard
+async function refreshLeaderboard() {
+  const leaderboardContainer = document.getElementById("leaderboard");
+  leaderboardContainer.innerHTML = "<p>Loading...</p>";
+
+  const snapshot = await userRecordsRef.get();
+  const users = [];
+  snapshot.forEach(doc => {
+    users.push(doc.data());
+  });
+
+  users.sort((a, b) => {
+    if (b.wins === a.wins) return a.losses - b.losses;
+    return b.wins - a.wins;
+  });
+
+  leaderboardContainer.innerHTML = "";
+  users.forEach((u, i) => {
+    const div = document.createElement("div");
+    div.textContent = `${i + 1}. ${u.name} — ${u.wins}W / ${u.losses}L`;
+    leaderboardContainer.appendChild(div);
+  });
+}
+
+// 5) Run once on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  const currentWeek = await getCurrentWeek();
+  await scoreUsersForWeek(currentWeek);
+  await refreshLeaderboard();
+});
 </script>
+
 
   <h2>Make Picks</h2>
 <a href="Week1homepage.html"><button style="font-size: 20px; padding: 15px 30px;">Week 1</button></a>
