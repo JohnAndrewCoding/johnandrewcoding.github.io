@@ -2,52 +2,224 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <title>Pickem Homepage</title>
+  <title>Leaderboard</title>
+  <!-- Firebase SDK v8 (works with your existing code) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <style>
+    body {
+      background-color: #1c1c1c;
+      color: white;
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #leaderboard div {
+      background-color: #2b2b2b;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
 </head>
-<body class="bg-dark text-white">
-  <div class="container mt-3">
-    <h1>Pick'em Homepage</h1>
+<body>
+  <h1>Pick'em Leaderboard</h1>
+  <div id="leaderboard"></div>
 
-    <div id="authStatus" class="mb-2"></div>
-    <button id="googleSignInBtn" class="btn btn-light mb-2">Sign in with Google</button>
-    <button id="googleSignOutBtn" class="btn btn-warning mb-2" style="display:none;">Sign Out</button>
+ <script>
+  // 🔑 Your Firebase Config (use the same one from your main JS file)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+    authDomain: "college-football-pickem-68eed.firebaseapp.com",
+    projectId: "college-football-pickem-68eed",
+    storageBucket: "college-football-pickem-68eed.appspot.com",
+    messagingSenderId: "650202039805",
+    appId: "1:650202039805:web:70e51177aab22e4d614594"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    <h2>Your Picks</h2>
-    <div class="mb-3">
-      <label for="weekSelect" class="form-label">Select Week:</label>
-      <select id="weekSelect" class="form-select" style="max-width:200px;">
-        <!-- Weeks will be populated dynamically -->
-      </select>
-    </div>
+  const userRecordsRef = db.collection("userRecords");
+  const userPicksRef = db.collection("userPicks");
 
-    <div id="welcomeMessage" class="mb-3 font-weight-bold"></div>
-    <form id="weekPicksForm">
-      <div id="gamesContainer"></div>
-      <button type="submit" class="btn btn-success mt-3">Save Picks</button>
-    </form>
+  // ESPN API for college football scores
+  const ESPN_API_URL = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250911-20250914";
 
-    <h2>Leaderboard</h2>
-    <div id="userRecord" class="mb-3 font-weight-bold"></div>
-    <table class="table table-striped table-dark" id="leaderboardTable">
-      <thead>
-        <tr>
-          <th>Rank</th>
-          <th>Name</th>
-          <th>Record</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Leaderboard rows will be injected here -->
-      </tbody>
-    </table>
-  </div>
+  async function fetchGameResults() {
+    try {
+      const response = await fetch(ESPN_API_URL);
+      if (!response.ok) throw new Error(`ESPN fetch failed: ${response.status}`);
+      const data = await response.json();
+      const results = {};
+      (data.events || []).forEach(event => {
+        const competition = event.competitions && event.competitions[0];
+        if (!competition) return;
+        const gameId = event.id; // ensure your picks use this same id format
+        const status = competition.status && competition.status.type && competition.status.type.name;
+        if (status === "STATUS_FINAL" || status === "FINAL") {
+          const winner = competition.competitors && competition.competitors.find(c => c.winner);
+          if (winner) results[gameId] = String(winner.id);
+        }
+      });
+      console.log("Fetched gameResults:", results);
+      return results;
+    } catch (err) {
+      console.error("fetchGameResults error:", err);
+      return {}; // empty -> nothing to score
+    }
+  }
 
-  <script src="test.js"></script>
+  async function autoScoreUsersForWeek(weekNumber) {
+    console.log("Starting autoScoreUsersForWeek for week", weekNumber);
+    try {
+      const [gameResults, usersSnap, picksSnap] = await Promise.all([
+        fetchGameResults(),
+        userRecordsRef.get(),
+        userPicksRef.where("week", "==", weekNumber).get()
+      ]);
+
+      console.log("usersSnap size:", usersSnap.size, "picksSnap size:", picksSnap.size);
+      const picksMap = {};
+      picksSnap.forEach(doc => {
+        const d = doc.data();
+        const key = d.uid || doc.id; // support either scheme
+        picksMap[key] = d.picks || {};
+      });
+      console.log("picksMap sample:", picksMap);
+
+      const gameIds = Object.keys(gameResults);
+      if (gameIds.length === 0) {
+        console.warn("No final games found in gameResults — nothing to score.");
+        return;
+      }
+
+      // Use a batch for atomic-ish updates (and less network churn)
+      const batch = db.batch();
+      let updatesCount = 0;
+
+      usersSnap.forEach(userDoc => {
+        const userData = userDoc.data();
+        const docId = userDoc.id;
+        const uid = userData.uid || docId;
+        const picks = picksMap[uid] || picksMap[docId] || {}; // flexible
+
+        let wins = 0, losses = 0;
+        for (const gameId of gameIds) {
+          const winnerId = String(gameResults[gameId]);
+          const userPick = picks[gameId];
+          if (!userPick) {
+            losses++;
+          } else if (String(userPick) === winnerId) {
+            wins++;
+          } else {
+            losses++;
+          }
+        }
+
+        const existingWins = Number(userData.wins || 0);
+        const existingLosses = Number(userData.losses || 0);
+        if (wins !== existingWins || losses !== existingLosses) {
+          // schedule update to that exact doc (userDoc.ref)
+          batch.update(userDoc.ref, { wins, losses });
+          updatesCount++;
+          console.log(`Will update ${docId}: ${existingWins}/${existingLosses} -> ${wins}/${losses}`);
+        } else {
+          console.log(`No change for ${docId}: remains ${existingWins}/${existingLosses}`);
+        }
+      });
+
+      if (updatesCount > 0) {
+        await batch.commit();
+        console.log("Batch commit complete. Updated", updatesCount, "documents.");
+      } else {
+        console.log("No updates needed.");
+      }
+    } catch (err) {
+      console.error("autoScoreUsersForWeek error:", err);
+    }
+  }
+
+  async function loadLeaderboard() {
+    const leaderboardContainer = document.getElementById('leaderboard');
+    leaderboardContainer.innerHTML = '<p>Loading...</p>';
+
+    try {
+      console.log("Fetching users collection...");
+      const snapshot = await db.collection('userRecords').get();
+      console.log("Snapshot size:", snapshot.size);
+
+      if (snapshot.empty) {
+        leaderboardContainer.innerHTML = "<p>No users found.</p>";
+        return;
+      }
+
+      const users = [];
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        users.push({
+          name: d.name || d.displayName || doc.id,
+          wins: Number(d.wins || 0),
+          losses: Number(d.losses || 0)
+        });
+      });
+
+      users.sort((a, b) => {
+        if (b.wins === a.wins) return a.losses - b.losses;
+        return b.wins - a.wins;
+      });
+
+      leaderboardContainer.innerHTML = ''; // Clear loading message
+      users.forEach((user, index) => {
+        const div = document.createElement('div');
+        div.textContent = `${index + 1}. ${user.name} — ${user.wins}W / ${user.losses}L`;
+        leaderboardContainer.appendChild(div);
+      });
+
+    } catch (error) {
+      console.error("Error loading leaderboard:", error);
+      leaderboardContainer.innerHTML = '<p style="color:red;">Error loading leaderboard. Check console.</p>';
+    }
+  }
+
+  // Run after DOM ready:
+  document.addEventListener('DOMContentLoaded', async () => {
+    // 1) Optionally auto-score (uncomment if you want it to run automatically)
+    // await autoScoreUsersForWeek(3);
+
+    // 2) Load leaderboard for the page
+    loadLeaderboard();
+
+    // 3) Add a manual rescore button (helpful for debugging)
+    const btn = document.createElement('button');
+    btn.textContent = "Rescore Week 3 (manual)";
+    btn.style.margin = "10px 0";
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.textContent = "Rescoring...";
+      await autoScoreUsersForWeek(3);
+      await loadLeaderboard();
+      btn.textContent = "Rescore Week 3 (manual)";
+      btn.disabled = false;
+    };
+    document.body.insertBefore(btn, document.querySelector('h2')); // insert near top
+  });
+</script>
+
+  <h2>Make Picks</h2>
+<a href="Week1homepage.html"><button style="font-size: 20px; padding: 15px 30px;">Week 1</button></a>
+<a href="Week2Homepage.html"><button style="font-size: 20px; padding: 15px 30px;">Week 2</button></a>
+<a href="Week3Homepage.html"><button style="font-size: 20px; padding: 15px 30px;">Week 3</button></a>
+<a href="Week4Homepage.html"><button style="font-size: 20px; padding: 15px 30px;">Week 4</button></a>
+<a href="Week5Homepage.html"><button style="font-size: 20px; padding: 15px 30px;">Week 5</button></a>
+
+  <br><br>
 </body>
 </html>
-
