@@ -89,112 +89,116 @@
       }
     }
 
-    async function renderResults() {
-      const resultsContainer = document.getElementById('results');
-      const snapshot = await db.collection("week4Picks").get();
-      if (snapshot.empty) {
-        resultsContainer.textContent = "No picks found.";
-        return;
-      }
+   async function renderResults() {
+  const resultsContainer = document.getElementById('results');
 
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const userName = data.name;
-        const picks = data.picks;
+  // --- 1. Fetch and display all game scores at the top ---
+  const gamesDiv = document.createElement('div');
+  gamesDiv.id = "game-results";
+  const gamesHeader = document.createElement('h2');
+  gamesHeader.textContent = "Game Scores";
+  gamesDiv.appendChild(gamesHeader);
+  resultsContainer.appendChild(gamesDiv);
 
-        let wins = 0;
-        let losses = 0;
-        const correctPicks = [];
-        const incorrectPicks = [];
+  const gameResultsMap = {}; // store results for later use by user picks
 
-        // Create a div for game results
-const gamesDiv = document.createElement('div');
-gamesDiv.id = "game-results";
-const gamesHeader = document.createElement('h2');
-gamesHeader.textContent = "Game Scores";
-gamesDiv.appendChild(gamesHeader);
-resultsContainer.appendChild(gamesDiv);
+  for (const eventId of gameSlate) {
+    const result = await getGameResult(eventId);
+    if (!result) continue;
 
-// Fetch and display each game in the slate
-for (const eventId of gameSlate) {
-  const result = await getGameResult(eventId);
-  if (!result) continue;
+    const { competitors, matchupName, winnerId } = result;
 
-  const { competitors, matchupName } = result;
-  
-  // Build a simple text line with score
-  const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score?.value || 0})`).join(" vs ");
-  
-  const p = document.createElement('p');
-  p.textContent = scoreLine;
-  gamesDiv.appendChild(p);
-}
-const resultsContainer = document.getElementById('results');
+    // Save for user pick checks
+    gameResultsMap[eventId] = result;
 
+    // Display score
+    const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score?.value || 0})`).join(" vs ");
+    const p = document.createElement('p');
+    p.textContent = scoreLine;
+    gamesDiv.appendChild(p);
+  }
 
-        for (const eventId of gameSlate) {
-          const result = await getGameResult(eventId);
-          if (!result || !result.winnerId) continue;
+  // --- 2. Loop through Firestore users and render picks ---
+  const snapshot = await db.collection("week4Picks").get();
+  if (snapshot.empty) {
+    resultsContainer.textContent += "\nNo picks found.";
+    return;
+  }
 
-          const { winnerId, competitors, matchupName } = result;
-          const userPick = picks[eventId];
-          const winnerTeam = competitors.find(c => c.team.id === winnerId).team.displayName;
-          const pickTeam = competitors.find(c => c.team.id === userPick)?.team.displayName;
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const userName = data.name;
+    const picks = data.picks;
 
-          if (userPick === winnerId) {
-            wins++;
-            correctPicks.push(winnerTeam);
-          } else {
-            losses++;
-            if (userPick) {
-              incorrectPicks.push(pickTeam);
-            } else {
-              incorrectPicks.push(`NoPick : ${matchupName}`);
-            }
-          }
+    let wins = 0;
+    let losses = 0;
+    const correctPicks = [];
+    const incorrectPicks = [];
+
+    for (const eventId of gameSlate) {
+      const result = gameResultsMap[eventId]; // use cached result
+      if (!result || !result.winnerId) continue;
+
+      const { winnerId, competitors, matchupName } = result;
+      const userPick = picks[eventId];
+      const winnerTeam = competitors.find(c => c.team.id === winnerId).team.displayName;
+      const pickTeam = competitors.find(c => c.team.id === userPick)?.team.displayName;
+
+      if (userPick === winnerId) {
+        wins++;
+        correctPicks.push(winnerTeam);
+      } else {
+        losses++;
+        if (userPick) {
+          incorrectPicks.push(pickTeam);
+        } else {
+          incorrectPicks.push(`NoPick : ${matchupName}`);
         }
-
-        // Build HTML table for the user
-        const div = document.createElement('div');
-        div.classList.add('user-report');
-
-        const h2 = document.createElement('h2');
-        h2.textContent = `${userName} W-L (${wins}-${losses})`;
-        div.appendChild(h2);
-
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        ["Correct Picks", "Incorrect Picks"].forEach(text => {
-          const th = document.createElement('th');
-          th.textContent = text;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        const tbody = document.createElement('tbody');
-        const maxRows = Math.max(correctPicks.length, incorrectPicks.length);
-        for (let i = 0; i < maxRows; i++) {
-          const tr = document.createElement('tr');
-          const tdCorrect = document.createElement('td');
-          tdCorrect.textContent = correctPicks[i] || "";
-          if (correctPicks[i]) tdCorrect.classList.add('correct');
-
-          const tdIncorrect = document.createElement('td');
-          tdIncorrect.textContent = incorrectPicks[i] || "";
-          if (incorrectPicks[i]) tdIncorrect.classList.add('incorrect');
-
-          tr.appendChild(tdCorrect);
-          tr.appendChild(tdIncorrect);
-          tbody.appendChild(tr);
-        }
-
-        table.appendChild(tbody);
-        div.appendChild(table);
-        resultsContainer.appendChild(div);
       }
     }
+
+    // Build HTML table for the user
+    const div = document.createElement('div');
+    div.classList.add('user-report');
+
+    const h2 = document.createElement('h2');
+    h2.textContent = `${userName} W-L (${wins}-${losses})`;
+    div.appendChild(h2);
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ["Correct Picks", "Incorrect Picks"].forEach(text => {
+      const th = document.createElement('th');
+      th.textContent = text;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const maxRows = Math.max(correctPicks.length, incorrectPicks.length);
+    for (let i = 0; i < maxRows; i++) {
+      const tr = document.createElement('tr');
+      const tdCorrect = document.createElement('td');
+      tdCorrect.textContent = correctPicks[i] || "";
+      if (correctPicks[i]) tdCorrect.classList.add('correct');
+
+      const tdIncorrect = document.createElement('td');
+      tdIncorrect.textContent = incorrectPicks[i] || "";
+      if (incorrectPicks[i]) tdIncorrect.classList.add('incorrect');
+
+      tr.appendChild(tdCorrect);
+      tr.appendChild(tdIncorrect);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    div.appendChild(table);
+    resultsContainer.appendChild(div);
+  }
+}
+
 
     renderResults().catch(err => console.error("Error rendering picks:", err));
   </script>
