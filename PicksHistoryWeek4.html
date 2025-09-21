@@ -112,7 +112,7 @@
     gameResultsMap[eventId] = result;
 
     // Display score
-    const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score?.value || 0})`).join(" vs ");
+    const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score || 0})`).join(" vs ");
     const p = document.createElement('p');
     p.textContent = scoreLine;
     gamesDiv.appendChild(p);
