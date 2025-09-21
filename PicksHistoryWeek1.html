@@ -51,29 +51,29 @@ const gameNames = [
 ];
 
 // Helper: fetch the winner team from ESPN summary API
-async function getWinnerByGameName(gameName) {
+async function fetchAllGameResults() {
   try {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902`;
+    const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard`;
     const res = await fetch(url);
     const data = await res.json();
     const events = data?.events || [];
+    const gameMap = {}; // matchupName => { winnerTeam, competitors }
 
     for (const event of events) {
       const competitors = event?.competitions?.[0]?.competitors || [];
       const matchupName = competitors.map(c => c.team.displayName).join(" vs ");
-      if (matchupName === gameName) {
-        const winner = competitors.find(c => c.winner === true);
-        return { winnerTeam: winner?.team?.displayName || null, competitors };
-      }
+      const winner = competitors.find(c => c.winner === true);
+      gameMap[matchupName] = { winnerTeam: winner?.team?.displayName || null, competitors };
     }
-    return null;
+
+    return gameMap;
   } catch (err) {
-    console.error("Failed to fetch game winner:", gameName, err);
-    return null;
+    console.error("Failed to fetch game results", err);
+    return {};
   }
 }
 
-async function renderResults() {
+async function renderResultsOptimized() {
   const resultsContainer = document.getElementById("results");
   const snapshot = await db.collection(week).get();
   if (snapshot.empty) {
@@ -81,22 +81,21 @@ async function renderResults() {
     return;
   }
 
-  // --- Loop through each user ---
+  const allGameResults = await fetchAllGameResults(); // fetch **once**
+
   for (const doc of snapshot.docs) {
     const data = doc.data();
     const userName = data.name;
     const picks = data.picks;
 
-    let wins = 0;
-    let losses = 0;
-    const correctPicks = [];
-    const incorrectPicks = [];
+    let wins = 0, losses = 0;
+    const correctPicks = [], incorrectPicks = [];
 
     for (const gameName of gameNames) {
-      const winnerData = await getWinnerByGameName(gameName);
-      if (!winnerData) continue;
+      const gameData = allGameResults[gameName];
+      if (!gameData) continue;
 
-      const { winnerTeam, competitors } = winnerData;
+      const { winnerTeam, competitors } = gameData;
       const userPick = picks[gameName];
 
       if (!userPick) {
@@ -111,7 +110,7 @@ async function renderResults() {
       }
     }
 
-    // --- Render table ---
+    // --- render user table (same as before) ---
     const div = document.createElement("div");
     div.classList.add("user-report");
 
@@ -152,7 +151,7 @@ async function renderResults() {
     resultsContainer.appendChild(div);
   }
 
-  // --- Optional: show all game scores at the bottom ---
+  // --- Game scores at the bottom ---
   const gamesDiv = document.createElement("div");
   gamesDiv.classList.add("games");
   const gamesHeader = document.createElement("h2");
@@ -160,9 +159,13 @@ async function renderResults() {
   gamesDiv.appendChild(gamesHeader);
 
   for (const gameName of gameNames) {
-    const winnerData = await getWinnerByGameName(gameName);
-    if (!winnerData) continue;
-    const scoreLine = winnerData.competitors.map(c => `${c.team.displayName} (${c.score || 0})`).join(" vs ");
+    const gameData = allGameResults[gameName];
+    if (!gameData) continue;
+
+    const scoreLine = gameData.competitors
+      .map(c => `${c.team.displayName} (${c.score?.value || 0})`)
+      .join(" vs ");
+
     const p = document.createElement("p");
     p.textContent = scoreLine;
     gamesDiv.appendChild(p);
@@ -171,7 +174,8 @@ async function renderResults() {
   resultsContainer.appendChild(gamesDiv);
 }
 
-renderResults().catch(err => console.error("Error rendering picks:", err));
+renderResultsOptimized().catch(err => console.error(err));
+
   </script>
 </body>
 </html>
