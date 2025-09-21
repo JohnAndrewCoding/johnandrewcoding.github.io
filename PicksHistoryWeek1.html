@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Week 1 Picks Results</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
+    h1 { text-align: center; }
+    h2 { margin-top: 40px; }
+    table { border-collapse: collapse; width: 100%; max-width: 600px; margin-bottom: 30px; background-color: #fff; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
+    th { background-color: #007bff; color: white; }
+    .correct { background-color: #d4edda; }
+    .incorrect { background-color: #f8d7da; }
+    .games { background-color: #c3e6cb; padding: 10px; border-radius: 5px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>Week 1 Picks Results</h1>
+  <div id="results"></div>
+
+  <!-- Firebase v8 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Firestore collection
+const week = "week1Picks";
+
+// Example list of game names you want to check (or build dynamically)
+const gameNames = [
+  "Akron vs Wyoming", "Baylor vs Auburn", "Charlotte vs App State", 
+  "Cincinnati vs Nebraska", "Clemson vs LSU", "Colorado vs Georgia Tech",
+  "Fresno State vs Georgia Southern", "Kentucky vs Toledo", "Massachusetts vs Temple",
+  "Miami vs Notre Dame", "North Carolina vs TCU", "Ohio State vs Texas",
+  "Oregon State vs California", "South Carolina vs Virginia Tech",
+  "South Florida vs Boise State", "Tulane vs Northwestern",
+  "UCLA vs Utah", "Utah State vs UTEP"
+];
+
+// Helper: fetch the winner team from ESPN summary API
+async function getWinnerByGameName(gameName) {
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const events = data?.events || [];
+
+    for (const event of events) {
+      const competitors = event?.competitions?.[0]?.competitors || [];
+      const matchupName = competitors.map(c => c.team.displayName).join(" vs ");
+      if (matchupName === gameName) {
+        const winner = competitors.find(c => c.winner === true);
+        return { winnerTeam: winner?.team?.displayName || null, competitors };
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("Failed to fetch game winner:", gameName, err);
+    return null;
+  }
+}
+
+async function renderResults() {
+  const resultsContainer = document.getElementById("results");
+  const snapshot = await db.collection(week).get();
+  if (snapshot.empty) {
+    resultsContainer.textContent = "No picks found.";
+    return;
+  }
+
+  // --- Loop through each user ---
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const userName = data.name;
+    const picks = data.picks;
+
+    let wins = 0;
+    let losses = 0;
+    const correctPicks = [];
+    const incorrectPicks = [];
+
+    for (const gameName of gameNames) {
+      const winnerData = await getWinnerByGameName(gameName);
+      if (!winnerData) continue;
+
+      const { winnerTeam, competitors } = winnerData;
+      const userPick = picks[gameName];
+
+      if (!userPick) {
+        losses++;
+        incorrectPicks.push(`NoPick : ${gameName}`);
+      } else if (userPick === winnerTeam) {
+        wins++;
+        correctPicks.push(userPick);
+      } else {
+        losses++;
+        incorrectPicks.push(userPick);
+      }
+    }
+
+    // --- Render table ---
+    const div = document.createElement("div");
+    div.classList.add("user-report");
+
+    const h2 = document.createElement("h2");
+    h2.textContent = `${userName} W-L (${wins}-${losses})`;
+    div.appendChild(h2);
+
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["Correct Picks", "Incorrect Picks"].forEach(text => {
+      const th = document.createElement("th");
+      th.textContent = text;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    const maxRows = Math.max(correctPicks.length, incorrectPicks.length);
+    for (let i = 0; i < maxRows; i++) {
+      const tr = document.createElement("tr");
+      const tdCorrect = document.createElement("td");
+      tdCorrect.textContent = correctPicks[i] || "";
+      if (correctPicks[i]) tdCorrect.classList.add("correct");
+
+      const tdIncorrect = document.createElement("td");
+      tdIncorrect.textContent = incorrectPicks[i] || "";
+      if (incorrectPicks[i]) tdIncorrect.classList.add("incorrect");
+
+      tr.appendChild(tdCorrect);
+      tr.appendChild(tdIncorrect);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    div.appendChild(table);
+    resultsContainer.appendChild(div);
+  }
+
+  // --- Optional: show all game scores at the bottom ---
+  const gamesDiv = document.createElement("div");
+  gamesDiv.classList.add("games");
+  const gamesHeader = document.createElement("h2");
+  gamesHeader.textContent = "Game Scores";
+  gamesDiv.appendChild(gamesHeader);
+
+  for (const gameName of gameNames) {
+    const winnerData = await getWinnerByGameName(gameName);
+    if (!winnerData) continue;
+    const scoreLine = winnerData.competitors.map(c => `${c.team.displayName} (${c.score || 0})`).join(" vs ");
+    const p = document.createElement("p");
+    p.textContent = scoreLine;
+    gamesDiv.appendChild(p);
+  }
+
+  resultsContainer.appendChild(gamesDiv);
+}
+
+renderResults().catch(err => console.error("Error rendering picks:", err));
+  </script>
+</body>
+</html>
