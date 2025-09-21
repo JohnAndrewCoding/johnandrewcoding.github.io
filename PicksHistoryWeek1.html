@@ -92,7 +92,10 @@ async function renderResultsOptimized() {
     const correctPicks = [], incorrectPicks = [];
 
     for (const gameName of gameNames) {
-      const gameData = allGameResults[gameName];
+const gameData = Object.values(allGameResults).find(g => 
+  g.competitors.map(c => c.team.displayName.toLowerCase()).some(t => gameName.toLowerCase().includes(t))
+);
+
       if (!gameData) continue;
 
       const { winnerTeam, competitors } = gameData;
