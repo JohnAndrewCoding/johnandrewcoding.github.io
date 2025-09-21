@@ -228,7 +228,7 @@ document.getElementById("googleSignOutBtn").onclick = () => {
     document.getElementById("authStatus").innerText = "Not signed in";
     document.getElementById("googleSignInBtn").style.display = "inline-block";
     document.getElementById("googleSignOutBtn").style.display = "none";
-    document.getElementById('week1games').innerHTML = '';
+    document.getElementById('week5games').innerHTML = '';
     document.getElementById('welcomeMessage').innerText = '';
   });
 };
