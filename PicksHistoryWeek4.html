@@ -44,24 +44,25 @@
   <h1>Weekly Picks Results</h1>
   <div id="results"></div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js";
+  <!-- Firebase v8 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
-    // TODO: Replace with your Firebase config
-  const firebaseConfig = {
-  apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
-  authDomain: "college-football-pickem-68eed.firebaseapp.com",
-  projectId: "college-football-pickem-68eed",
-  storageBucket: "college-football-pickem-68eed.appspot.com",
-  messagingSenderId: "650202039805",
-  appId: "1:650202039805:web:70e51177aab22e4d614594"
-};
+  <script>
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "...",
+      authDomain: "...",
+      projectId: "...",
+      storageBucket: "...",
+      messagingSenderId: "...",
+      appId: "..."
+    };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    const collectionName = "week4Picks";
     const gameSlate = [
       "401752708", "401752709", "401752714", "401752843", "401752844", "401752846",
       "401754538", "401754636", "401754640", "401756896", "401756898", "401756901",
@@ -72,22 +73,26 @@
 
     async function getGameResult(eventId) {
       const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${eventId}`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const data = await res.json();
-      const competitors = data?.header?.competitions?.[0]?.competitors ?? [];
-      const winner = competitors.find(c => c.winner === true);
-      const matchupName = competitors.map(c => c.team.displayName).join(" vs ");
-      return {
-        winnerId: winner?.team?.id ?? null,
-        competitors,
-        matchupName
-      };
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const competitors = data?.header?.competitions?.[0]?.competitors || [];
+        const winner = competitors.find(c => c.winner === true);
+        const matchupName = competitors.map(c => c.team.displayName).join(" vs ");
+        return {
+          winnerId: winner?.team?.id || null,
+          competitors,
+          matchupName
+        };
+      } catch (err) {
+        console.error("Failed to fetch game:", eventId, err);
+        return null;
+      }
     }
 
     async function renderResults() {
       const resultsContainer = document.getElementById('results');
-      const snapshot = await getDocs(collection(db, collectionName));
+      const snapshot = await db.collection("week4Picks").get();
       if (snapshot.empty) {
         resultsContainer.textContent = "No picks found.";
         return;
@@ -125,9 +130,10 @@
           }
         }
 
-        // Create user table
+        // Build HTML table for the user
         const div = document.createElement('div');
         div.classList.add('user-report');
+
         const h2 = document.createElement('h2');
         h2.textContent = `${userName} W-L (${wins}-${losses})`;
         div.appendChild(h2);
@@ -147,13 +153,12 @@
         const maxRows = Math.max(correctPicks.length, incorrectPicks.length);
         for (let i = 0; i < maxRows; i++) {
           const tr = document.createElement('tr');
-
           const tdCorrect = document.createElement('td');
-          tdCorrect.textContent = correctPicks[i] ?? "";
+          tdCorrect.textContent = correctPicks[i] || "";
           if (correctPicks[i]) tdCorrect.classList.add('correct');
 
           const tdIncorrect = document.createElement('td');
-          tdIncorrect.textContent = incorrectPicks[i] ?? "";
+          tdIncorrect.textContent = incorrectPicks[i] || "";
           if (incorrectPicks[i]) tdIncorrect.classList.add('incorrect');
 
           tr.appendChild(tdCorrect);
@@ -171,5 +176,6 @@
   </script>
 </body>
 </html>
+
 
 
