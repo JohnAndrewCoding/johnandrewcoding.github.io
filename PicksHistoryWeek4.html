@@ -98,7 +98,7 @@
   const gamesHeader = document.createElement('h2');
   gamesHeader.textContent = "Game Scores";
   gamesDiv.appendChild(gamesHeader);
-  resultsContainer.appendChild(gamesDiv);
+
 
   const gameResultsMap = {}; // store results for later use by user picks
 
@@ -196,6 +196,7 @@
     table.appendChild(tbody);
     div.appendChild(table);
     resultsContainer.appendChild(div);
+      resultsContainer.appendChild(gamesDiv);
   }
 }
 
