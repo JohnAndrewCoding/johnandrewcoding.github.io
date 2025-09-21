@@ -107,6 +107,31 @@
         const correctPicks = [];
         const incorrectPicks = [];
 
+        // Create a div for game results
+const gamesDiv = document.createElement('div');
+gamesDiv.id = "game-results";
+const gamesHeader = document.createElement('h2');
+gamesHeader.textContent = "Game Scores";
+gamesDiv.appendChild(gamesHeader);
+resultsContainer.appendChild(gamesDiv);
+
+// Fetch and display each game in the slate
+for (const eventId of gameSlate) {
+  const result = await getGameResult(eventId);
+  if (!result) continue;
+
+  const { competitors, matchupName } = result;
+  
+  // Build a simple text line with score
+  const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score?.value || 0})`).join(" vs ");
+  
+  const p = document.createElement('p');
+  p.textContent = scoreLine;
+  gamesDiv.appendChild(p);
+}
+const resultsContainer = document.getElementById('results');
+
+
         for (const eventId of gameSlate) {
           const result = await getGameResult(eventId);
           if (!result || !result.winnerId) continue;
