@@ -4,19 +4,45 @@
   <meta charset="UTF-8">
   <title>Week 1 Picks Results</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }
-    h1 { text-align: center; }
-    h2 { margin-top: 40px; }
-    table { border-collapse: collapse; width: 100%; max-width: 600px; margin-bottom: 30px; background-color: #fff; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-    th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; }
-    th { background-color: #007bff; color: white; }
-    .correct { background-color: #d4edda; }
-    .incorrect { background-color: #f8d7da; }
-    .games { background-color: #c3e6cb; padding: 10px; border-radius: 5px; margin-top: 30px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 30px;
+      background-color: #fff;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    .correct {
+      background-color: #d4edda; /* green */
+    }
+    .incorrect {
+      background-color: #f8d7da; /* red */
+    }
   </style>
 </head>
 <body>
   <h1>Week 1 Picks Results</h1>
+  <a href="PicksHistory.html"><button>Home</button></a>
   <div id="results"></div>
 
   <!-- Firebase v8 SDK -->
@@ -24,167 +50,173 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
-      authDomain: "college-football-pickem-68eed.firebaseapp.com",
-      projectId: "college-football-pickem-68eed",
-      storageBucket: "college-football-pickem-68eed.appspot.com",
-      messagingSenderId: "650202039805",
-      appId: "1:650202039805:web:70e51177aab22e4d614594"
-    };
+ const firebaseConfig = {
+  apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+  authDomain: "college-football-pickem-68eed.firebaseapp.com",
+  projectId: "college-football-pickem-68eed",
+  storageBucket: "college-football-pickem-68eed.appspot.com",
+  messagingSenderId: "650202039805",
+  appId: "1:650202039805:web:70e51177aab22e4d614594"
+};
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const week = "week1Picks";
-    const gameNames = [
-      "Akron vs Wyoming", "Baylor vs Auburn", "Charlotte vs App State", 
-      "Cincinnati vs Nebraska", "Clemson vs LSU", "Colorado vs Georgia Tech",
-      "Fresno State vs Georgia Southern", "Kentucky vs Toledo", "Massachusetts vs Temple",
-      "Miami vs Notre Dame", "North Carolina vs TCU", "Ohio State vs Texas",
-      "Oregon State vs California", "South Carolina vs Virginia Tech",
-      "South Florida vs Boise State", "Tulane vs Northwestern",
-      "UCLA vs Utah", "Utah State vs UTEP"
-    ];
+    const gameSlate = [
+  "401762522",
+  "401762789",
+  "401752796",
+  "401761589",
+  "401752667",
+  "401754375",
+  "401752677",
+  "401752671",
+  "401752803",
+  "401752670",
+  "401762456",
+  "401757225",
+  "401760361",
+  "401752936",
+  "401752800",
+  "401754522",
+  "401752680",
+  "401754523"
+];
 
-    async function fetchAllGameResults() {
+
+    async function getGameResult(eventId) {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${eventId}`;
       try {
-        const url = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902';
         const res = await fetch(url);
         const data = await res.json();
-        const events = data?.events || [];
-        const gameMap = {}; // matchupKey => { winnerTeam, competitors }
-
-        for (const event of events) {
-          const comp = event?.competitions?.[0];
-          if (!comp) continue;
-          const home = comp.competitors[0].team;
-          const away = comp.competitors[1].team;
-          const matchupKey = `${home.location} vs ${away.location}`;
-          const winner = comp.competitors.find(c => c.winner)?.team;
-
-          gameMap[matchupKey] = {
-            winnerTeam: winner?.displayName || null,
-            competitors: comp.competitors
-          };
-        }
-
-        return gameMap;
+        const competitors = data?.header?.competitions?.[0]?.competitors || [];
+        const winner = competitors.find(c => c.winner === true);
+        const matchupName = competitors.map(c => c.team.displayName).join(" vs ");
+        return {
+          winnerId: winner?.team?.id || null,
+          competitors,
+          matchupName
+        };
       } catch (err) {
-        console.error("Failed to fetch game results", err);
-        return {};
+        console.error("Failed to fetch game:", eventId, err);
+        return null;
       }
     }
 
-    function findGameDataByGameName(gameName, allGameResults) {
-      // Match Firestore gameName to ESPN matchup using substring
-      return Object.values(allGameResults).find(g =>
-        g.competitors.some(c =>
-          gameName.toLowerCase().includes(c.team.displayName.toLowerCase())
-        )
-      );
-    }
+  async function renderResults() {
+  const resultsContainer = document.getElementById('results');
 
-    async function renderResults() {
-      const resultsContainer = document.getElementById("results");
-      const snapshot = await db.collection(week).get();
-      if (snapshot.empty) {
-        resultsContainer.textContent = "No picks found.";
-        return;
-      }
+  // --- 1. Fetch all game results first and cache them ---
+  const gameResultsMap = {}; // store results for later use by user picks
+  for (const eventId of gameSlate) {
+    const result = await getGameResult(eventId);
+    if (!result) continue;
+    gameResultsMap[eventId] = result;
+  }
 
-      const allGameResults = await fetchAllGameResults();
+  // --- 2. Loop through Firestore users and render pick tables at the top ---
+  const snapshot = await db.collection("week1Picks").get();
+  if (snapshot.empty) {
+    resultsContainer.textContent = "No picks found.";
+    return;
+  }
 
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const userName = data.name;
-        const picks = data.picks;
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const userName = data.name;
+    const picks = data.picks;
 
-        let wins = 0, losses = 0;
-        const correctPicks = [], incorrectPicks = [];
+    let wins = 0;
+    let losses = 0;
+    const correctPicks = [];
+    const incorrectPicks = [];
 
-        for (const gameName of gameNames) {
-          const gameData = findGameDataByGameName(gameName, allGameResults);
-          if (!gameData) continue;
+    for (const eventId of gameSlate) {
+      const result = gameResultsMap[eventId];
+      if (!result || !result.winnerId) continue;
 
-          const { winnerTeam } = gameData;
-          const userPick = picks[gameName];
+      const { winnerId, competitors, matchupName } = result;
+      const userPick = picks[eventId];
+      const winnerTeam = competitors.find(c => c.team.id === winnerId).team.displayName;
+      const pickTeam = competitors.find(c => c.team.id === userPick)?.team.displayName;
 
-          if (!userPick) {
-            losses++;
-            incorrectPicks.push(`NoPick : ${gameName}`);
-          } else if (userPick === winnerTeam) {
-            wins++;
-            correctPicks.push(userPick);
-          } else {
-            losses++;
-            incorrectPicks.push(userPick);
-          }
+      if (userPick === winnerId) {
+        wins++;
+        correctPicks.push(winnerTeam);
+      } else {
+        losses++;
+        if (userPick) {
+          incorrectPicks.push(pickTeam);
+        } else {
+          incorrectPicks.push(`NoPick : ${matchupName}`);
         }
-
-        const div = document.createElement("div");
-        div.classList.add("user-report");
-
-        const h2 = document.createElement("h2");
-        h2.textContent = `${userName} W-L (${wins}-${losses})`;
-        div.appendChild(h2);
-
-        const table = document.createElement("table");
-        const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-        ["Correct Picks", "Incorrect Picks"].forEach(text => {
-          const th = document.createElement("th");
-          th.textContent = text;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-
-        const tbody = document.createElement("tbody");
-        const maxRows = Math.max(correctPicks.length, incorrectPicks.length);
-        for (let i = 0; i < maxRows; i++) {
-          const tr = document.createElement("tr");
-          const tdCorrect = document.createElement("td");
-          tdCorrect.textContent = correctPicks[i] || "";
-          if (correctPicks[i]) tdCorrect.classList.add("correct");
-
-          const tdIncorrect = document.createElement("td");
-          tdIncorrect.textContent = incorrectPicks[i] || "";
-          if (incorrectPicks[i]) tdIncorrect.classList.add("incorrect");
-
-          tr.appendChild(tdCorrect);
-          tr.appendChild(tdIncorrect);
-          tbody.appendChild(tr);
-        }
-
-        table.appendChild(tbody);
-        div.appendChild(table);
-        resultsContainer.appendChild(div);
       }
-
-      const gamesDiv = document.createElement("div");
-      gamesDiv.classList.add("games");
-      const gamesHeader = document.createElement("h2");
-      gamesHeader.textContent = "Game Scores";
-      gamesDiv.appendChild(gamesHeader);
-
-      for (const gameName of gameNames) {
-        const gameData = findGameDataByGameName(gameName, allGameResults);
-        if (!gameData) continue;
-
-        const scoreLine = gameData.competitors
-          .map(c => `${c.team.displayName} (${c.score ?? 0})`)
-          .join(" vs ");
-
-        const p = document.createElement("p");
-        p.textContent = scoreLine;
-        gamesDiv.appendChild(p);
-      }
-
-      resultsContainer.appendChild(gamesDiv);
     }
 
-    renderResults().catch(err => console.error(err));
+    // Build HTML table for the user
+    const div = document.createElement('div');
+    div.classList.add('user-report');
+
+    const h2 = document.createElement('h2');
+    h2.textContent = `${userName} W-L (${wins}-${losses})`;
+    div.appendChild(h2);
+
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ["Correct Picks", "Incorrect Picks"].forEach(text => {
+      const th = document.createElement('th');
+      th.textContent = text;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const maxRows = Math.max(correctPicks.length, incorrectPicks.length);
+    for (let i = 0; i < maxRows; i++) {
+      const tr = document.createElement('tr');
+      const tdCorrect = document.createElement('td');
+      tdCorrect.textContent = correctPicks[i] || "";
+      if (correctPicks[i]) tdCorrect.classList.add('correct');
+
+      const tdIncorrect = document.createElement('td');
+      tdIncorrect.textContent = incorrectPicks[i] || "";
+      if (incorrectPicks[i]) tdIncorrect.classList.add('incorrect');
+
+      tr.appendChild(tdCorrect);
+      tr.appendChild(tdIncorrect);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    div.appendChild(table);
+    resultsContainer.appendChild(div);
+  }
+
+  // --- 3. Display all game scores at the bottom ---
+  const gamesDiv = document.createElement('div');
+  gamesDiv.id = "game-results";
+  const gamesHeader = document.createElement('h2');
+  gamesHeader.textContent = "Game Scores";
+  gamesDiv.appendChild(gamesHeader);
+
+  for (const eventId of gameSlate) {
+    const result = gameResultsMap[eventId];
+    if (!result) continue;
+
+    const { competitors } = result;
+    const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score || 0})`).join(" vs ");
+    const p = document.createElement('p');
+    p.textContent = scoreLine;
+    gamesDiv.appendChild(p);
+  }
+
+  resultsContainer.appendChild(gamesDiv);
+}
+
+    renderResults().catch(err => console.error("Error rendering picks:", err));
   </script>
 </body>
 </html>
