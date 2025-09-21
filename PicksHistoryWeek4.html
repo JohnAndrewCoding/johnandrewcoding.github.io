@@ -89,39 +89,21 @@
       }
     }
 
-   async function renderResults() {
+  async function renderResults() {
   const resultsContainer = document.getElementById('results');
 
-  // --- 1. Fetch and display all game scores at the top ---
-  const gamesDiv = document.createElement('div');
-  gamesDiv.id = "game-results";
-  const gamesHeader = document.createElement('h2');
-  gamesHeader.textContent = "Game Scores";
-  gamesDiv.appendChild(gamesHeader);
-
-
+  // --- 1. Fetch all game results first and cache them ---
   const gameResultsMap = {}; // store results for later use by user picks
-
   for (const eventId of gameSlate) {
     const result = await getGameResult(eventId);
     if (!result) continue;
-
-    const { competitors, matchupName, winnerId } = result;
-
-    // Save for user pick checks
     gameResultsMap[eventId] = result;
-
-    // Display score
-    const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score || 0})`).join(" vs ");
-    const p = document.createElement('p');
-    p.textContent = scoreLine;
-    gamesDiv.appendChild(p);
   }
 
-  // --- 2. Loop through Firestore users and render picks ---
+  // --- 2. Loop through Firestore users and render pick tables at the top ---
   const snapshot = await db.collection("week4Picks").get();
   if (snapshot.empty) {
-    resultsContainer.textContent += "\nNo picks found.";
+    resultsContainer.textContent = "No picks found.";
     return;
   }
 
@@ -136,7 +118,7 @@
     const incorrectPicks = [];
 
     for (const eventId of gameSlate) {
-      const result = gameResultsMap[eventId]; // use cached result
+      const result = gameResultsMap[eventId];
       if (!result || !result.winnerId) continue;
 
       const { winnerId, competitors, matchupName } = result;
@@ -196,10 +178,28 @@
     table.appendChild(tbody);
     div.appendChild(table);
     resultsContainer.appendChild(div);
-      resultsContainer.appendChild(gamesDiv);
   }
-}
 
+  // --- 3. Display all game scores at the bottom ---
+  const gamesDiv = document.createElement('div');
+  gamesDiv.id = "game-results";
+  const gamesHeader = document.createElement('h2');
+  gamesHeader.textContent = "Game Scores";
+  gamesDiv.appendChild(gamesHeader);
+
+  for (const eventId of gameSlate) {
+    const result = gameResultsMap[eventId];
+    if (!result) continue;
+
+    const { competitors } = result;
+    const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score || 0})`).join(" vs ");
+    const p = document.createElement('p');
+    p.textContent = scoreLine;
+    gamesDiv.appendChild(p);
+  }
+
+  resultsContainer.appendChild(gamesDiv);
+}
 
     renderResults().catch(err => console.error("Error rendering picks:", err));
   </script>
