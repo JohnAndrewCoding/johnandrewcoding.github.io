@@ -53,7 +53,7 @@ const gameNames = [
 // Helper: fetch the winner team from ESPN summary API
 async function getWinnerByGameName(gameName) {
   try {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard`;
+    const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250827-20250902`;
     const res = await fetch(url);
     const data = await res.json();
     const events = data?.events || [];
