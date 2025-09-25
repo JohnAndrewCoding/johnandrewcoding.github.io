@@ -6,76 +6,90 @@
 <title>Week 5 Picks</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-  body { background-color: #1c1c1c; color: white; font-family: Arial, sans-serif; }
-  .container { max-width: 900px; }
+  body {
+    background: linear-gradient(135deg, #1f2a44, #4b6cb7);
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+    padding: 20px;
+  }
 
-  .game-block {
-    background: #282828;
+  h2 { text-align: center; margin-bottom: 20px; font-weight: 700; }
+
+  .btn-custom {
     border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  }
-
-  .teams-container {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: nowrap; /* always side by side */
-    margin-top: 10px;
-  }
-
-  .btn-team {
-    width: calc(50% - 5px);
+    padding: 10px;
+    margin: 5px;
+    min-width: 120px;
+    height: 140px;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    padding: 10px;
-    height: 120px;
-    border-radius: 12px;
-    border: 2px solid white;
+    align-items: center;
     font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.15s;
+    border: 2px solid white;
+    transition: transform 0.2s, box-shadow 0.2s;
   }
 
-  .btn-team:hover { transform: scale(1.03); }
-
-  .btn-team.active {
-    outline: 2px solid gold;
-    box-shadow: 0 0 10px gold;
+  .btn-custom:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255,255,255,0.6);
   }
 
-  .team-logo { max-width: 70px; max-height: 70px; object-fit: contain; margin-bottom: 5px; }
+  .btn-custom.active {
+    outline: 2px solid #ffcc00;
+    box-shadow: 0 0 15px #ffcc00;
+  }
 
-  .odds { font-size: 0.8rem; color: #ffd700; margin-top: 3px; }
+  .game-block {
+    background: rgba(255,255,255,0.05);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    transition: transform 0.2s, background 0.2s;
+  }
 
-  .pickers { margin-top: 5px; font-size: 0.75rem; color: #00ffff; text-align: center; }
+  .game-block:hover {
+    transform: scale(1.02);
+    background: rgba(255,255,255,0.1);
+  }
 
-  .vs-span { align-self: center; font-weight: bold; margin: 0 10px; }
+  .teams {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: nowrap; /* always side by side */
+    margin-bottom: 10px;
+  }
+
+  .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 5px; }
+  .team-name { font-size: 16px; text-align: center; }
+  .odds { font-size: 0.85rem; color: #ffd700; margin-top: 3px; }
+  .vs-span { font-weight: bold; font-size: 18px; align-self: center; }
+  .auth-buttons { text-align: center; margin-bottom: 20px; }
 </style>
-<!-- Firebase SDKs -->
+</head>
+<body>
+
+<a href="Week5Homepage.html"><button class="btn btn-light btn-sm text-dark mb-3">Home</button></a>
+
+<h2 id="welcomeMessage">Welcome!</h2>
+
+<div class="auth-buttons">
+  <button id="googleSignInBtn" class="btn btn-light text-dark mb-2">Sign in with Google</button>
+  <button id="googleSignOutBtn" class="btn btn-secondary mb-2" style="display:none;">Sign Out</button>
+  <p id="authStatus">Not signed in</p>
+</div>
+
+<form id="Week5picksform">
+  <div id="week5games" class="mb-3"></div>
+  <button class="btn btn-warning text-dark" type="submit">Save Picks</button>
+</form>
+
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore-compat.js"></script>
-</head>
-<body>
-<div class="container my-3">
-  <a href="Week5Homepage.html" class="btn btn-light btn-sm text-dark mb-3">Home</a>
-  <h2 id="welcomeMessage">Welcome!</h2>
-
-  <div class="mb-3">
-    <button id="googleSignInBtn" class="btn btn-light text-dark mb-2">Sign in with Google</button>
-    <button id="googleSignOutBtn" class="btn btn-secondary mb-2" style="display:none;">Sign Out</button>
-    <p id="authStatus">Not signed in</p>
-  </div>
-
-  <form id="Week5picksform">
-    <div id="week5games"></div>
-    <button class="btn btn-secondary text-white mt-3" type="submit">Save Picks</button>
-  </form>
-</div>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
@@ -91,11 +105,10 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 const provider = new firebase.auth.GoogleAuthProvider();
 
-const userSelections = {};
-let currentUser = null;
+let userSelections = {};
 let picksInitialized = false;
+let currentUser = null;
 
-// Utility functions
 function getContrastYIQ(hexcolor) {
   hexcolor = hexcolor.replace('#','');
   const r = parseInt(hexcolor.substr(0,2),16);
@@ -109,20 +122,18 @@ function adjustColor(color, amount) {
   let usePound = false;
   if (color[0] === "#") { color = color.slice(1); usePound = true; }
   let num = parseInt(color,16);
-  let r = (num >> 16) + amount; r = Math.min(255, Math.max(0, r));
-  let g = ((num >> 8) & 0x00FF) + amount; g = Math.min(255, Math.max(0, g));
-  let b = (num & 0x0000FF) + amount; b = Math.min(255, Math.max(0, b));
+  let r = (num >> 16) + amount; r = Math.min(255, Math.max(0,r));
+  let g = ((num >> 8) & 0x00FF) + amount; g = Math.min(255, Math.max(0,g));
+  let b = (num & 0x0000FF) + amount; b = Math.min(255, Math.max(0,b));
   return (usePound ? "#" : "") + (r << 16 | g << 8 | b).toString(16).padStart(6,'0');
 }
 
-// Save picks
-function savePicks(user, weekNum) {
+async function savePicks(user, weekNum) {
   const form = document.getElementById('Week5picksform');
-  form.addEventListener('submit', async function(e) {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const docId = `${user.uid}_week${weekNum}`;
-    const dbName = `week${weekNum}Picks`;
-    await db.collection(dbName).doc(docId).set({
+    await db.collection(`week${weekNum}Picks`).doc(docId).set({
       uid: user.uid,
       name: user.displayName,
       week: weekNum,
@@ -133,53 +144,38 @@ function savePicks(user, weekNum) {
   });
 }
 
-// Load previous picks
 async function loadUserPicks(user, weekNum) {
-  const docId = `${user.uid}_week${weekNum}`;
-  const dbName = `week${weekNum}Picks`;
-  const docRef = await db.collection(dbName).doc(docId).get();
+  const docRef = await db.collection(`week${weekNum}Picks`).doc(`${user.uid}_week${weekNum}`).get();
   if (!docRef.exists) return;
-
   const picks = docRef.data().picks || {};
   Object.entries(picks).forEach(([eventId, pickedTeamId]) => {
-    const btnGroup = document.querySelector(`div[data-event-id="${eventId}"]`);
-    if (!btnGroup) return;
-    const matchBtn = Array.from(btnGroup.querySelectorAll('.btn-team'))
-      .find(b => b.dataset.teamId === pickedTeamId);
-    if (matchBtn) matchBtn.classList.add('active');
+    const btn = document.querySelector(`button[data-event-id="${eventId}"][data-team-id="${pickedTeamId}"]`);
+    if (btn) btn.classList.add('active');
     userSelections[eventId] = pickedTeamId;
   });
 }
 
-// Load games and render buttons
 async function loadGames(weekNum, user) {
   const container = document.getElementById('week5games');
-  container.innerHTML = '<p>Loading games...</p>';
+  container.innerHTML = '';
 
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250924-20250927');
     const data = await res.json();
     const targetEventIds = ["401754543","401752850","401752717","401752719","401752724","401752853","401756904","401752854","401752718"];
-    const gameSlate = data.events.filter(event => targetEventIds.includes(event.id));
+    const games = data.events.filter(e => targetEventIds.includes(e.id));
 
-    container.innerHTML = '';
-    for (const event of gameSlate) {
+    games.forEach(event => {
       const comp = event.competitions[0];
       const home = comp.competitors[0].team;
       const away = comp.competitors[1].team;
       const kickoffTime = new Date(event.date);
 
-      // Game block
       const gameDiv = document.createElement('div');
       gameDiv.className = 'game-block';
-      const header = document.createElement('div');
-      header.innerHTML = `<strong>${home.location} vs ${away.location}</strong> <small>${event.status.type.description} | ${kickoffTime.toLocaleString()}</small>`;
-      gameDiv.appendChild(header);
 
-      // Teams container
       const teamsDiv = document.createElement('div');
-      teamsDiv.className = 'teams-container';
-      teamsDiv.dataset.eventId = event.id;
+      teamsDiv.className = 'teams';
 
       const oddsInfo = comp.odds && comp.odds[0];
       let homeFav = false, awayFav = false;
@@ -191,59 +187,57 @@ async function loadGames(weekNum, user) {
       [home, away].forEach((team, index) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'btn-team';
+        btn.className = 'btn-custom';
         btn.dataset.teamId = team.id;
         btn.dataset.eventId = event.id;
 
-        const bgColor = `#${adjustColor(team.color, 40)}`;
+        const bgColor = `#${adjustColor(team.color, 40) || (index === 0 ? "007bff":"6c757d")}`;
         btn.style.backgroundColor = bgColor;
         btn.style.color = getContrastYIQ(bgColor);
 
-        // Logo + Name
         const img = document.createElement('img');
-        img.src = team.logo; img.className = 'team-logo'; btn.appendChild(img);
+        img.src = team.logo; img.className = 'team-logo';
+        btn.appendChild(img);
 
-        const nameSpan = document.createElement('span'); nameSpan.textContent = team.location; btn.appendChild(nameSpan);
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = team.location; nameSpan.className = 'team-name';
+        btn.appendChild(nameSpan);
 
-        // Odds for favored team
+        // Display odds if favored
         if ((team === home && homeFav) || (team === away && awayFav)) {
-          const oddsSpan = document.createElement('div');
+          const oddsSpan = document.createElement('span');
           oddsSpan.className = 'odds';
-          oddsSpan.textContent = oddsInfo.details || 'Favored';
+          oddsSpan.textContent = oddsInfo.details || "Favored";
           btn.appendChild(oddsSpan);
         }
 
-        // Pickers display
-        const pickersDiv = document.createElement('div'); pickersDiv.className = 'pickers';
-        pickersDiv.dataset.teamId = team.id;
-        btn.appendChild(pickersDiv);
-
-        // Disable past games
         if (new Date() >= kickoffTime) btn.disabled = true;
         else btn.onclick = () => {
-          teamsDiv.querySelectorAll('.btn-team').forEach(b => b.classList.remove('active'));
+          const siblings = gameDiv.querySelectorAll('button');
+          siblings.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          userSelections[event.id] = btn.dataset.teamId;
+          userSelections[event.id] = team.id;
         };
 
         teamsDiv.appendChild(btn);
 
         if (index === 0) {
-          const vsSpan = document.createElement('div'); vsSpan.className = 'vs-span'; vsSpan.textContent = 'vs';
+          const vsSpan = document.createElement('span');
+          vsSpan.textContent = 'vs';
+          vsSpan.className = 'vs-span';
           teamsDiv.appendChild(vsSpan);
         }
       });
 
       gameDiv.appendChild(teamsDiv);
       container.appendChild(gameDiv);
-    }
+    });
 
     if (user) await loadUserPicks(user, weekNum);
 
-  } catch (err) { console.error(err); container.innerHTML = '<p>Error loading games</p>'; }
+  } catch(err) { console.error(err); }
 }
 
-// Initialize picks
 function initPicks(user) {
   if (picksInitialized) return;
   picksInitialized = true;
@@ -253,7 +247,6 @@ function initPicks(user) {
   loadGames(weekNum, user);
 }
 
-// Auth
 document.getElementById("googleSignInBtn").onclick = () => auth.signInWithPopup(provider);
 document.getElementById("googleSignOutBtn").onclick = () => {
   auth.signOut().then(() => {
@@ -268,12 +261,14 @@ document.getElementById("googleSignOutBtn").onclick = () => {
 };
 
 auth.onAuthStateChanged(user => {
-  if (user) { currentUser = user; initPicks(user); document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
+  if (user) {
+    currentUser = user;
+    document.getElementById("authStatus").innerText = `Signed in as ${user.displayName}`;
     document.getElementById("googleSignInBtn").style.display = "none";
     document.getElementById("googleSignOutBtn").style.display = "inline-block";
+    initPicks(user);
   }
 });
 </script>
 </body>
 </html>
-
