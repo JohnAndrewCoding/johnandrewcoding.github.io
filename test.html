@@ -41,6 +41,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
   <script>
+    // --- Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
       authDomain: "college-football-pickem-68eed.firebaseapp.com",
@@ -54,30 +55,34 @@
     const db = firebase.firestore();
 
     async function buildLeaderboard() {
-      const leaderboardContainer = document.getElementById("leaderboard");
+      const container = document.getElementById("leaderboard");
 
       // 1. Fetch all userResults documents
       const snapshot = await db.collection("userResults").get();
       if (snapshot.empty) {
-        leaderboardContainer.textContent = "No results yet.";
+        container.textContent = "No results yet.";
         return;
       }
 
-      // 2. Aggregate running totals per user
-      const totals = {};
+      // 2. Aggregate wins/losses by UID
+      const totals = {}; // key = uid, value = {userName, wins, losses}
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         const { uid, userName, wins = 0, losses = 0 } = data;
-        if (!totals[uid]) totals[uid] = { userName, wins: 0, losses: 0 };
-        totals[uid].wins += wins;
-        totals[uid].losses += losses;
+
+        // Extract UID without week suffix if needed
+        const baseUid = uid.replace(/_week\d+$/, "");
+
+        if (!totals[baseUid]) totals[baseUid] = { userName, wins: 0, losses: 0 };
+        totals[baseUid].wins += wins;
+        totals[baseUid].losses += losses;
       });
 
       // 3. Convert totals to array and sort by wins descending
       const leaderboardArray = Object.values(totals)
         .sort((a, b) => b.wins - a.wins);
 
-      // 4. Update Firestore leaderboard document
+      // 4. Update Firestore leaderboard/allTime doc
       await db.collection("leaderboard").doc("allTime").set({
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         users: leaderboardArray
@@ -108,10 +113,10 @@
       });
 
       table.appendChild(tbody);
-      leaderboardContainer.appendChild(table);
+      container.appendChild(table);
     }
 
-    // Ensure anonymous auth before building leaderboard
+    // --- Anonymous Auth before building leaderboard ---
     firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
         try {
@@ -125,6 +130,3 @@
   </script>
 </body>
 </html>
-
-
-
