@@ -1,12 +1,260 @@
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<body class="bg-dark text-light">
-  <h1 class="text-center my-4">Week 5 Games & Picks</h1>
-  <a href="leaderboard.html"><button>Homepage</button></a>
-  <a href="GamesWeek5.html"><button>Make Picks</button></a>
-  <div id="picksContainer" class="container"></div>
-  <br><br><br>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Week 5 Games & Picks</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #1f2a44, #4b6cb7);
+      color: #fff;
+      margin: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    a button {
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: linear-gradient(90deg, #4b6cb7, #182848);
+      color: #fff;
+      transition: transform 0.2s;
+    }
+    a button:hover {
+      transform: scale(1.05);
+    }
+
+    #picksContainer {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .game-block {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .game-block:hover {
+      transform: scale(1.02);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .teams {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-weight: 600;
+    }
+
+    .team-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 100px;
+    }
+
+    .team-logo {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 5px;
+    }
+
+    .team-name {
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .team-score {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .status {
+      font-size: 14px;
+      font-weight: 400;
+      margin-top: 5px;
+      text-align: right;
+      flex: 1;
+    }
+
+    .picks-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .picks-list {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .picks-list h4 {
+      margin: 0 0 5px 0;
+      font-size: 14px;
+      text-align: center;
+      text-decoration: underline;
+    }
+
+    .picks-list p {
+      margin: 2px 0;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .teams { flex-direction: column; gap: 10px; }
+      .status { text-align: center; margin-top: 10px; }
+      .picks-container { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Week 5 Games & Picks</h1>
+  <div class="buttons">
+    <a href="leaderboard.html"><button>Homepage</button></a>
+    <a href="GamesWeek5.html"><button>Make Picks</button></a>
+  </div>
+
+  <div id="picksContainer"></div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script src="Week5Homepage.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+      authDomain: "college-football-pickem-68eed.firebaseapp.com",
+      projectId: "college-football-pickem-68eed",
+      storageBucket: "college-football-pickem-68eed.appspot.com",
+      messagingSenderId: "650202039805",
+      appId: "1:650202039805:web:70e51177aab22e4d614594"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function loadGamesAndPicks(weekNum) {
+      const container = document.getElementById('picksContainer');
+      container.innerHTML = '<p>Loading games...</p>';
+
+      try {
+        const picksSnapshot = await db.collection(`week${weekNum}Picks`).get();
+        const allPicks = {};
+        const gamesInDB = new Set();
+
+        picksSnapshot.forEach(doc => {
+          const { picks, name } = doc.data();
+          for (const [eventId, teamPick] of Object.entries(picks)) {
+            if (!allPicks[eventId]) allPicks[eventId] = [];
+            allPicks[eventId].push({ name, pick: teamPick });
+            gamesInDB.add(eventId);
+          }
+        });
+
+        if (gamesInDB.size === 0) {
+          container.innerHTML = '<p>No games/picks available.</p>';
+          return;
+        }
+
+        const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20250924-20250927');
+        const data = await res.json();
+        const games = data.events;
+
+        container.innerHTML = '';
+
+        games.forEach(event => {
+          if (!gamesInDB.has(event.id)) return;
+
+          const comp = event.competitions[0];
+          const status = event.status.type.description;
+
+          const home = comp.competitors[0];
+          const away = comp.competitors[1];
+
+          const gameDiv = document.createElement('div');
+          gameDiv.className = 'game-block';
+
+          // Header with teams + scores
+          const headerDiv = document.createElement('div');
+          headerDiv.className = 'game-header';
+          const teamsDiv = document.createElement('div');
+          teamsDiv.className = 'teams';
+
+          [home, away].forEach(team => {
+            const teamDiv = document.createElement('div');
+            teamDiv.className = 'team-block';
+            teamDiv.innerHTML = `
+              <img src="${team.team.logo}" class="team-logo" alt="${team.team.displayName}">
+              <div class="team-name">${team.team.displayName}</div>
+              <div class="team-score">${team.score || 0}</div>
+            `;
+
+            // Picks for this team
+            const picksForTeam = allPicks[event.id].filter(p => p.pick === team.team.id);
+            if (picksForTeam.length) {
+              const picksDiv = document.createElement('div');
+              picksDiv.className = 'picks-list';
+              picksDiv.innerHTML = `<h4>Picks</h4>`;
+              picksForTeam.forEach(p => {
+                const pEl = document.createElement('p');
+                pEl.textContent = p.name;
+                picksDiv.appendChild(pEl);
+              });
+              teamDiv.appendChild(picksDiv);
+            }
+
+            teamsDiv.appendChild(teamDiv);
+          });
+
+          const statusDiv = document.createElement('div');
+          statusDiv.className = 'status';
+          statusDiv.textContent = status;
+
+          headerDiv.appendChild(teamsDiv);
+          headerDiv.appendChild(statusDiv);
+
+          gameDiv.appendChild(headerDiv);
+          container.appendChild(gameDiv);
+        });
+
+      } catch(err) {
+        console.error('Error loading games/picks:', err);
+        container.innerHTML = '<p>Error loading data. Check console.</p>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const weekNum = 5;
+      loadGamesAndPicks(weekNum);
+    });
+  </script>
 </body>
+</html>
