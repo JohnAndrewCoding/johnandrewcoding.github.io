@@ -40,17 +40,15 @@
     }
   </style>
 </head>
-  <!-- Add Firebase Auth SDK -->
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-
 <body>
   <h1>Week 1 Picks Results</h1>
   <a href="PicksHistory.html"><button>Home</button></a>
   <div id="results"></div>
 
-  <!-- Firebase v8 SDK -->
+  <!-- Firebase SDKs (v8) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
   <script>
     // --- Firebase Config ---
@@ -63,6 +61,7 @@
       appId: "1:650202039805:web:70e51177aab22e4d614594"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -75,6 +74,7 @@
       "401752680", "401754523"
     ];
 
+    // --- Fetch game results from ESPN API ---
     async function getGameResult(eventId) {
       const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${eventId}`;
       try {
@@ -93,10 +93,12 @@
         return null;
       }
     }
+
+    // --- Render results and update Firestore ---
     async function renderResults() {
       const resultsContainer = document.getElementById('results');
 
-      // 1. Fetch game results first
+      // 1. Fetch all game results first
       const gameResultsMap = {};
       for (const eventId of gameSlate) {
         const result = await getGameResult(eventId);
@@ -110,13 +112,13 @@
         return;
       }
 
-      const weekNum = 1; // <-- Change this dynamically if you reuse this file for other weeks
+      const weekNum = 1; // Adjust if needed for other weeks
 
       for (const doc of snapshot.docs) {
         const data = doc.data();
         const userName = data.name;
         const picks = data.picks;
-        const uid = doc.id; // assuming doc.id = user UID
+        const uid = doc.id;
 
         let wins = 0;
         let losses = 0;
@@ -145,7 +147,7 @@
           }
         }
 
-        // 3. Store or update user results in Firestore
+        // --- Save or update user results ---
         const resultDocId = `week${weekNum}results_${uid}`;
         await db.collection("userResults").doc(resultDocId).set({
           uid,
@@ -157,7 +159,7 @@
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
 
-        // 4. Render the results table on page
+        // --- Render the table for the user ---
         const div = document.createElement('div');
         div.classList.add('user-report');
 
@@ -198,7 +200,7 @@
         resultsContainer.appendChild(div);
       }
 
-      // 5. Show all game scores at the bottom
+      // --- Display all game scores at the bottom ---
       const gamesDiv = document.createElement('div');
       gamesDiv.id = "game-results";
       const gamesHeader = document.createElement('h2');
@@ -219,12 +221,18 @@
       resultsContainer.appendChild(gamesDiv);
     }
 
-  firebase.auth().onAuthStateChanged(async (user) => {
-  if (!user) {
-    await firebase.auth().signInAnonymously();
-  }
-  renderResults().catch(err => console.error("Error rendering picks:", err));
-});
+    // --- Sign in anonymously before rendering ---
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) {
+        try {
+          await firebase.auth().signInAnonymously();
+        } catch (err) {
+          console.error("Anonymous sign-in failed:", err);
+        }
+      }
+      renderResults().catch(err => console.error("Error rendering picks:", err));
+    });
   </script>
 </body>
 </html>
+
