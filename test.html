@@ -35,13 +35,11 @@
   <h1>Leaderboard</h1>
   <div id="leaderboard"></div>
 
-  <!-- Firebase SDKs (v8) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 
   <script>
-    // --- Firebase config ---
     const firebaseConfig = {
       apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
       authDomain: "college-football-pickem-68eed.firebaseapp.com",
@@ -57,38 +55,35 @@
     async function buildLeaderboard() {
       const container = document.getElementById("leaderboard");
 
-      // 1. Fetch all userResults documents
       const snapshot = await db.collection("userResults").get();
       if (snapshot.empty) {
         container.textContent = "No results yet.";
         return;
       }
 
-      // 2. Aggregate wins/losses by UID
-      const totals = {}; // key = uid, value = {userName, wins, losses}
+      // Aggregate wins/losses by username (trimmed & lowercase for safety)
+      const totals = {};
       snapshot.docs.forEach(doc => {
         const data = doc.data();
-        const { uid, userName, wins = 0, losses = 0 } = data;
+        if (!data.userName) return; // skip invalid docs
 
-        // Extract UID without week suffix if needed
-        const baseUid = uid.replace(/_week\d+$/, "");
-
-        if (!totals[baseUid]) totals[baseUid] = { userName, wins: 0, losses: 0 };
-        totals[baseUid].wins += wins;
-        totals[baseUid].losses += losses;
+        const key = data.userName.trim().toLowerCase();
+        if (!totals[key]) {
+          totals[key] = { userName: data.userName.trim(), wins: 0, losses: 0 };
+        }
+        totals[key].wins += data.wins || 0;
+        totals[key].losses += data.losses || 0;
       });
 
-      // 3. Convert totals to array and sort by wins descending
-      const leaderboardArray = Object.values(totals)
-        .sort((a, b) => b.wins - a.wins);
+      const leaderboardArray = Object.values(totals).sort((a, b) => b.wins - a.wins);
 
-      // 4. Update Firestore leaderboard/allTime doc
+      // Update Firestore leaderboard doc
       await db.collection("leaderboard").doc("allTime").set({
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         users: leaderboardArray
       });
 
-      // 5. Render leaderboard table
+      // Render table
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
@@ -116,7 +111,6 @@
       container.appendChild(table);
     }
 
-    // --- Anonymous Auth before building leaderboard ---
     firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
         try {
@@ -130,3 +124,4 @@
   </script>
 </body>
 </html>
+
