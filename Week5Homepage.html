@@ -68,6 +68,7 @@
       align-items: center;
       gap: 15px;
       font-weight: 600;
+      flex-wrap: nowrap; /* ensures side by side even on mobile */
     }
 
     .team-block {
@@ -102,39 +103,28 @@
       flex: 1;
     }
 
-    .picks-container {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
     .picks-list {
       background: rgba(255,255,255,0.1);
       border-radius: 8px;
       padding: 8px;
-      flex: 1;
-      min-width: 120px;
+      margin-top: 5px;
+      text-align: center;
     }
 
     .picks-list h4 {
       margin: 0 0 5px 0;
       font-size: 14px;
-      text-align: center;
       text-decoration: underline;
     }
 
     .picks-list p {
       margin: 2px 0;
       font-size: 13px;
-      text-align: center;
     }
 
+    /* Removed mobile stacking so teams stay side by side */
     @media (max-width: 600px) {
-      .teams { flex-direction: column; gap: 10px; }
       .status { text-align: center; margin-top: 10px; }
-      .picks-container { flex-direction: column; }
     }
   </style>
 </head>
@@ -195,7 +185,6 @@
 
           const comp = event.competitions[0];
           const status = event.status.type.description;
-
           const home = comp.competitors[0];
           const away = comp.competitors[1];
 
@@ -216,6 +205,20 @@
               <div class="team-name">${team.team.displayName}</div>
               <div class="team-score">${team.score || 0}</div>
             `;
+
+            // Odds logic: highlight favorite if available
+            if (comp.odds && comp.odds[0] && comp.odds[0].homeTeamOdds) {
+              const oddsInfo = comp.odds[0];
+              const isFavorite = (team === home && oddsInfo.homeTeamOdds.favorite) || 
+                                 (team === away && !oddsInfo.homeTeamOdds.favorite);
+              if (isFavorite) {
+                const oddsEl = document.createElement('div');
+                oddsEl.textContent = oddsInfo.details;
+                oddsEl.style.fontSize = '12px';
+                oddsEl.style.marginTop = '2px';
+                teamDiv.appendChild(oddsEl);
+              }
+            }
 
             // Picks for this team
             const picksForTeam = allPicks[event.id].filter(p => p.pick === team.team.id);
