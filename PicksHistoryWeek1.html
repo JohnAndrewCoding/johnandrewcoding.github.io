@@ -40,6 +40,9 @@
     }
   </style>
 </head>
+  <!-- Add Firebase Auth SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
 <body>
   <h1>Week 1 Picks Results</h1>
   <a href="PicksHistory.html"><button>Home</button></a>
@@ -90,7 +93,6 @@
         return null;
       }
     }
-
     async function renderResults() {
       const resultsContainer = document.getElementById('results');
 
@@ -217,7 +219,12 @@
       resultsContainer.appendChild(gamesDiv);
     }
 
-    renderResults().catch(err => console.error("Error rendering picks:", err));
+  firebase.auth().onAuthStateChanged(async (user) => {
+  if (!user) {
+    await firebase.auth().signInAnonymously();
+  }
+  renderResults().catch(err => console.error("Error rendering picks:", err));
+});
   </script>
 </body>
 </html>
