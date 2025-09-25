@@ -7,28 +7,30 @@
   <style>
     body {
       font-family: 'Montserrat', sans-serif;
-      margin: 40px;
+      margin: 20px;
       background: linear-gradient(135deg, #1f2a44, #4b6cb7);
       color: #fff;
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       font-weight: 700;
       letter-spacing: 1px;
+      font-size: 28px;
     }
 
     #leaderboard {
       display: flex;
       justify-content: center;
+      overflow-x: auto; /* allow horizontal scroll on small screens */
     }
 
     table {
       border-collapse: separate;
       border-spacing: 0;
-      width: 90%;
-      max-width: 750px;
+      min-width: 600px; /* ensures table is scrollable on mobile */
+      width: 100%;
       background-color: rgba(255, 255, 255, 0.1);
       border-radius: 15px;
       overflow: hidden;
@@ -37,8 +39,9 @@
     }
 
     th, td {
-      padding: 15px 20px;
+      padding: 12px 18px;
       text-align: left;
+      font-size: 14px;
     }
 
     th {
@@ -64,7 +67,7 @@
     }
 
     td {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 500;
     }
 
@@ -78,13 +81,21 @@
       position: relative;
       background-color: rgba(255,255,255,0.2);
       border-radius: 8px;
-      height: 15px;
+      height: 12px;
       width: 100%;
+      margin-bottom: 4px;
     }
     .win-percent-inner {
       background-color: #4b6cb7;
       height: 100%;
       border-radius: 8px;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 600px) {
+      h1 { font-size: 22px; }
+      th, td { padding: 10px 12px; font-size: 12px; }
+      .win-percent { height: 10px; }
     }
   </style>
 </head>
@@ -131,7 +142,11 @@
       });
 
       const leaderboardArray = Object.values(totals)
-        .map(u => ({ ...u, totalGames: u.wins + u.losses, winPercent: ((u.wins/(u.wins+u.losses))*100).toFixed(1) }))
+        .map(u => ({ 
+          ...u, 
+          totalGames: u.wins + u.losses, 
+          winPercent: ((u.wins/(u.wins+u.losses))*100).toFixed(1) 
+        }))
         .sort((a,b) => b.wins - a.wins || a.losses - b.losses);
 
       // Assign ranks with ties
