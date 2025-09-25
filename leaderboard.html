@@ -14,26 +14,25 @@
 
     h1 {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       font-weight: 700;
       letter-spacing: 1px;
       font-size: 28px;
     }
 
-    /* Button container at top */
     .button-group {
       display: flex;
-      flex-wrap: wrap;
       justify-content: center;
+      flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 20px;
     }
 
     .button-group a button {
       font-size: 20px;
-      padding: 12px 25px;
+      padding: 15px 30px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
       background: linear-gradient(90deg, #4b6cb7, #182848);
@@ -43,13 +42,13 @@
 
     .button-group a button:hover {
       transform: scale(1.05);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      box-shadow: 0 0 15px rgba(255,255,255,0.6);
     }
 
     #leaderboard {
       display: flex;
       justify-content: center;
-      overflow-x: auto; /* allow horizontal scroll on small screens */
+      overflow-x: auto;
     }
 
     table {
@@ -119,18 +118,27 @@
 
     /* Mobile adjustments */
     @media (max-width: 600px) {
-      h1 { font-size: 22px; }
-      th, td { padding: 10px 12px; font-size: 12px; }
+      h1 { font-size: 24px; }
+      th, td { padding: 10px 12px; font-size: 13px; }
       .win-percent { height: 10px; }
-      .button-group { flex-direction: column; align-items: center; }
-      .button-group a button { width: 90%; max-width: 300px; }
+      
+      .button-group { 
+        flex-direction: column; 
+        align-items: center; 
+      }
+      .button-group a button { 
+        width: 90%; 
+        max-width: 350px; 
+        font-size: 18px; 
+        padding: 15px 25px; 
+      }
     }
   </style>
 </head>
 <body>
   <h1>College Football Leaderboard</h1>
 
-  <!-- Week buttons + Picks History -->
+  <!-- Week Buttons + Picks History -->
   <div class="button-group">
     <a href="Week1homepage.html"><button>Week 1</button></a>
     <a href="Week2Homepage.html"><button>Week 2</button></a>
@@ -187,6 +195,7 @@
         }))
         .sort((a,b) => b.wins - a.wins || a.losses - b.losses);
 
+      // Assign ranks
       let currentRank = 0, previousWins = null, previousLosses = null, skip = 0;
       leaderboardArray.forEach((user, index) => {
         if (user.wins === previousWins && user.losses === previousLosses) {
@@ -197,11 +206,13 @@
         previousWins = user.wins; previousLosses = user.losses;
       });
 
+      // Update Firestore leaderboard document
       await db.collection("leaderboard").doc("allTime").set({
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         users: leaderboardArray
       });
 
+      // Render table
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
