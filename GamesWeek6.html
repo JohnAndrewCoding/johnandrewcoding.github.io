@@ -129,7 +129,7 @@ function adjustColor(color, amount) {
 }
 
 async function savePicks(user, weekNum) {
-  const form = document.getElementById('Week5picksform');
+  const form = document.getElementById('Week6picksform');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const docId = `${user.uid}_week${weekNum}`;
@@ -156,7 +156,7 @@ async function loadUserPicks(user, weekNum) {
 }
 
 async function loadGames(weekNum, user) {
-  const container = document.getElementById('week5games');
+  const container = document.getElementById('week6games');
   container.innerHTML = '';
 
   try {
