@@ -14,7 +14,7 @@
 
     body {
       font-family: 'Orbitron', sans-serif;
-      background: radial-gradient(circle at 20% 30%, #07171f, #102a34, #1a3f4f);
+      background: radial-gradient(circle at 20% 30%, #03151c, #072631, #0e3849);
       overflow-x: hidden;
       color: #00ffff;
       min-height: 100vh;
@@ -25,12 +25,14 @@
       position: relative;
     }
 
-    /* Particle background - moved behind everything else */
-    #particles {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
+    /* === Force canvas to stay behind === */
+    #particles canvas {
+      position: fixed !important;
+      top: 0; 
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1 !important; /* absolute bottom */
       pointer-events: none;
     }
 
@@ -39,8 +41,8 @@
       letter-spacing: 3px;
       text-shadow: 0 0 10px #00ffff, 0 0 20px #00e0ff;
       margin-bottom: 40px;
-      z-index: 2;
       text-align: center;
+      z-index: 10;
     }
 
     .container {
@@ -48,9 +50,9 @@
       flex-direction: column;
       align-items: center;
       gap: 1rem;
-      z-index: 2;
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(12px);
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
       border-radius: 20px;
       padding: 30px;
       box-shadow: 0 0 25px rgba(0, 255, 255, 0.2);
@@ -64,14 +66,14 @@
       border: 2px solid #00ffff;
       color: #00ffff;
       border-radius: 10px;
-      position: relative;
-      overflow: hidden;
       text-transform: uppercase;
       letter-spacing: 2px;
       transition: 0.3s;
       font-weight: bold;
       background: rgba(255,255,255,0.05);
-      box-shadow: 0 0 10px rgba(0,255,255,0.6);
+      box-shadow: 0 0 10px rgba(0,255,255,0.7);
+      position: relative;
+      z-index: 10;
     }
 
     .neon-btn:hover {
@@ -88,6 +90,8 @@
       margin-top: 20px;
       width: 100%;
       align-items: center;
+      z-index: 10;
+      position: relative;
     }
 
     .weeks a {
@@ -102,7 +106,8 @@
       text-align: center;
       border: 1px solid rgba(0,255,255,0.3);
       box-shadow: 0 0 12px rgba(0,255,255,0.5);
-      z-index: 3;
+      position: relative;
+      z-index: 10;
     }
 
     .weeks a:hover {
@@ -121,6 +126,7 @@
 </head>
 <body>
   <div id="particles"></div>
+
   <h1>Picks History Portal</h1>
 
   <div class="container">
@@ -137,12 +143,14 @@
     </div>
   </div>
 
+  <!-- === GSAP === -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script>
-    // === PARTICLE BACKGROUND FIX ===
+    // === PARTICLE BACKGROUND ===
+    const particlesDiv = document.getElementById('particles');
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    document.getElementById('particles').appendChild(canvas);
+    particlesDiv.appendChild(canvas);
 
     function resize() {
       canvas.width = window.innerWidth;
@@ -174,10 +182,11 @@
     }
     drawParticles();
 
-    // GSAP animations
+    // === GSAP ANIMATIONS ===
     gsap.from("h1", {y: -100, opacity: 0, duration: 1, ease: "back"});
     gsap.from(".container", {scale: 0.7, opacity: 0, duration: 1, delay: 0.5});
     gsap.from(".weeks a", {opacity: 0, y: 20, stagger: 0.1, delay: 1});
   </script>
 </body>
 </html>
+
