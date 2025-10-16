@@ -1,23 +1,26 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>View Store Data</title>
+    <title>Store Data by Store Number</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
     <style>
       body {
         font-family: Arial, sans-serif;
         margin: 40px;
       }
+      h2 {
+        text-align: center;
+      }
       table {
         border-collapse: collapse;
         width: 100%;
+        margin-bottom: 40px;
       }
       th, td {
-        padding: 10px;
         border: 1px solid #ddd;
+        padding: 8px;
         text-align: center;
       }
       th {
@@ -30,32 +33,17 @@
       #logoutBtn {
         margin-bottom: 20px;
       }
+      .store-section {
+        margin-top: 40px;
+      }
     </style>
   </head>
-
   <body>
     <h2 id="welcome"></h2>
-    <button id="logoutBtn" style="display:none;">Sign out</button>
     <button id="loginBtn">Sign in with Google</button>
-    <a href="submitWahoNumbers.html"><button>Enter Numbers</button></a>
+    <button id="logoutBtn" style="display:none;">Sign out</button>
 
-    <h3>Store Data Records</h3>
-    <table id="dataTable">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Store #</th>
-          <th>Sales Daily ($)</th>
-          <th>Sales Weekly ($)</th>
-          <th>Payroll (%)</th>
-          <th>Food Cost (%)</th>
-          <th>Violation (%)</th>
-          <th>Extra Payroll (%)</th>
-          <th>Training (%)</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+    <div id="storeTables"></div>
 
     <script>
       // --- Firebase Config ---
@@ -68,76 +56,100 @@
         appId: "1:650202039805:web:70e51177aab22e4d614594"
       };
 
-      // Initialize Firebase
       firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
 
-      // --- UI Elements ---
+      // UI elements
       const loginBtn = document.getElementById("loginBtn");
       const logoutBtn = document.getElementById("logoutBtn");
       const welcomeText = document.getElementById("welcome");
-      const tableBody = document.getElementById("tableBody");
+      const storeTables = document.getElementById("storeTables");
 
-      // --- Sign In ---
+      // Auth buttons
       loginBtn.addEventListener("click", () => {
         auth.signInWithPopup(provider).catch(err => alert("Login failed: " + err.message));
       });
-
-      // --- Sign Out ---
       logoutBtn.addEventListener("click", () => auth.signOut());
 
-      // --- Auth State Change ---
       auth.onAuthStateChanged(user => {
         if (user) {
           welcomeText.textContent = `Welcome, ${user.displayName}`;
           loginBtn.style.display = "none";
           logoutBtn.style.display = "inline";
-          loadData(user);
+          loadAllStoreData();
         } else {
           welcomeText.textContent = "";
           loginBtn.style.display = "inline";
           logoutBtn.style.display = "none";
-          tableBody.innerHTML = "";
+          storeTables.innerHTML = "";
         }
       });
 
-      // --- Load Firestore Data ---
-      function loadData(user) {
-        tableBody.innerHTML = "<tr><td colspan='9'>Loading...</td></tr>";
+      // --- Load and Group Data by Store Number ---
+      function loadAllStoreData() {
+        storeTables.innerHTML = "<p>Loading data...</p>";
 
         db.collection("storeData")
-          .where("uid", "==", user.uid)
+          .orderBy("storeNum")
           .orderBy("timestamp", "desc")
           .onSnapshot(snapshot => {
-            tableBody.innerHTML = ""; // clear old data
-
             if (snapshot.empty) {
-              tableBody.innerHTML = "<tr><td colspan='9'>No data found.</td></tr>";
+              storeTables.innerHTML = "<p>No data found.</p>";
               return;
             }
 
+            // Group data by storeNum
+            const grouped = {};
             snapshot.forEach(doc => {
               const d = doc.data();
-              const row = `
-                <tr>
-                  <td>${d.date || "-"}</td>
-                  <td>${d.storeNum || "-"}</td>
-                  <td>${d.salesDay || "-"}</td>
-                  <td>${d.salesWeek || "-"}</td>
-                  <td>${d.payroll || "-"}</td>
-                  <td>${d.foodCost || "-"}</td>
-                  <td>${d.violation || "-"}</td>
-                  <td>${d.extPayroll || "-"}</td>
-                  <td>${d.training || "-"}</td>
-                </tr>
-              `;
-              tableBody.insertAdjacentHTML("beforeend", row);
+              const store = d.storeNum || "Unknown";
+              if (!grouped[store]) grouped[store] = [];
+              grouped[store].push(d);
             });
+
+            // Build tables
+            storeTables.innerHTML = "";
+            for (const [store, entries] of Object.entries(grouped)) {
+              const section = document.createElement("div");
+              section.className = "store-section";
+              section.innerHTML = `
+                <h3>Store #${store}</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Sales Daily ($)</th>
+                      <th>Sales Weekly ($)</th>
+                      <th>Payroll (%)</th>
+                      <th>Food Cost (%)</th>
+                      <th>Violation (%)</th>
+                      <th>Extra Payroll (%)</th>
+                      <th>Training (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${entries.map(d => `
+                      <tr>
+                        <td>${d.date || "-"}</td>
+                        <td>${d.salesDay || "-"}</td>
+                        <td>${d.salesWeek || "-"}</td>
+                        <td>${d.payroll || "-"}</td>
+                        <td>${d.foodCost || "-"}</td>
+                        <td>${d.violation || "-"}</td>
+                        <td>${d.extPayroll || "-"}</td>
+                        <td>${d.training || "-"}</td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              `;
+              storeTables.appendChild(section);
+            }
           }, err => {
             console.error("Error loading data:", err);
-            tableBody.innerHTML = "<tr><td colspan='9'>Error loading data.</td></tr>";
+            storeTables.innerHTML = "<p>Error loading data. Check console.</p>";
           });
       }
     </script>
