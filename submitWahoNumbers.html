@@ -1,55 +1,139 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head>
     <title>Store Data Form with Google Auth</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Firebase v8 scripts -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 0;
+        background: #f9f9f9;
+      }
+
+      h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      button {
+        padding: 10px 20px;
+        margin: 5px 0;
+        border: none;
+        background-color: #007BFF;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      form {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 500px;
+        margin: 0 auto 40px auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      label {
+        display: block;
+        margin-bottom: 15px;
+        font-weight: bold;
+        color: #555;
+      }
+
+      input[type="date"],
+      input[type="number"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+
+      @media (max-width: 600px) {
+        body {
+          margin: 10px;
+        }
+
+        form {
+          padding: 15px;
+        }
+
+        button {
+          width: 100%;
+        }
+      }
+
+      #loginBtn, #logoutBtn, #welcome {
+        display: block;
+        text-align: center;
+        margin: 10px auto;
+      }
+
+      a button {
+        background-color: #28a745;
+      }
+
+      a button:hover {
+        background-color: #1e7e34;
+      }
+    </style>
   </head>
 
   <body>
     <h2 id="welcome"></h2>
     <button id="loginBtn">Sign in with Google</button>
     <button id="logoutBtn" style="display:none;">Sign out</button>
-   <a href="PostWahoNumbers.html"><button>Home</button></a>
+    <a href="PostWahoNumbers.html"><button>Home</button></a>
 
     <form id="submitForm" style="display:none;">
       <label>Date
         <input type="date" id="date" required />
-      </label><br>
+      </label>
 
       <label>Store Number
         <input type="number" id="storeNum" required />
-      </label><br>
+      </label>
 
       <label>Sales Daily ($)
         <input type="number" id="salesDay" required />
-      </label><br>
+      </label>
 
       <label>Sales Weekly ($)
         <input type="number" id="salesWeek" required />
-      </label><br>
+      </label>
 
       <label>Payroll (%)
         <input type="number" id="payroll" required />
-      </label><br>
+      </label>
 
       <label>Food Cost (%)
         <input type="number" id="foodCost" required />
-      </label><br>
+      </label>
 
       <label>Violation (%)
         <input type="number" id="violation" required />
-      </label><br>
+      </label>
 
       <label>Extra Payroll (%)
         <input type="number" id="extPayroll" required />
-      </label><br>
+      </label>
 
       <label>Training (%)
         <input type="number" id="training" required />
-      </label><br>
+      </label>
 
       <button type="submit">Submit</button>
     </form>
@@ -65,8 +149,10 @@
         appId: "1:650202039805:web:70e51177aab22e4d614594"
       };
 
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+
       const db = firebase.firestore();
       const auth = firebase.auth();
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -80,30 +166,21 @@
       // --- Google Sign-In ---
       loginBtn.addEventListener("click", () => {
         auth.signInWithPopup(provider)
-          .then(result => {
-            console.log("Signed in as:", result.user.displayName);
-          })
-          .catch(error => {
-            console.error("Login error:", error);
-            alert("❌ Login failed. Check console for details.");
-          });
+          .then(result => console.log("Signed in as:", result.user.displayName))
+          .catch(error => alert("Login failed: " + error.message));
       });
 
       // --- Logout ---
-      logoutBtn.addEventListener("click", () => {
-        auth.signOut();
-      });
+      logoutBtn.addEventListener("click", () => auth.signOut());
 
       // --- Auth State Change Listener ---
       auth.onAuthStateChanged(user => {
         if (user) {
-          // Logged in
           welcomeText.textContent = `Welcome, ${user.displayName}!`;
           loginBtn.style.display = "none";
           logoutBtn.style.display = "inline";
           submitForm.style.display = "block";
         } else {
-          // Logged out
           welcomeText.textContent = "";
           loginBtn.style.display = "inline";
           logoutBtn.style.display = "none";
@@ -115,10 +192,7 @@
       submitForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const user = auth.currentUser;
-        if (!user) {
-          alert("Please sign in first!");
-          return;
-        }
+        if (!user) return alert("Please sign in first!");
 
         const data = {
           uid: user.uid,
@@ -141,7 +215,7 @@
           alert("✅ Data successfully saved!");
           submitForm.reset();
         } catch (error) {
-          console.error("Error saving data: ", error);
+          console.error("Error saving data:", error);
           alert("❌ Failed to save data.");
         }
       });
