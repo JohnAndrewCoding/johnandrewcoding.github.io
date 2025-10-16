@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>View Store Data</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th, td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: center;
+      }
+      th {
+        background-color: #007BFF;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      #logoutBtn {
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2 id="welcome"></h2>
+    <button id="logoutBtn" style="display:none;">Sign out</button>
+    <button id="loginBtn">Sign in with Google</button>
+
+    <h3>Store Data Records</h3>
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Store #</th>
+          <th>Sales Daily ($)</th>
+          <th>Sales Weekly ($)</th>
+          <th>Payroll (%)</th>
+          <th>Food Cost (%)</th>
+          <th>Violation (%)</th>
+          <th>Extra Payroll (%)</th>
+          <th>Training (%)</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+      // --- Firebase Config ---
+      const firebaseConfig = {
+        apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+        authDomain: "college-football-pickem-68eed.firebaseapp.com",
+        projectId: "college-football-pickem-68eed",
+        storageBucket: "college-football-pickem-68eed.appspot.com",
+        messagingSenderId: "650202039805",
+        appId: "1:650202039805:web:70e51177aab22e4d614594"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      // --- UI Elements ---
+      const loginBtn = document.getElementById("loginBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const welcomeText = document.getElementById("welcome");
+      const tableBody = document.getElementById("tableBody");
+
+      // --- Sign In ---
+      loginBtn.addEventListener("click", () => {
+        auth.signInWithPopup(provider).catch(err => alert("Login failed: " + err.message));
+      });
+
+      // --- Sign Out ---
+      logoutBtn.addEventListener("click", () => auth.signOut());
+
+      // --- Auth State Change ---
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          welcomeText.textContent = `Welcome, ${user.displayName}`;
+          loginBtn.style.display = "none";
+          logoutBtn.style.display = "inline";
+          loadData(user);
+        } else {
+          welcomeText.textContent = "";
+          loginBtn.style.display = "inline";
+          logoutBtn.style.display = "none";
+          tableBody.innerHTML = "";
+        }
+      });
+
+      // --- Load Firestore Data ---
+      function loadData(user) {
+        tableBody.innerHTML = "<tr><td colspan='9'>Loading...</td></tr>";
+
+        db.collection("storeData")
+          .where("uid", "==", user.uid)
+          .orderBy("timestamp", "desc")
+          .onSnapshot(snapshot => {
+            tableBody.innerHTML = ""; // clear old data
+
+            if (snapshot.empty) {
+              tableBody.innerHTML = "<tr><td colspan='9'>No data found.</td></tr>";
+              return;
+            }
+
+            snapshot.forEach(doc => {
+              const d = doc.data();
+              const row = `
+                <tr>
+                  <td>${d.date || "-"}</td>
+                  <td>${d.storeNum || "-"}</td>
+                  <td>${d.salesDay || "-"}</td>
+                  <td>${d.salesWeek || "-"}</td>
+                  <td>${d.payroll || "-"}</td>
+                  <td>${d.foodCost || "-"}</td>
+                  <td>${d.violation || "-"}</td>
+                  <td>${d.extPayroll || "-"}</td>
+                  <td>${d.training || "-"}</td>
+                </tr>
+              `;
+              tableBody.insertAdjacentHTML("beforeend", row);
+            });
+          }, err => {
+            console.error("Error loading data:", err);
+            tableBody.innerHTML = "<tr><td colspan='9'>Error loading data.</td></tr>";
+          });
+      }
+    </script>
+  </body>
+</html>
