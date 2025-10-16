@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Store Data by Store Number (No Index)</title>
+  <title>Store Data by Store Number</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <style>
     body { font-family: Arial; margin: 40px; }
@@ -16,10 +15,7 @@
 </head>
 <body>
 
-<h2 id="welcome"></h2>
-<button id="loginBtn">Sign in with Google</button>
-<button id="logoutBtn" style="display:none;">Sign out</button>
-
+<h2>Store Data by Store Number</h2>
 <div id="storeTables"></div>
 
 <script>
@@ -33,121 +29,79 @@
     appId: "1:650202039805:web:70e51177aab22e4d614594"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const auth = firebase.auth();
-  const provider = new firebase.auth.GoogleAuthProvider();
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
 
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const welcomeText = document.getElementById("welcome");
+  const db = firebase.firestore();
   const storeTables = document.getElementById("storeTables");
 
-  loginBtn.addEventListener("click", () => auth.signInWithPopup(provider));
-  logoutBtn.addEventListener("click", () => auth.signOut());
+  storeTables.innerHTML = "<p>Loading data...</p>";
 
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      welcomeText.textContent = `Welcome, ${user.displayName}`;
-      loginBtn.style.display = "none";
-      logoutBtn.style.display = "inline";
-      loadAllDataNoIndexes(user);
-    } else {
-      welcomeText.textContent = "";
-      loginBtn.style.display = "inline";
-      logoutBtn.style.display = "none";
-      storeTables.innerHTML = "";
-    }
-  });
+  // --- Fetch all data ---
+  db.collection("storeData").get()
+    .then(snapshot => {
+      if (snapshot.empty) {
+        storeTables.innerHTML = "<p>No data found.</p>";
+        return;
+      }
 
-  function loadAllDataNoIndexes(user) {
-    storeTables.innerHTML = "<p>Loading data...</p>";
+      const grouped = {};
 
-    db.collection("storeData")
-      .get() // Fetch ALL documents
-      .then(snapshot => {
-        if (snapshot.empty) {
-          storeTables.innerHTML = "<p>No data found.</p>";
-          return;
-        }
-
-        // --- Convert snapshot to array ---
-        const allData = [];
-        snapshot.forEach(doc => {
-          const d = doc.data();
-          // Only show the current user's data (optional)
-          if (d.uid === user.uid) {
-            allData.push(d);
-          }
-        });
-
-        if (allData.length === 0) {
-          storeTables.innerHTML = "<p>No data for this user.</p>";
-          return;
-        }
-
-        // --- Group by storeNum ---
-        const grouped = {};
-        allData.forEach(d => {
-          const store = d.storeNum || "Unknown";
-          if (!grouped[store]) grouped[store] = [];
-          grouped[store].push(d);
-        });
-
-        // --- Sort each group by timestamp descending ---
-        for (const store in grouped) {
-          grouped[store].sort((a, b) => {
-            const tA = a.timestamp ? a.timestamp.seconds : 0;
-            const tB = b.timestamp ? b.timestamp.seconds : 0;
-            return tB - tA;
-          });
-        }
-
-        // --- Build HTML tables ---
-        storeTables.innerHTML = "";
-        for (const store of Object.keys(grouped).sort((a,b)=>a-b)) {
-          const entries = grouped[store];
-          const section = document.createElement("div");
-          section.className = "store-section";
-          section.innerHTML = `
-            <h3>Store #${store}</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Sales Daily ($)</th>
-                  <th>Sales Weekly ($)</th>
-                  <th>Payroll (%)</th>
-                  <th>Food Cost (%)</th>
-                  <th>Violation (%)</th>
-                  <th>Extra Payroll (%)</th>
-                  <th>Training (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${entries.map(d => `
-                  <tr>
-                    <td>${d.date || "-"}</td>
-                    <td>${d.salesDay || "-"}</td>
-                    <td>${d.salesWeek || "-"}</td>
-                    <td>${d.payroll || "-"}</td>
-                    <td>${d.foodCost || "-"}</td>
-                    <td>${d.violation || "-"}</td>
-                    <td>${d.extPayroll || "-"}</td>
-                    <td>${d.training || "-"}</td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
-          `;
-          storeTables.appendChild(section);
-        }
-      })
-      .catch(err => {
-        console.error("Error loading data:", err);
-        storeTables.innerHTML = "<p>Error loading data.</p>";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const store = d.storeNum || "Unknown";
+        if (!grouped[store]) grouped[store] = [];
+        grouped[store].push(d);
       });
-  }
+
+      storeTables.innerHTML = "";
+
+      // --- Build tables per store ---
+      Object.keys(grouped).sort((a,b)=>a-b).forEach(store => {
+        const entries = grouped[store];
+        const section = document.createElement("div");
+        section.className = "store-section";
+        section.innerHTML = `
+          <h3>Store #${store}</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Sales Daily ($)</th>
+                <th>Sales Weekly ($)</th>
+                <th>Payroll (%)</th>
+                <th>Food Cost (%)</th>
+                <th>Violation (%)</th>
+                <th>Extra Payroll (%)</th>
+                <th>Training (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${entries.map(d => `
+                <tr>
+                  <td>${d.date || "-"}</td>
+                  <td>${d.salesDay || "-"}</td>
+                  <td>${d.salesWeek || "-"}</td>
+                  <td>${d.payroll || "-"}</td>
+                  <td>${d.foodCost || "-"}</td>
+                  <td>${d.violation || "-"}</td>
+                  <td>${d.extPayroll || "-"}</td>
+                  <td>${d.training || "-"}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+        storeTables.appendChild(section);
+      });
+
+    })
+    .catch(err => {
+      console.error("Error reading data:", err);
+      storeTables.innerHTML = "<p>Error loading data. Check console.</p>";
+    });
 </script>
+
 </body>
 </html>
