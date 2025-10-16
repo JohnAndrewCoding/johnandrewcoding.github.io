@@ -1,157 +1,153 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Store Data by Store Number</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
-      }
-      h2 {
-        text-align: center;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 40px;
-      }
-      th, td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: center;
-      }
-      th {
-        background-color: #007BFF;
-        color: white;
-      }
-      tr:nth-child(even) {
-        background-color: #f2f2f2;
-      }
-      #logoutBtn {
-        margin-bottom: 20px;
-      }
-      .store-section {
-        margin-top: 40px;
-      }
-    </style>
-  </head>
-  <body>
-    <h2 id="welcome"></h2>
-    <button id="loginBtn">Sign in with Google</button>
-    <button id="logoutBtn" style="display:none;">Sign out</button>
+<head>
+  <title>Store Data by Store Number (No Index)</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <style>
+    body { font-family: Arial; margin: 40px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 40px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #007BFF; color: white; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    .store-section { margin-top: 40px; }
+  </style>
+</head>
+<body>
 
-    <div id="storeTables"></div>
+<h2 id="welcome"></h2>
+<button id="loginBtn">Sign in with Google</button>
+<button id="logoutBtn" style="display:none;">Sign out</button>
 
-    <script>
-      // --- Firebase Config ---
-      const firebaseConfig = {
-        apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
-        authDomain: "college-football-pickem-68eed.firebaseapp.com",
-        projectId: "college-football-pickem-68eed",
-        storageBucket: "college-football-pickem-68eed.appspot.com",
-        messagingSenderId: "650202039805",
-        appId: "1:650202039805:web:70e51177aab22e4d614594"
-      };
+<div id="storeTables"></div>
 
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
-      const auth = firebase.auth();
-      const provider = new firebase.auth.GoogleAuthProvider();
+<script>
+  // --- Firebase Config ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzYSzXSISoCWKU",
+    authDomain: "college-football-pickem-68eed.firebaseapp.com",
+    projectId: "college-football-pickem-68eed",
+    storageBucket: "college-football-pickem-68eed.appspot.com",
+    messagingSenderId: "650202039805",
+    appId: "1:650202039805:web:70e51177aab22e4d614594"
+  };
 
-      // UI elements
-      const loginBtn = document.getElementById("loginBtn");
-      const logoutBtn = document.getElementById("logoutBtn");
-      const welcomeText = document.getElementById("welcome");
-      const storeTables = document.getElementById("storeTables");
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  const provider = new firebase.auth.GoogleAuthProvider();
 
-      // Auth buttons
-      loginBtn.addEventListener("click", () => {
-        auth.signInWithPopup(provider).catch(err => alert("Login failed: " + err.message));
-      });
-      logoutBtn.addEventListener("click", () => auth.signOut());
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const welcomeText = document.getElementById("welcome");
+  const storeTables = document.getElementById("storeTables");
 
-      auth.onAuthStateChanged(user => {
-        if (user) {
-          welcomeText.textContent = `Welcome, ${user.displayName}`;
-          loginBtn.style.display = "none";
-          logoutBtn.style.display = "inline";
-          loadAllStoreData();
-        } else {
-          welcomeText.textContent = "";
-          loginBtn.style.display = "inline";
-          logoutBtn.style.display = "none";
-          storeTables.innerHTML = "";
+  loginBtn.addEventListener("click", () => auth.signInWithPopup(provider));
+  logoutBtn.addEventListener("click", () => auth.signOut());
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      welcomeText.textContent = `Welcome, ${user.displayName}`;
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "inline";
+      loadAllDataNoIndexes(user);
+    } else {
+      welcomeText.textContent = "";
+      loginBtn.style.display = "inline";
+      logoutBtn.style.display = "none";
+      storeTables.innerHTML = "";
+    }
+  });
+
+  function loadAllDataNoIndexes(user) {
+    storeTables.innerHTML = "<p>Loading data...</p>";
+
+    db.collection("storeData")
+      .get() // Fetch ALL documents
+      .then(snapshot => {
+        if (snapshot.empty) {
+          storeTables.innerHTML = "<p>No data found.</p>";
+          return;
         }
-      });
 
-      // --- Load and Group Data by Store Number ---
-      function loadAllStoreData() {
-        storeTables.innerHTML = "<p>Loading data...</p>";
+        // --- Convert snapshot to array ---
+        const allData = [];
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          // Only show the current user's data (optional)
+          if (d.uid === user.uid) {
+            allData.push(d);
+          }
+        });
 
-        db.collection("storeData")
-          .orderBy("storeNum")
-          .orderBy("timestamp", "desc")
-          .onSnapshot(snapshot => {
-            if (snapshot.empty) {
-              storeTables.innerHTML = "<p>No data found.</p>";
-              return;
-            }
+        if (allData.length === 0) {
+          storeTables.innerHTML = "<p>No data for this user.</p>";
+          return;
+        }
 
-            // Group data by storeNum
-            const grouped = {};
-            snapshot.forEach(doc => {
-              const d = doc.data();
-              const store = d.storeNum || "Unknown";
-              if (!grouped[store]) grouped[store] = [];
-              grouped[store].push(d);
-            });
+        // --- Group by storeNum ---
+        const grouped = {};
+        allData.forEach(d => {
+          const store = d.storeNum || "Unknown";
+          if (!grouped[store]) grouped[store] = [];
+          grouped[store].push(d);
+        });
 
-            // Build tables
-            storeTables.innerHTML = "";
-            for (const [store, entries] of Object.entries(grouped)) {
-              const section = document.createElement("div");
-              section.className = "store-section";
-              section.innerHTML = `
-                <h3>Store #${store}</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Sales Daily ($)</th>
-                      <th>Sales Weekly ($)</th>
-                      <th>Payroll (%)</th>
-                      <th>Food Cost (%)</th>
-                      <th>Violation (%)</th>
-                      <th>Extra Payroll (%)</th>
-                      <th>Training (%)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${entries.map(d => `
-                      <tr>
-                        <td>${d.date || "-"}</td>
-                        <td>${d.salesDay || "-"}</td>
-                        <td>${d.salesWeek || "-"}</td>
-                        <td>${d.payroll || "-"}</td>
-                        <td>${d.foodCost || "-"}</td>
-                        <td>${d.violation || "-"}</td>
-                        <td>${d.extPayroll || "-"}</td>
-                        <td>${d.training || "-"}</td>
-                      </tr>
-                    `).join("")}
-                  </tbody>
-                </table>
-              `;
-              storeTables.appendChild(section);
-            }
-          }, err => {
-            console.error("Error loading data:", err);
-            storeTables.innerHTML = "<p>Error loading data. Check console.</p>";
+        // --- Sort each group by timestamp descending ---
+        for (const store in grouped) {
+          grouped[store].sort((a, b) => {
+            const tA = a.timestamp ? a.timestamp.seconds : 0;
+            const tB = b.timestamp ? b.timestamp.seconds : 0;
+            return tB - tA;
           });
-      }
-    </script>
-  </body>
+        }
+
+        // --- Build HTML tables ---
+        storeTables.innerHTML = "";
+        for (const store of Object.keys(grouped).sort((a,b)=>a-b)) {
+          const entries = grouped[store];
+          const section = document.createElement("div");
+          section.className = "store-section";
+          section.innerHTML = `
+            <h3>Store #${store}</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Sales Daily ($)</th>
+                  <th>Sales Weekly ($)</th>
+                  <th>Payroll (%)</th>
+                  <th>Food Cost (%)</th>
+                  <th>Violation (%)</th>
+                  <th>Extra Payroll (%)</th>
+                  <th>Training (%)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${entries.map(d => `
+                  <tr>
+                    <td>${d.date || "-"}</td>
+                    <td>${d.salesDay || "-"}</td>
+                    <td>${d.salesWeek || "-"}</td>
+                    <td>${d.payroll || "-"}</td>
+                    <td>${d.foodCost || "-"}</td>
+                    <td>${d.violation || "-"}</td>
+                    <td>${d.extPayroll || "-"}</td>
+                    <td>${d.training || "-"}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+          storeTables.appendChild(section);
+        }
+      })
+      .catch(err => {
+        console.error("Error loading data:", err);
+        storeTables.innerHTML = "<p>Error loading data.</p>";
+      });
+  }
+</script>
+</body>
 </html>
