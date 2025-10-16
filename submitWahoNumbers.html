@@ -1,39 +1,149 @@
-  <form id="submitForm">
-    
-    <label>Date
-      <input type="date" id="date" required />
-    </label><br>
-    
-    <label>Store Number
-    <input type="number" id="storeNum" required />
-    </label><br>
-    
-    <label>Sales Daily ($)
-      <input type="number" id="salesDay" required />
-    </label><br>
-    
-    <label>Sales Weekly ($)
-      <input type="number" id="salesWeek" required />
-    </label><br>
-    <label>Payroll (%)
-      <input type="number" id="payroll" required />
-    </label><br>
-    
-    <label>Food Cost (%)
-      <input type="number" id="foodCost" required />
-    </label><br>
-    
-    <label>Violation (%)
-      <input type="number" id="violation" required />
-    </label><br>
-    
-    <label>Extra Payroll (%)
-      <input type="number" id="extPayroll" required />
-    </label><br>
-    
-    <label>Training (%)
-      <input type="number" id="training" required />
-    </label><br>
-    
-    <button type="submit">Submit</button>
-  </form>
+ <!DOCTYPE html>
+<html>
+  <head>
+    <title>Store Data Form with Google Auth</title>
+    <!-- Firebase v8 scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  </head>
+
+  <body>
+    <h2 id="welcome"></h2>
+    <button id="loginBtn">Sign in with Google</button>
+    <button id="logoutBtn" style="display:none;">Sign out</button>
+
+    <form id="submitForm" style="display:none;">
+      <label>Date
+        <input type="date" id="date" required />
+      </label><br>
+
+      <label>Store Number
+        <input type="number" id="storeNum" required />
+      </label><br>
+
+      <label>Sales Daily ($)
+        <input type="number" id="salesDay" required />
+      </label><br>
+
+      <label>Sales Weekly ($)
+        <input type="number" id="salesWeek" required />
+      </label><br>
+
+      <label>Payroll (%)
+        <input type="number" id="payroll" required />
+      </label><br>
+
+      <label>Food Cost (%)
+        <input type="number" id="foodCost" required />
+      </label><br>
+
+      <label>Violation (%)
+        <input type="number" id="violation" required />
+      </label><br>
+
+      <label>Extra Payroll (%)
+        <input type="number" id="extPayroll" required />
+      </label><br>
+
+      <label>Training (%)
+        <input type="number" id="training" required />
+      </label><br>
+
+      <button type="submit">Submit</button>
+    </form>
+
+    <script>
+      // --- Firebase Configuration ---
+      const firebaseConfig = {
+        apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+        authDomain: "college-football-pickem-68eed.firebaseapp.com",
+        projectId: "college-football-pickem-68eed",
+        storageBucket: "college-football-pickem-68eed.appspot.com",
+        messagingSenderId: "650202039805",
+        appId: "1:650202039805:web:70e51177aab22e4d614594"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      // --- Elements ---
+      const loginBtn = document.getElementById("loginBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const submitForm = document.getElementById("submitForm");
+      const welcomeText = document.getElementById("welcome");
+
+      // --- Google Sign-In ---
+      loginBtn.addEventListener("click", () => {
+        auth.signInWithPopup(provider)
+          .then(result => {
+            console.log("Signed in as:", result.user.displayName);
+          })
+          .catch(error => {
+            console.error("Login error:", error);
+            alert("❌ Login failed. Check console for details.");
+          });
+      });
+
+      // --- Logout ---
+      logoutBtn.addEventListener("click", () => {
+        auth.signOut();
+      });
+
+      // --- Auth State Change Listener ---
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          // Logged in
+          welcomeText.textContent = `Welcome, ${user.displayName}!`;
+          loginBtn.style.display = "none";
+          logoutBtn.style.display = "inline";
+          submitForm.style.display = "block";
+        } else {
+          // Logged out
+          welcomeText.textContent = "";
+          loginBtn.style.display = "inline";
+          logoutBtn.style.display = "none";
+          submitForm.style.display = "none";
+        }
+      });
+
+      // --- Handle Form Submission ---
+      submitForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const user = auth.currentUser;
+        if (!user) {
+          alert("Please sign in first!");
+          return;
+        }
+
+        const data = {
+          uid: user.uid,
+          userEmail: user.email,
+          userName: user.displayName,
+          date: document.getElementById("date").value,
+          storeNum: Number(document.getElementById("storeNum").value),
+          salesDay: Number(document.getElementById("salesDay").value),
+          salesWeek: Number(document.getElementById("salesWeek").value),
+          payroll: Number(document.getElementById("payroll").value),
+          foodCost: Number(document.getElementById("foodCost").value),
+          violation: Number(document.getElementById("violation").value),
+          extPayroll: Number(document.getElementById("extPayroll").value),
+          training: Number(document.getElementById("training").value),
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        try {
+          await db.collection("storeData").add(data);
+          alert("✅ Data successfully saved!");
+          submitForm.reset();
+        } catch (error) {
+          console.error("Error saving data: ", error);
+          alert("❌ Failed to save data.");
+        }
+      });
+    </script>
+  </body>
+</html>
