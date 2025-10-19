@@ -3,142 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <title>College Football Leaderboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Basic, simple styling -->
   <style>
     body {
-      font-family: 'Montserrat', sans-serif;
+      font-family: Arial, sans-serif;
       margin: 20px;
-      background: linear-gradient(135deg, #1f2a44, #4b6cb7);
-      color: #fff;
+      background-color: #f2f2f2;
+      color: #000;
     }
 
     h1 {
       text-align: center;
+      font-size: 24px;
       margin-bottom: 15px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      font-size: 28px;
     }
 
     .button-group {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
+      text-align: center;
       margin-bottom: 20px;
     }
 
-    .button-group a button {
-      font-size: 20px;
-      padding: 15px 30px;
-      border: none;
-      border-radius: 8px;
+    .button-group a {
+      display: inline-block;
+      margin: 5px;
+    }
+
+    .button-group button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: 1px solid #333;
+      background-color: #fff;
       cursor: pointer;
-      font-weight: 600;
-      background: linear-gradient(90deg, #4b6cb7, #182848);
-      color: #fff;
-      transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .button-group a button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 15px rgba(255,255,255,0.6);
-    }
-
-    #leaderboard {
-      display: flex;
-      justify-content: center;
-      overflow-x: auto;
+    .button-group button:hover {
+      background-color: #ddd;
     }
 
     table {
-      border-collapse: separate;
-      border-spacing: 0;
-      min-width: 600px;
       width: 100%;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-      backdrop-filter: blur(5px);
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
     }
 
     th, td {
-      padding: 12px 18px;
+      border: 1px solid #999;
+      padding: 8px;
       text-align: left;
       font-size: 14px;
     }
 
     th {
-      background: linear-gradient(90deg, #4b6cb7, #182848);
-      font-weight: 600;
-      color: #fff;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      background-color: #eaeaea;
     }
 
-    tbody tr {
-      transition: all 0.3s ease;
-      cursor: default;
-    }
-
-    tbody tr:nth-child(even) {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    tbody tr:hover {
-      background-color: rgba(255, 255, 255, 0.15);
-      transform: scale(1.02);
-    }
-
-    td {
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    /* Highlight top 3 ranks */
-    tbody tr td.rank-1 { color: gold; font-weight: 700; }
-    tbody tr td.rank-2 { color: silver; font-weight: 700; }
-    tbody tr td.rank-3 { color: #cd7f32; font-weight: 700; }
-
-    /* Win % bar */
-    .win-percent {
-      position: relative;
-      background-color: rgba(255,255,255,0.2);
-      border-radius: 8px;
-      height: 12px;
-      width: 100%;
-      margin-bottom: 4px;
-    }
-    .win-percent-inner {
-      background-color: #4b6cb7;
-      height: 100%;
-      border-radius: 8px;
-    }
-
-    /* Mobile adjustments */
+    /* Make it mobile-friendly */
     @media (max-width: 600px) {
-      h1 { font-size: 24px; }
-      th, td { padding: 10px 12px; font-size: 13px; }
-      .win-percent { height: 10px; }
-      
-      .button-group { 
-        flex-direction: column; 
-        align-items: center; 
-      }
-      .button-group a button { 
-        width: 90%; 
-        max-width: 350px; 
-        font-size: 18px; 
-        padding: 15px 25px; 
-      }
+      body { margin: 10px; }
+      th, td { font-size: 12px; padding: 6px; }
+      .button-group button { width: 100%; }
     }
   </style>
 </head>
 <body>
   <h1>College Football Leaderboard</h1>
 
-  <!-- Week Buttons + Picks History -->
   <div class="button-group">
     <a href="Week1homepage.html"><button>Week 1</button></a>
     <a href="Week2Homepage.html"><button>Week 2</button></a>
@@ -146,13 +77,14 @@
     <a href="Week4Homepage.html"><button>Week 4</button></a>
     <a href="Week5Homepage.html"><button>Week 5</button></a>
     <a href="Week6Homepage.html"><button>Week 6</button></a>
-     <a href="Week7Homepage.html"><button>Week 7</button></a>
-     <a href="Week8Homepage.html"><button>Week 8</button></a>
+    <a href="Week7Homepage.html"><button>Week 7</button></a>
+    <a href="Week8Homepage.html"><button>Week 8</button></a>
     <a href="PicksHistory.html"><button>Picks History</button></a>
   </div>
 
-  <div id="leaderboard"></div>
+  <div id="leaderboard">Loading leaderboard...</div>
 
+  <!-- Firebase Scripts -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -183,7 +115,6 @@
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         if (!data.userName) return;
-
         const key = data.userName.trim().toLowerCase();
         if (!totals[key]) totals[key] = { userName: data.userName.trim(), wins: 0, losses: 0 };
         totals[key].wins += data.wins || 0;
@@ -191,37 +122,34 @@
       });
 
       const leaderboardArray = Object.values(totals)
-        .map(u => ({ 
-          ...u, 
-          totalGames: u.wins + u.losses, 
-          winPercent: ((u.wins/(u.wins+u.losses))*100).toFixed(1) 
+        .map(u => ({
+          ...u,
+          totalGames: u.wins + u.losses,
+          winPercent: ((u.wins / (u.wins + u.losses)) * 100).toFixed(1)
         }))
-        .sort((a,b) => b.wins - a.wins || a.losses - b.losses);
+        .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
 
-      // Assign ranks
-      let currentRank = 0, previousWins = null, previousLosses = null, skip = 0;
-      leaderboardArray.forEach((user, index) => {
-        if (user.wins === previousWins && user.losses === previousLosses) {
-          user.rank = currentRank; skip++;
+      // Ranks
+      let currentRank = 0, prevWins = null, prevLosses = null, skip = 0;
+      leaderboardArray.forEach((user) => {
+        if (user.wins === prevWins && user.losses === prevLosses) {
+          user.rank = currentRank;
+          skip++;
         } else {
-          currentRank = currentRank + 1 + skip; user.rank = currentRank; skip = 0;
+          currentRank = currentRank + 1 + skip;
+          user.rank = currentRank;
+          skip = 0;
         }
-        previousWins = user.wins; previousLosses = user.losses;
-      });
-
-      // Update Firestore leaderboard document
-      await db.collection("leaderboard").doc("allTime").set({
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        users: leaderboardArray
+        prevWins = user.wins; prevLosses = user.losses;
       });
 
       // Render table
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
-      ["Rank", "User", "Wins", "Losses", "Win %"].forEach(text => {
+      ["Rank", "User", "Wins", "Losses", "Win %"].forEach(h => {
         const th = document.createElement("th");
-        th.textContent = text;
+        th.textContent = h;
         headerRow.appendChild(th);
       });
       thead.appendChild(headerRow);
@@ -229,34 +157,25 @@
 
       const tbody = document.createElement("tbody");
       leaderboardArray.forEach(user => {
-        let rankClass = '';
-        if(user.rank === 1) rankClass = 'rank-1';
-        else if(user.rank === 2) rankClass = 'rank-2';
-        else if(user.rank === 3) rankClass = 'rank-3';
-
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="${rankClass}">${user.rank}</td>
+          <td>${user.rank}</td>
           <td>${user.userName}</td>
           <td>${user.wins}</td>
           <td>${user.losses}</td>
-          <td>
-            <div class="win-percent">
-              <div class="win-percent-inner" style="width:${user.winPercent}%;"></div>
-            </div>
-            ${user.winPercent}%
-          </td>
+          <td>${user.winPercent}%</td>
         `;
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);
+      container.innerHTML = "";
       container.appendChild(table);
     }
 
     firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
-        try { await firebase.auth().signInAnonymously(); } 
-        catch(err){ console.error("Anonymous sign-in failed:", err); }
+        try { await firebase.auth().signInAnonymously(); }
+        catch (err) { console.error("Sign-in failed:", err); }
       }
       buildLeaderboard().catch(err => console.error("Error building leaderboard:", err));
     });
