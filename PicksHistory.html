@@ -5,124 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Picks History Homepage</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
 
-    body {
-      font-family: 'Orbitron', sans-serif;
-      background: radial-gradient(circle at 20% 30%, #03151c, #072631, #0e3849);
-      overflow-x: hidden;
-      color: #00ffff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    /* === Force canvas to stay behind === */
-    #particles canvas {
-      position: fixed !important;
-      top: 0; 
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: -1 !important; /* absolute bottom */
-      pointer-events: none;
-    }
-
-    h1 {
-      font-size: 2.8rem;
-      letter-spacing: 3px;
-      text-shadow: 0 0 10px #00ffff, 0 0 20px #00e0ff;
-      margin-bottom: 40px;
-      text-align: center;
-      z-index: 10;
-    }
-
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      z-index: 10;
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 0 25px rgba(0, 255, 255, 0.2);
-      position: relative;
-    }
-
-    .neon-btn {
-      display: inline-block;
-      text-decoration: none;
-      padding: 12px 25px;
-      border: 2px solid #00ffff;
-      color: #00ffff;
-      border-radius: 10px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      transition: 0.3s;
-      font-weight: bold;
-      background: rgba(255,255,255,0.05);
-      box-shadow: 0 0 10px rgba(0,255,255,0.7);
-      position: relative;
-      z-index: 10;
-    }
-
-    .neon-btn:hover {
-      color: #fff;
-      background: rgba(0,255,255,0.2);
-      box-shadow: 0 0 25px #00ffff, 0 0 50px #00ffff;
-      transform: scale(1.05);
-    }
-
-    .weeks {
-      display: flex;
-      flex-direction: column;
-      gap: 0.7rem;
-      margin-top: 20px;
-      width: 100%;
-      align-items: center;
-      z-index: 10;
-      position: relative;
-    }
-
-    .weeks a {
-      font-size: 1.1rem;
-      color: #00ffff;
-      text-decoration: none;
-      transition: 0.3s;
-      background: rgba(0, 255, 255, 0.08);
-      padding: 10px 20px;
-      border-radius: 10px;
-      width: 220px;
-      text-align: center;
-      border: 1px solid rgba(0,255,255,0.3);
-      box-shadow: 0 0 12px rgba(0,255,255,0.5);
-      position: relative;
-      z-index: 10;
-    }
-
-    .weeks a:hover {
-      background: rgba(0, 255, 255, 0.3);
-      box-shadow: 0 0 20px #00ffff, 0 0 50px #00ffff;
-      transform: scale(1.08);
-      color: #fff;
-    }
-
-    @media (max-width: 600px) {
-      h1 { font-size: 2rem; }
-      .weeks a { width: 90%; font-size: 1rem; }
-      .neon-btn { width: 90%; text-align: center; }
-    }
-  </style>
 </head>
 <body>
   <div id="particles"></div>
@@ -130,7 +13,7 @@
   <h1>Picks History Portal</h1>
 
   <div class="container">
-    <a href="leaderboard.html" class="neon-btn">🏠 Home</a>
+    <a href="leaderboard.html">🏠 Home</a>
 
     <div class="weeks">
       <a href="PicksHistoryWeek8.html">Week 8 Results</a>
@@ -144,50 +27,6 @@
     </div>
   </div>
 
-  <!-- === GSAP === -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script>
-    // === PARTICLE BACKGROUND ===
-    const particlesDiv = document.getElementById('particles');
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    particlesDiv.appendChild(canvas);
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    const particles = Array.from({length: 70}, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 2 + 1,
-      dx: (Math.random() - 0.5) * 0.7,
-      dy: (Math.random() - 0.5) * 0.7
-    }));
-
-    function drawParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(0,255,255,0.5)';
-      particles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-        p.x += p.dx; p.y += p.dy;
-        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
-      });
-      requestAnimationFrame(drawParticles);
-    }
-    drawParticles();
-
-    // === GSAP ANIMATIONS ===
-    gsap.from("h1", {y: -100, opacity: 0, duration: 1, ease: "back"});
-    gsap.from(".container", {scale: 0.7, opacity: 0, duration: 1, delay: 0.5});
-    gsap.from(".weeks a", {opacity: 0, y: 20, stagger: 0.1, delay: 1});
-  </script>
 </body>
 </html>
 
