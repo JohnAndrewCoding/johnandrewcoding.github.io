@@ -99,7 +99,7 @@
       }
 
       // 2. Fetch user picks
-      const snapshot = await db.collection("week7Picks").get();
+      const snapshot = await db.collection("week8Picks").get();
       if (snapshot.empty) {
         resultsContainer.textContent = "No picks found.";
         return;
