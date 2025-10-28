@@ -79,7 +79,7 @@
     <a href="Week6Homepage.html"><button>Week 6</button></a>
     <a href="Week7Homepage.html"><button>Week 7</button></a>
     <a href="Week8Homepage.html"><button>Week 8</button></a>
-      <a href="Week9Homepage.html"><button>Week 9</button></a>
+    <a href="Week9Homepage.html"><button>Week 9</button></a>
     <a href="PicksHistory.html"><button>Picks History</button></a>
   </div>
 
@@ -105,21 +105,34 @@
 
     async function buildLeaderboard() {
       const container = document.getElementById("leaderboard");
-
       const snapshot = await db.collection("userResults").get();
+
       if (snapshot.empty) {
         container.textContent = "No results yet.";
         return;
       }
 
+      // Map aliases to canonical names
+      const nameMap = {
+        "samuel lawson": "Samuel Lawson",
+        "Sam Lawson": "Samuel Lawson"
+        // add more aliases here as needed
+      };
+
       const totals = {};
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         if (!data.userName) return;
+
         const key = data.userName.trim().toLowerCase();
-        if (!totals[key]) totals[key] = { userName: data.userName.trim(), wins: 0, losses: 0 };
-        totals[key].wins += data.wins || 0;
-        totals[key].losses += data.losses || 0;
+        const canonicalName = nameMap[key] || data.userName.trim();
+
+        if (!totals[canonicalName]) {
+          totals[canonicalName] = { userName: canonicalName, wins: 0, losses: 0 };
+        }
+
+        totals[canonicalName].wins += data.wins || 0;
+        totals[canonicalName].losses += data.losses || 0;
       });
 
       const leaderboardArray = Object.values(totals)
