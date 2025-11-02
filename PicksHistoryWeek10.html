@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Week 10 Picks Results</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 30px;
+      background-color: #fff;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+    .correct {
+      background-color: #d4edda; /* green */
+    }
+    .incorrect {
+      background-color: #f8d7da; /* red */
+    }
+  </style>
+</head>
+<body>
+  <h1>Week 10 Picks Results</h1>
+  <a href="PicksHistory.html"><button>Home</button></a>
+  <div id="results"></div>
+
+  <!-- Firebase SDKs (v8) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+  <script>
+    // --- Firebase Config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkSlyFKQNHYQgLa_dQuzjYSzXSISoCWKU",
+      authDomain: "college-football-pickem-68eed.firebaseapp.com",
+      projectId: "college-football-pickem-68eed",
+      storageBucket: "college-football-pickem-68eed.appspot.com",
+      messagingSenderId: "650202039805",
+      appId: "1:650202039805:web:70e51177aab22e4d614594"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // --- Game Slate for Week 10 ---
+    const gameSlate =["401757289","401761639","401757292","401757291","401761640","401762443","401754575","401752758","401754577","401756936","401760401","401762499","401762849","401756939","401762498","401754580","401760404","401752755","401756941","401752888","401757293","401757294","401761642","401754576","401752753","401762850","401756937","401760405","401754579","401752757","401752892","401752754","401752943","401754578","401761643","401756942","401760403"];
+    // --- Fetch game results from ESPN API ---
+    async function getGameResult(eventId) {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${eventId}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const competitors = data?.header?.competitions?.[0]?.competitors || [];
+        const winner = competitors.find(c => c.winner === true);
+        const matchupName = competitors.map(c => c.team.displayName).join(" vs ");
+        return {
+          winnerId: winner?.team?.id || null,
+          competitors,
+          matchupName
+        };
+      } catch (err) {
+        console.error("Failed to fetch game:", eventId, err);
+        return null;
+      }
+    }
+
+    // --- Render results and update Firestore ---
+    async function renderResults() {
+      const resultsContainer = document.getElementById('results');
+
+      // 1. Fetch all game results first
+      const gameResultsMap = {};
+      for (const eventId of gameSlate) {
+        const result = await getGameResult(eventId);
+        if (result) gameResultsMap[eventId] = result;
+      }
+
+      // 2. Fetch user picks
+      const snapshot = await db.collection("week10Picks").get();
+      if (snapshot.empty) {
+        resultsContainer.textContent = "No picks found.";
+        return;
+      }
+
+      const weekNum = 10; // Adjust if needed for other weeks
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const userName = data.name;
+        const picks = data.picks;
+        const uid = doc.id;
+
+        let wins = 0;
+        let losses = 0;
+        const correctPicks = [];
+        const incorrectPicks = [];
+
+        for (const eventId of gameSlate) {
+          const result = gameResultsMap[eventId];
+          if (!result || !result.winnerId) continue;
+
+          const { winnerId, competitors, matchupName } = result;
+          const userPick = picks[eventId];
+          const winnerTeam = competitors.find(c => c.team.id === winnerId)?.team.displayName;
+          const pickTeam = competitors.find(c => c.team.id === userPick)?.team.displayName;
+
+          if (userPick === winnerId) {
+            wins++;
+            correctPicks.push(winnerTeam);
+          } else {
+            losses++;
+            if (userPick) {
+              incorrectPicks.push(pickTeam);
+            } else {
+              incorrectPicks.push(`NoPick : ${matchupName}`);
+            }
+          }
+        }
+
+        // --- Save or update user results ---
+        const resultDocId = `week${weekNum}results_${uid}`;
+        await db.collection("userResults").doc(resultDocId).set({
+          uid,
+          userName,
+          week: weekNum,
+          wins,
+          losses,
+          totalGames: wins + losses,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // --- Render the table for the user ---
+        const div = document.createElement('div');
+        div.classList.add('user-report');
+
+        const h2 = document.createElement('h2');
+        h2.textContent = `${userName} W-L (${wins}-${losses})`;
+        div.appendChild(h2);
+
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        ["Correct Picks", "Incorrect Picks"].forEach(text => {
+          const th = document.createElement('th');
+          th.textContent = text;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        const maxRows = Math.max(correctPicks.length, incorrectPicks.length);
+        for (let i = 0; i < maxRows; i++) {
+          const tr = document.createElement('tr');
+          const tdCorrect = document.createElement('td');
+          tdCorrect.textContent = correctPicks[i] || "";
+          if (correctPicks[i]) tdCorrect.classList.add('correct');
+
+          const tdIncorrect = document.createElement('td');
+          tdIncorrect.textContent = incorrectPicks[i] || "";
+          if (incorrectPicks[i]) tdIncorrect.classList.add('incorrect');
+
+          tr.appendChild(tdCorrect);
+          tr.appendChild(tdIncorrect);
+          tbody.appendChild(tr);
+        }
+
+        table.appendChild(tbody);
+        div.appendChild(table);
+        resultsContainer.appendChild(div);
+      }
+
+      // --- Display all game scores at the bottom ---
+      const gamesDiv = document.createElement('div');
+      gamesDiv.id = "game-results";
+      const gamesHeader = document.createElement('h2');
+      gamesHeader.textContent = "Game Scores";
+      gamesDiv.appendChild(gamesHeader);
+
+      for (const eventId of gameSlate) {
+        const result = gameResultsMap[eventId];
+        if (!result) continue;
+
+        const { competitors } = result;
+        const scoreLine = competitors.map(c => `${c.team.displayName} (${c.score || 0})`).join(" vs ");
+        const p = document.createElement('p');
+        p.textContent = scoreLine;
+        gamesDiv.appendChild(p);
+      }
+
+      resultsContainer.appendChild(gamesDiv);
+    }
+
+    // --- Sign in anonymously before rendering ---
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) {
+        try {
+          await firebase.auth().signInAnonymously();
+        } catch (err) {
+          console.error("Anonymous sign-in failed:", err);
+        }
+      }
+      renderResults().catch(err => console.error("Error rendering picks:", err));
+    });
+  </script>
+</body>
+</html>
