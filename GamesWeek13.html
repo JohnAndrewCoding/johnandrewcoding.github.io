@@ -241,7 +241,7 @@ async function loadGames(weekNum, user) {
 function initPicks(user) {
   if (picksInitialized) return;
   picksInitialized = true;
-  const weekNum = 12;
+  const weekNum = 13;
   document.getElementById('welcomeMessage').innerText = `${user.displayName}'s Week ${weekNum} Picks`;
   savePicks(user, weekNum);
   loadGames(weekNum, user);
@@ -255,7 +255,7 @@ document.getElementById("googleSignOutBtn").onclick = () => {
     document.getElementById("authStatus").innerText = "Not signed in";
     document.getElementById("googleSignInBtn").style.display = "inline-block";
     document.getElementById("googleSignOutBtn").style.display = "none";
-    document.getElementById('week13games').innerHTML = '';
+    document.getElementById('week5games').innerHTML = '';
     document.getElementById('welcomeMessage').innerText = '';
   });
 };
