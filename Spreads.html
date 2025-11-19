@@ -1,3 +1,4 @@
+<p id="spreads">Loading....</p>
 <script>
   async function loadGames(weekNum, user) {
   const container = document.getElementById('week15games');
@@ -11,6 +12,12 @@
     const nbares = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20251119');
     const nbadata = await nbares.json();
   }
+    const games = [nbadata.events[0], nbadata.events[1], nbadata.events[2],cfbdata.events[0], cfbdata.events[1],mbbdata.events[1]]\
+    games.forEach(event=> {
+    const spreads = document.getElementByID("spreads");
+    spreads.innerHTML = event[0].name;
+    
+    });
  
  catch(err) { console.error(err); }
 }
