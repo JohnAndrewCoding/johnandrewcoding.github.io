@@ -1,25 +1,39 @@
 <p id="spreads">Loading....</p>
-<h1>---Test</h1>
+
 <script>
-  const container = document.getElementById('week15games');
-  container.innerHTML = '';
+  async function loadData() {
+    const spreads = document.getElementById("spreads");
+    spreads.innerHTML = "Loading...";
 
-  try {
-    const cfbres = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20251119');
-    const cfbdata = await cfbres.json();
-    const mbbres = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=20251119');
-    const mbbdata = await mbbres.json();
-    const nbares = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20251119');
-    const nbadata = await nbares.json();
+    try {
+      // Fetch all 3 scoreboards
+      const cfbres = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20251119');
+      const cfbdata = await cfbres.json();
+
+      const mbbres = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=20251119');
+      const mbbdata = await mbbres.json();
+
+      const nbares = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20251119');
+      const nbadata = await nbares.json();
+
+      // Safely collect available events
+      const games = [
+        nbadata.events?.[0],
+        nbadata.events?.[1],
+        nbadata.events?.[2],
+        cfbdata.events?.[0],
+        cfbdata.events?.[1],
+        mbbdata.events?.[1],
+      ].filter(Boolean); // removes undefined entries
+
+      // Display names
+      spreads.innerHTML = games.map(g => g.name).join("<br>");
+      
+    } catch (err) {
+      console.error(err);
+      spreads.innerHTML = "Error loading games.";
+    }
   }
-    const games = [nbadata.events[0], nbadata.events[1], nbadata.events[2],cfbdata.events[0], cfbdata.events[1],mbbdata.events[1]];
-    games.forEach(event=> {
-    const spreads = document.getElementByID("spreads");
-    spreads.innerHTML = event.name;
-    
-    });
- 
- catch(err) { console.error(err);}
 
-
+  loadData();
 </script>
