@@ -1,12 +1,60 @@
-<p id="spreads">Loading....</p>
+<p id="spreads">Loading...</p>
+<h1>--- Sports Scoreboard ---</h1>
+
+<div id="scoreboard"></div>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    text-align: center;
+  }
+
+  #scoreboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 20px;
+  }
+
+  .game {
+    background-color: #2d2d2d;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .game .teams {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.2em;
+  }
+
+  .game .score {
+    font-size: 2em;
+    font-weight: bold;
+  }
+
+  .game .info {
+    margin-top: 10px;
+    font-size: 1em;
+    color: #ccc;
+  }
+
+  .game .status {
+    font-size: 1.5em;
+    color: #e74c3c;
+  }
+</style>
 
 <script>
   async function loadData() {
-    const spreads = document.getElementById("spreads");
-    spreads.innerHTML = "Loading...";
+    const scoreboard = document.getElementById('scoreboard');
+    scoreboard.innerHTML = "Loading..."; // Set initial loading message
 
     try {
-      // Fetch all 3 scoreboards
+      // Fetch data from the APIs
       const cfbres = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20251119');
       const cfbdata = await cfbres.json();
 
@@ -24,14 +72,42 @@
         cfbdata.events?.[0],
         cfbdata.events?.[1],
         mbbdata.events?.[1],
-      ].filter(Boolean); // removes undefined entries
+      ].filter(Boolean); // Remove undefined entries
 
-      // Display names
-      spreads.innerHTML = games.map(g => g.name).join("<br>");
-      
+      // Clear previous content
+      scoreboard.innerHTML = '';
+
+      games.forEach(game => {
+        const gameElement = document.createElement('div');
+        gameElement.classList.add('game');
+
+        const teams = game.competitions[0].competitors.map(team => team.team.shortDisplayName);
+        const scores = game.competitions[0].competitors.map(team => team.score);
+
+        const status = game.status;
+        const quarter = game.competitions[0].status.type.description;  // e.g., "Halftime", "4th Quarter"
+        const timeLeft = game.competitions[0].status.periodTime;  // Time remaining, if available
+
+        gameElement.innerHTML = `
+          <div class="teams">
+            <span>${teams[0]}</span>
+            <span>${teams[1]}</span>
+          </div>
+          <div class="score">
+            ${scores[0]} - ${scores[1]}
+          </div>
+          <div class="info">
+            <div>Quarter: ${quarter}</div>
+            <div>Time Left: ${timeLeft || "N/A"}</div>
+          </div>
+          <div class="status">${status}</div>
+        `;
+
+        scoreboard.appendChild(gameElement);
+      });
     } catch (err) {
       console.error(err);
-      spreads.innerHTML = "Error loading games.";
+      scoreboard.innerHTML = "Error loading games.";
     }
   }
 
