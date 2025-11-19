@@ -1,0 +1,18 @@
+<script>
+  async function loadGames(weekNum, user) {
+  const container = document.getElementById('week15games');
+  container.innerHTML = '';
+
+  try {
+    const cfbres = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20251119');
+    const cfbdata = await cfbres.json();
+    const mbbres = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=20251119');
+    const mbbdata = await mbbres.json();
+    const nbares = await fetch('https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20251119');
+    const nbadata = await nbares.json();
+  }
+ 
+ catch(err) { console.error(err); }
+}
+
+</script>
