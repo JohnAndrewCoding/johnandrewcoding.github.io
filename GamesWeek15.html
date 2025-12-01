@@ -162,7 +162,7 @@ async function loadGames(weekNum, user) {
   try {
     const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20251201-20251207');
     const data = await res.json();
-    const targetEventIds = ["401777326","401777325","401777352","401777324","401777327","401777329","401777351","401777328","401777353"];
+    const targetEventIds = ["401777325","401777352","401777324","401777326","401777327","401777329","401777351","401777353","401777328"];
     const games = data.events.filter(e => targetEventIds.includes(e.id));
 
     games.forEach(event => {
