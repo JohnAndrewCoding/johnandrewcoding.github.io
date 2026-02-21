@@ -1,17 +1,40 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // These are your "Public" keys from Supabase Settings -> API
+  // 1. Rename the constant to 'supabaseClient'
   const SUPABASE_URL = 'https://uyrjamdudxudijijqrgv.supabase.co'
   const SUPABASE_KEY = 'sb_publishable_HMy_rPlbs8axiD57SGxGhA_8D0RT5Cv'
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  
+  // Note: 'supabase' (lowercase) is the library, 'supabaseClient' is your instance
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
   async function getGames() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('slate')
       .select('*')
     
-    console.log("Games from Supabase:", data);
-    // Code to inject data into your HTML table goes here
+    if (error) {
+        console.error("Error fetching games:", error);
+    } else {
+        console.log("Games from Supabase:", data);
+        renderGames(data);
+    }
   }
+
+  // Simple helper to put the data on the screen
+  function renderGames(games) {
+    const list = document.getElementById('games-list');
+    if (!list) return;
+    
+    list.innerHTML = games.map(g => `
+        <div style="border: 1px solid #444; margin: 10px; padding: 10px; border-radius: 5px;">
+            <strong>${g.matchup}</strong><br>
+            Status: ${g.status}<br>
+            Score: ${g.home_score} - ${g.away_score}
+        </div>
+    `).join('');
+  }
+
   getGames();
 </script>
+
+<div id="games-list">Loading live games...</div>
