@@ -103,23 +103,26 @@
     }
 
     // --- RENDERING ---
-    function renderGames(games, user) {
-        const list = document.getElementById('games-list');
-        list.innerHTML = games.map(g => {
-            // Split matchup (e.g. "Duke @ UNC")
-            const teams = g.matchup.split(' vs ') || g.matchup.split(' @ ');
-            return `
-                <div class="game-card">
-                    <button class="team-btn" onclick="makePick('${g.espn_id}', '${teams[0]}')">${teams[0]}</button>
-                    <div style="text-align: center;">
-                        <div class="status">${g.status}</div>
-                        <div>${g.home_score} - ${g.away_score}</div>
-                    </div>
-                    <button class="team-btn" onclick="makePick('${g.espn_id}', '${teams[1]}')">${teams[1]}</button>
+   function renderGames(games, user) {
+    const list = document.getElementById('games-list');
+    list.innerHTML = games.map(g => {
+        // This splits by " at " or " vs "
+        const teams = g.matchup.split(/ at | vs /);
+        const awayTeam = teams[0] || "Away";
+        const homeTeam = teams[1] || "Home";
+
+        return `
+            <div class="game-card">
+                <button class="team-btn" onclick="makePick('${g.espn_id}', '${awayTeam}')">${awayTeam}</button>
+                <div style="text-align: center;">
+                    <div class="status">${g.status}</div>
+                    <div>${g.home_score} - ${g.away_score}</div>
                 </div>
-            `;
-        }).join('');
-    }
+                <button class="team-btn" onclick="makePick('${g.espn_id}', '${homeTeam}')">${homeTeam}</button>
+            </div>
+        `;
+    }).join('');
+}
 
     function renderLeaderboard(profiles) {
         const list = document.getElementById('leaderboard-list');
