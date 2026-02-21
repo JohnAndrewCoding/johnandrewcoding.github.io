@@ -1,0 +1,17 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // These are your "Public" keys from Supabase Settings -> API
+  const SUPABASE_URL = 'https://uyrjamdudxudijijqrgv.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_HMy_rPlbs8axiD57SGxGhA_8D0RT5Cv'
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+  async function getGames() {
+    const { data, error } = await supabase
+      .from('slate')
+      .select('*')
+    
+    console.log("Games from Supabase:", data);
+    // Code to inject data into your HTML table goes here
+  }
+  getGames();
+</script>
