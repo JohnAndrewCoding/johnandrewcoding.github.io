@@ -3,222 +3,301 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CFB Team Fantasy Dashboard</title>
+    <title>Retro Pick'em Dashboard</title>
+    <!-- Google Fonts for the 8-bit Arcade Text and clean UI text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
     <style>
+        /* --- RETRO BOWL SYSTEM DESIGN --- */
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent-color: #38bdf8;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --success: #22c55e;
+            --bg-canvas: #0f172a;       /* Deep slate arcade background */
+            --bg-card: #1e293b;         /* Lighter card block */
+            --retro-yellow: #facc15;    /* Primary headers / selection neon */
+            --retro-blue: #38bdf8;      /* UI Accent blue */
+            --retro-green: #4ade80;     /* Selected state / Success */
+            --retro-red: #f87171;       /* Locked state / Urgent */
+            --pixel-font: 'Press Start 2P', monospace;
+            --ui-font: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 2rem;
+            background-color: var(--bg-canvas);
+            color: #ffffff;
+            font-family: var(--ui-font);
+            padding: 2rem 1rem;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .container {
-            width: 100%;
-            max-width: 800px;
-        }
-
+        /* --- HEADER SECTION --- */
         header {
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 1rem;
-        }
-
-        h1 { margin: 0; font-size: 2rem; color: var(--text-main); }
-        p { color: var(--text-muted); margin: 0.5rem 0 0 0; }
-
-        .btn-container {
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: flex-start;
-        }
-
-        /* The Recommended Core Action Button */
-        .calc-btn {
-            background-color: var(--accent-color);
-            color: #0f172a;
-            font-weight: 700;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 6px -1px rgba(56, 189, 248, 0.2);
-        }
-
-        .calc-btn:hover {
-            background-color: #7dd3fc;
-            transform: translateY(-1px);
-        }
-
-        .calc-btn:active {
-            transform: translateY(1px);
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        }
-
-        h2 { margin-top: 0; font-size: 1.25rem; color: var(--accent-color); }
-
-        table {
+            text-align: center;
+            margin-bottom: 2.5rem;
             width: 100%;
-            border-collapse: collapse;
+            max-width: 600px;
+        }
+
+        .game-title {
+            font-family: var(--pixel-font);
+            font-size: 1.5rem;
+            color: var(--retro-yellow);
+            text-shadow: 4px 4px 0px #000;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+            line-height: 1.4;
+        }
+
+        .week-selector {
+            font-family: var(--pixel-font);
+            font-size: 0.9rem;
+            color: var(--retro-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #000000;
+            padding: 0.75rem;
+            border: 4px solid #ffffff;
+        }
+
+        .arrow-btn {
+            color: var(--retro-yellow);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* --- THE MATCHUP CARD (The Recommended Interaction) --- */
+        .matchup-container {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 1.5rem;
+        }
+
+        .matchup-card {
+            background-color: var(--bg-card);
+            border: 6px solid #000000;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Split-button logic: Each team is half the button */
+        .team-option {
+            flex: 1;
+            background: none;
+            border: none;
+            color: white;
+            padding: 2rem 1rem;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            transition: background-color 0.1s ease;
+            position: relative;
+        }
+
+        /* Team color identities mapped directly into the retro UI hover states */
+        .team-option.team-home:hover {
+            background-color: #991b1b; /* Deep Red Team Accent */
+        }
+
+        .team-option.team-away:hover {
+            background-color: #1e3a8a; /* Deep Blue Team Accent */
+        }
+
+        /* The Arcade Pixel Helmets built with CSS grid */
+        .helmet-icon {
+            width: 48px;
+            height: 40px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1px;
+        }
+        .pixel { background-color: transparent; }
+        .p-fill { background-color: var(--team-color); }
+        .p-face { background-color: #e2e8f0; } /* Facemask silver */
+        .p-dark { background-color: #000000; }
+
+        .team-name {
+            font-family: var(--pixel-font);
+            font-size: 1rem;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .spread {
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0.8;
+            color: #cbd5e1;
+        }
+
+        /* Center Arcade VS Element */
+        .vs-badge {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--pixel-font);
+            font-size: 0.8rem;
+            background: #000000;
+            color: var(--retro-yellow);
+            padding: 0.5rem;
+            border: 3px solid #ffffff;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* --- ACTIVE SELECTED STATE --- */
+        /* Massive chunky arcade flashing border when a pick is locked */
+        .matchup-card.has-pick {
+            border-color: var(--retro-green);
+            animation: retro-glow 1.5s infinite steps(2);
+        }
+
+        .team-option.is-selected {
+            background-color: rgba(74, 222, 128, 0.15);
+        }
+
+        .team-option.is-selected .team-name {
+            color: var(--retro-yellow);
+        }
+
+        /* Dim the unselected team slightly to emphasize the choice */
+        .matchup-card.has-pick .team-option:not(.is-selected) {
+            opacity: 0.4;
+        }
+
+        @keyframes retro-glow {
+            0% { border-color: var(--retro-green); }
+            50% { border-color: #ffffff; }
+            100% { border-color: var(--retro-green); }
+        }
+
+        /* --- SUBMIT ACTIONS --- */
+        .action-container {
+            width: 100%;
+            max-width: 600px;
             margin-top: 1rem;
         }
 
-        th, td {
-            text-align: left;
-            padding: 0.75rem;
-            border-bottom: 1px solid #334155;
+        .submit-btn {
+            width: 100%;
+            background-color: var(--retro-green);
+            color: #000000;
+            font-family: var(--pixel-font);
+            font-size: 1rem;
+            padding: 1.25rem;
+            border: 4px solid #000000;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000000;
+            transition: transform 0.05s ease, box-shadow 0.05s ease;
         }
 
-        th { color: var(--text-muted); font-weight: 600; font-size: 0.875rem; }
-        .score-cell { font-weight: 700; color: var(--success); text-align: right; }
-        th.text-right, td.text-right { text-align: right; }
+        .submit-btn:hover {
+            background-color: #22c55e;
+        }
 
-        .status-tag {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-weight: 600;
-            background-color: #334155;
-            color: var(--text-main);
+        .submit-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px #000000;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>CFB Team Fantasy</h1>
-            <p>Mock Testing Environment — Week 1 Matchups</p>
-        </header>
-
-        <!-- Main Action Trigger -->
-        <div class="btn-container">
-            <button class="calc-btn" id="calcBtn">Calculate Weekly Scores</button>
+    <!-- Header / Main Dashboard Navigation -->
+    <header>
+        <h1 class="game-title">RETRO PICK'EM PRO</h1>
+        <div class="week-selector">
+            <span class="arrow-btn">&lt;</span>
+            <span>WEEK 01</span>
+            <span class="arrow-btn">&gt;</span>
         </div>
+    </header>
 
-        <div class="card">
-            <h2>Your Roster Performance</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>College Team</th>
-                        <th>Conference</th>
-                        <th>Status</th>
-                        <th class="text-right">Fantasy Points</th>
-                    </tr>
-                </thead>
-                <tbody id="rosterTemplate">
-                    <tr>
-                        <td>Georgia Bulldogs</td>
-                        <td>SEC (Heavyweight)</td>
-                        <td><span class="status-tag">STARTING</span></td>
-                        <td class="score-cell text-right" id="score-uga">--</td>
-                    </tr>
-                    <tr>
-                        <td>Ohio State Buckeyes</td>
-                        <td>Big Ten (Heavyweight)</td>
-                        <td><span class="status-tag">STARTING</span></td>
-                        <td class="score-cell text-right" id="score-osu">--</td>
-                    </tr>
-                    <tr>
-                        <td>Boise State Broncos</td>
-                        <td>Mountain West (Sleeper)</td>
-                        <td><span class="status-tag">STARTING</span></td>
-                        <td class="score-cell text-right" id="score-bsu">--</td>
-                    </tr>
-                    <tr>
-                        <td>Appalachian State Mountaineers</td>
-                        <td>Sun Belt (Sleeper)</td>
-                        <td><span class="status-tag">BENCH</span></td>
-                        <td class="score-cell text-right" id="score-app">--</td>
-                    </tr>
-                </tbody>
-            </table>
+    <!-- Matchup Card 1 -->
+    <div class="matchup-container">
+        <div class="matchup-card" id="matchup-1">
+            <div class="vs-badge">VS</div>
+            
+            <!-- Team A Button (Home) -->
+            <button class="team-option team-home" onclick="makePick('matchup-1', 'home')">
+                <!-- 8-Bit Pixel Helmet Art via CSS Grid -->
+                <div class="helmet-icon" style="--team-color: #dc2626;">
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                </div>
+                <span class="team-name">UGA</span>
+                <span class="spread">-7.5</span>
+            </button>
+
+            <!-- Team B Button (Away) -->
+            <button class="team-option team-away" onclick="makePick('matchup-1', 'away')">
+                <div class="helmet-icon" style="--team-color: #2563eb;">
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                </div>
+                <span class="team-name">UF</span>
+                <span class="spread">+7.5</span>
+            </button>
         </div>
     </div>
 
+    <!-- Submit Action Area -->
+    <div class="action-container">
+        <button class="submit-btn" onclick="submitPicks()">LOCK IN PICKS</button>
+    </div>
+
+    <!-- UI Interaction Engine -->
     <script>
-        // 1. Mocking the API raw data ingestion
-        const mockRealWorldStats = {
-            uga: { pointsScored: 34, oppPointsScored: 17, yards: 450, turnoverMargin: 2, isWin: true, isAway: true, oppIsRanked: true },
-            osu: { pointsScored: 42, oppPointsScored: 7, yards: 520, turnoverMargin: 1, isWin: true, isAway: false, oppIsRanked: false },
-            bsu: { pointsScored: 28, oppPointsScored: 31, yards: 380, turnoverMargin: -2, isWin: false, isAway: true, oppIsRanked: false },
-            app: { pointsScored: 38, oppPointsScored: 10, yards: 410, turnoverMargin: 0, isWin: true, isAway: false, oppIsRanked: false }
+        // Track the state of selections in-memory
+        const userPicks = {
+            'matchup-1': null
         };
 
-        // 2. Pure function implementation of your custom scoring matrix
-        function calculateTeamFantasyScore(stats) {
-            let score = 0;
+        function makePick(matchupId, selection) {
+            const card = document.getElementById(matchupId);
+            const buttons = card.querySelectorAll('.team-option');
+            
+            // Update internal state
+            userPicks[matchupId] = selection;
 
-            // Base Outcome Matchers
-            if (stats.isWin) {
-                score += 10;
-                if (stats.isAway) score += 3;
-                if (stats.oppIsRanked) score += 5;
-            } else {
-                score -= 5;
+            // Clear previous visual classes
+            card.classList.add('has-pick');
+            buttons.forEach(btn => btn.classList.remove('is-selected'));
+
+            // Assign active retro classes to the chosen button half
+            if (selection === 'home') {
+                buttons[0].classList.add('is-selected');
+            } else if (selection === 'away') {
+                buttons[1].classList.add('is-selected');
             }
-
-            // Offensive Multipliers
-            score += Math.floor(stats.pointsScored / 2); // 0.5 pts per real point
-            score += Math.floor(stats.yards / 50);       // 1 pt per 50 yards
-
-            // Point Margin Cap/Bonus
-            if (stats.isWin && (stats.pointsScored - stats.oppPointsScored) >= 20) {
-                score += 5;
-            }
-
-            // Defensive Milestones
-            if (stats.oppPointsScored === 0) {
-                score += 10;
-            } else if (stats.oppPointsScored < 10) {
-                score += 5;
-            }
-
-            // Turnover Efficiency
-            score += (stats.turnoverMargin * 2);
-
-            return score;
         }
 
-        // 3. UI Interaction Controller
-        document.getElementById('calcBtn').addEventListener('click', () => {
-            // Process the raw box score through the scoring logic matrix
-            const ugaFinal = calculateTeamFantasyScore(mockRealWorldStats.uga);
-            const osuFinal = calculateTeamFantasyScore(mockRealWorldStats.osu);
-            const bsuFinal = calculateTeamFantasyScore(mockRealWorldStats.bsu);
-            const appFinal = calculateTeamFantasyScore(mockRealWorldStats.app);
-
-            // Dynamically inject processed math into the DOM
-            document.getElementById('score-uga').innerText = `${ugaFinal} pts`;
-            document.getElementById('score-osu').innerText = `${osuFinal} pts`;
-            document.getElementById('score-bsu').innerText = `${bsuFinal} pts`;
-            document.getElementById('score-app').innerText = `${appFinal} pts`;
-
-            // Visual confirmation feedback on the core button
-            const btn = document.getElementById('calcBtn');
-            btn.style.backgroundColor = '#22c55e';
-            btn.innerText = 'Scores Processed ✓';
-        });
+        function submitPicks() {
+            if (!userPicks['matchup-1']) {
+                alert('CHOOSE A TEAM BEFORE LOCKING IN!');
+                return;
+            }
+            alert(`PICKS LOCKED! CURRENT CHOICE: ${userPicks['matchup-1'].toUpperCase()}`);
+            // This is where you will plug your Supabase integration logic later
+        }
     </script>
 </body>
 </html>
