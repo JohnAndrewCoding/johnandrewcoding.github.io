@@ -1,1 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Bowl Swipe Pick'em</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-canvas: #0f172a;       
+            --bg-card: #1e293b;         
+            --retro-yellow: #facc15;    
+            --retro-blue: #38bdf8;      
+            --retro-green: #4ade80;     
+            --pixel-font: 'Press Start 2P', monospace;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; 
+            background-color: var(--bg-canvas);
+        }
+
+        body {
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 400px;
+            user-select: none;
+        }
+
+        .title {
+            font-family: var(--pixel-font);
+            font-size: 1.2rem;
+            color: var(--retro-yellow);
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 0.75rem;
+        }
+
+        .progress-bar {
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+            color: var(--retro-blue);
+            background: #000000;
+            padding: 0.5rem;
+            border: 3px solid #ffffff;
+        }
+
+        .deck-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 380px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .matchup-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-card);
+            border: 6px solid #000000;
+            box-shadow: 6px 6px 0px #000000;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            box-sizing: border-box;
+            cursor: grab;
+            user-select: none;
+            touch-action: none; 
+            transform-origin: center bottom;
+            z-index: 10;
+        }
+
+        .matchup-card.dragging .teams-wrapper,
+        .matchup-card.dragging .team-btn,
+        .matchup-card.dragging .team-display-block {
+            pointer-events: none;
+        }
+
+        .matchup-number {
+            font-family: var(--pixel-font);
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .teams-wrapper {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Container structure holding helmet + button */
+        .team-display-block {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .team-btn {
+            width: 100%;
+            background: #000000;
+            border: 4px solid #ffffff;
+            color: #ffffff;
+            padding: 1.25rem 0.5rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.9rem;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+        }
+
+        .team-btn:hover {
+            border-color: var(--retro-yellow);
+            color: var(--retro-yellow);
+        }
+
+        .vs-divider {
+            font-family: var(--pixel-font);
+            font-size: 0.9rem;
+            color: var(--retro-yellow);
+            margin-top: 3.5rem; /* Pushes VS down to align with buttons */
+        }
+
+        /* --- THE 8-BIT GRID HELMET SPRITE --- */
+        .helmet-icon {
+            width: 48px;
+            height: 40px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1px;
+        }
+        .pixel { background-color: transparent; }
+        .p-fill { background-color: var(--team-color); } /* Main Helmet Accent */
+        .p-face { background-color: #cbd5e1; }          /* Silver Facemask Grid */
+        .p-dark { background-color: #000000; }          /* Visor/Shadow depth */
+
+        .swipe-left {
+            transform: translateX(-150vw) rotate(-25deg) !important;
+            opacity: 0 !important;
+        }
+
+        .swipe-right {
+            transform: translateX(150vw) rotate(25deg) !important;
+            opacity: 0 !important;
+        }
+
+        .mobile-hint {
+            display: none;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            color: #475569;
+            margin-top: 2rem;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .retro-toast {
+            position: fixed;
+            bottom: 12%; 
+            background-color: #000000;
+            border: 4px solid var(--retro-yellow);
+            padding: 1rem;
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+            color: #ffffff;
+            text-align: center;
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.7);
+            z-index: 100; 
+            opacity: 0;
+            transform: translateY(20px);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+            pointer-events: none; 
+        }
+
+        .retro-toast.show {
+            opacity: 1;
+            transform: translateY(0px);
+        }
+
+        @media (max-width: 600px) {
+            .vs-divider { display: none; }
+            .mobile-hint { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 class="title">RETRO SWIPER</h1>
+        <div class="progress-bar" id="progress">GAME 1 OF 3</div>
+    </header>
+
+    <div class="retro-toast" id="toast">PICKED: UGA</div>
+
+    <div class="deck-container" id="deck">
+        
+        <!-- Card 3 -->
+        <div class="matchup-card" id="card-3" data-home="TB" data-away="DAL">
+            <span class="matchup-number">MATCHUP 03</span>
+            <div class="teams-wrapper">
+                <div class="team-display-block">
+                    <!-- Red Helmet -->
+                    <div class="helmet-icon" style="--team-color: #dc2626;">
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    </div>
+                    <button class="team-btn" onclick="handleBtnPick('card-3', 'home')">TB</button>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="team-display-block">
+                    <!-- Navy Blue Helmet -->
+                    <div class="helmet-icon" style="--team-color: #1e3a8a;">
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    </div>
+                    <button class="team-btn" onclick="handleBtnPick('card-3', 'away')">DAL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="matchup-card" id="card-2" data-home="KC" data-away="BUF">
+            <span class="matchup-number">MATCHUP 02</span>
+            <div class="teams-wrapper">
+                <div class="team-display-block">
+                    <!-- Red/Gold Helmet Accent -->
+                    <div class="helmet-icon" style="--team-color: #e11d48;">
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    </div>
+                    <button class="team-btn" onclick="handleBtnPick('card-2', 'home')">KC</button>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="team-display-block">
+                    <!-- Royal Blue Helmet -->
+                    <div class="helmet-icon" style="--team-color: #2563eb;">
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    </div>
+                    <button class="team-btn" onclick="handleBtnPick('card-2', 'away')">BUF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 1 -->
+        <div class="matchup-card" id="card-1" data-home="UGA" data-away="UF">
+            <span class="matchup-number">MATCHUP 01</span>
+            <div class="teams-wrapper">
+                <div class="team-display-block">
+                    <!-- Crimson Helmet -->
+                    <div class="helmet-icon" style="--team-color: #991b1b;">
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    </div>
+                    <button class="team-btn" onclick="handleBtnPick('card-1', 'home')">UGA</button>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="team-display-block">
+                    <!-- Bright Orange/Blue Helmet -->
+                    <div class="helmet-icon" style="--team-color: #ea580c;">
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                    </div>
+                    <button class="team-btn" onclick="handleBtnPick('card-1', 'away')">UF</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mobile-hint">
+        &lt; SWIPE LEFT FOR HOME | SWIPE RIGHT FOR AWAY &gt;
+    </div>
+
+    <script>
+        let currentCardIndex = 1;
+        const totalCards = 3;
+        const savedPicks = {};
+
+        let startX = 0;
+        let startY = 0;
+        let isDragging = false;
+        let toastTimeout = null; 
+
+        function initSwipeEngine() {
+            const cards = document.querySelectorAll('.matchup-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('touchstart', e => {
+                    isDragging = true;
+                    card.classList.add('dragging');
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    card.style.transition = 'none'; 
+                }, { passive: true });
+
+                card.addEventListener('touchmove', e => {
+                    if (!isDragging) return;
+
+                    const currentX = e.touches[0].clientX;
+                    const deltaX = currentX - startX;
+                    const rotationDegree = deltaX * 0.06; 
+                    
+                    card.style.transform = `translateX(${deltaX}px) rotate(${rotationDegree}deg)`;
+                }, { passive: true });
+
+                card.addEventListener('touchend', e => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    card.classList.remove('dragging');
+                    
+                    card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+
+                    const endX = e.changedTouches[0].clientX;
+                    const swipeDistance = endX - startX;
+                    const threshold = 100; 
+
+                    if (swipeDistance < -threshold) {
+                        executePick(card, 'home', 'swipe-left');
+                    } else if (swipeDistance > threshold) {
+                        executePick(card, 'away', 'swipe-right');
+                    } else {
+                        card.style.transform = 'translateX(0px) rotate(0deg)';
+                    }
+                }, { passive: true });
+            });
+        }
+
+        function handleBtnPick(cardId, pickType) {
+            const card = document.getElementById(cardId);
+            const animationClass = pickType === 'home' ? 'swipe-left' : 'swipe-right';
+            executePick(card, pickType, animationClass);
+        }
+
+        function executePick(cardElement, pickType, animationClass) {
+            const cardId = cardElement.id;
+            const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
+            
+            savedPicks[cardId] = chosenTeam;
+            console.log(`Saved: ${cardId} -> ${chosenTeam}`);
+
+            triggerToastNotification(chosenTeam);
+
+            cardElement.removeAttribute('style'); 
+            cardElement.classList.add(animationClass);
+
+            currentCardIndex++;
+            renderProgressUpdates();
+        }
+
+        function triggerToastNotification(teamName) {
+            const toast = document.getElementById('toast');
+            clearTimeout(toastTimeout);
+            toast.innerText = `LOCKED: ${teamName}`;
+            toast.classList.add('show');
+            
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1200);
+        }
+
+        function renderProgressUpdates() {
+            const display = document.getElementById('progress');
+            if (currentCardIndex <= totalCards) {
+                display.innerText = `GAME ${currentCardIndex} OF ${totalCards}`;
+            } else {
+                display.innerText = "ALL PICKS LOCKED!";
+                display.style.color = "#4ade80";      
+                display.style.borderColor = "#4ade80";
+            }
+        }
+
+        initSwipeEngine();
+    </script>
+</body>
+</html>
