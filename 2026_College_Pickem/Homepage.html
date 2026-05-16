@@ -2,54 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Swipe Pick'em</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Bowl Swipe Pick'em</title>
+    
+    <!-- Google Fonts for 8-bit Arcade Aesthetics -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
+        /* --- RETRO BOWL SYSTEM DESIGN --- */
         :root {
-            --bg-canvas: #0f172a;
-            --bg-card: #1e293b;
-            --retro-yellow: #facc15;
-            --retro-blue: #38bdf8;
-            --retro-green: #4ade80;
+            --bg-canvas: #0f172a;       /* Deep slate arcade background */
+            --bg-card: #1e293b;         /* Lighter card block */
+            --retro-yellow: #facc15;    /* Primary headers / arcade neon */
+            --retro-blue: #38bdf8;      /* Away team accent blue */
+            --retro-green: #4ade80;     /* Success / Locked indicators */
             --pixel-font: 'Press Start 2P', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
             background-color: var(--bg-canvas);
-            color: white;
+            color: #ffffff;
             font-family: Arial, sans-serif;
-            overflow: hidden; /* Prevents bounce scrolling during swipes */
+            overflow: hidden; /* Critical for GitHub Pages mobile: disables global page bouncing */
             display: flex;
             flex-direction: column;
             align-items: center;
             height: 100vh;
-            padding: 1rem;
+            padding: 1.5rem 1rem;
         }
 
+        /* --- DASHBOARD HEADER --- */
         header {
             text-align: center;
-            margin-top: 1rem;
             margin-bottom: 2rem;
+            width: 100%;
+            max-width: 400px;
+            user-select: none;
         }
 
         .title {
             font-family: var(--pixel-font);
             font-size: 1.2rem;
             color: var(--retro-yellow);
-            margin-bottom: 0.5rem;
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 0.75rem;
+            letter-spacing: -1px;
         }
 
         .progress-bar {
             font-family: var(--pixel-font);
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: var(--retro-blue);
+            background: #000000;
+            padding: 0.5rem;
+            border: 3px solid #ffffff;
         }
 
-        /* --- DECK & CARD STRUCTURE --- */
+        /* --- CARD DECK CONTAINER --- */
         .deck-container {
             position: relative;
             width: 100%;
@@ -60,6 +77,7 @@
             align-items: center;
         }
 
+        /* --- ARCADE MATCHUP CARD --- */
         .matchup-card {
             position: absolute;
             width: 100%;
@@ -71,31 +89,47 @@
             flex-direction: column;
             justify-content: space-around;
             align-items: center;
-            padding: 2rem;
+            padding: 2rem 1.5rem;
             box-sizing: border-box;
-            transition: transform 0.3s ease, opacity 0.3s ease;
             cursor: grab;
             user-select: none;
-            touch-action: none; /* Critical for capturing clean mobile swipes */
+            touch-action: none; /* Instructs mobile browsers to completely ignore default pan actions */
+            
+            /* Center layer mechanics */
+            transform-origin: center bottom;
         }
 
-        /* Desktop Mode: Classic click layout */
+        .matchup-card:active {
+            cursor: grabbing;
+        }
+
+        .matchup-number {
+            font-family: var(--pixel-font);
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        /* Wrapper to manage responsive layouts */
         .teams-wrapper {
             display: flex;
             width: 100%;
             justify-content: space-between;
+            align-items: center;
             gap: 1rem;
         }
 
+        /* --- THE BUTTONS (Desktop Interaction Blueprint) --- */
         .team-btn {
             flex: 1;
             background: #000000;
-            border: 3px solid #ffffff;
-            color: white;
+            border: 4px solid #ffffff;
+            color: #ffffff;
             padding: 1.5rem 0.5rem;
             cursor: pointer;
             font-family: var(--pixel-font);
             font-size: 0.9rem;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+            transition: border-color 0.1s ease, color 0.1s ease;
         }
 
         .team-btn:hover {
@@ -105,54 +139,60 @@
 
         .vs-divider {
             font-family: var(--pixel-font);
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: var(--retro-yellow);
-            align-self: center;
+            text-shadow: 2px 2px 0px #000;
         }
 
-        /* Swipe Animations */
+        /* --- RETRO SWIPE ANIMATION CLASSES --- */
         .swipe-left {
-            transform: translateX(-150vw) rotate(-20deg) !important;
+            transform: translateX(-150vw) rotate(-25deg) !important;
             opacity: 0;
         }
 
         .swipe-right {
-            transform: translateX(150vw) rotate(20deg) !important;
+            transform: translateX(150vw) rotate(25deg) !important;
             opacity: 0;
         }
 
-        /* Responsive Mobile Layout adjustments */
-        @media (max-width: 600px) {
-            .vs-divider {
-                display: none; /* Hide VS on mobile to focus on the swipe instruction */
-            }
-            .mobile-hint {
-                display: block !important;
-                font-family: var(--pixel-font);
-                font-size: 0.6rem;
-                color: #64748b;
-                margin-top: 1.5rem;
-                text-align: center;
-                line-height: 1.5;
-            }
-        }
-
+        /* --- INTERFACE UTILITIES & HINTS --- */
         .mobile-hint {
             display: none;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            color: #475569;
+            margin-top: 2rem;
+            text-align: center;
+            line-height: 1.6;
+            letter-spacing: -0.5px;
+            user-select: none;
+        }
+
+        /* Clean media query handling layout changes on mobile viewports */
+        @media (max-width: 600px) {
+            .vs-divider {
+                display: none; 
+            }
+            .mobile-hint {
+                display: block;
+            }
         }
     </style>
 </head>
 <body>
 
+    <!-- Dashboard Tracking System -->
     <header>
-        <div class="title">SWIPE PICKS</div>
+        <h1 class="title">RETRO SWIPER</h1>
         <div class="progress-bar" id="progress">GAME 1 OF 3</div>
     </header>
 
+    <!-- Main Deck Deck Stacking Area -->
     <div class="deck-container" id="deck">
-        <!-- Card 3 -->
+        
+        <!-- Card 3 (Bottom of Stack) -->
         <div class="matchup-card" id="card-3" data-home="TB" data-away="DAL">
-            <span style="font-family: var(--pixel-font); color:#64748b; font-size:0.8rem;">MATCHUP 3</span>
+            <span class="matchup-number">MATCHUP 03</span>
             <div class="teams-wrapper">
                 <button class="team-btn" onclick="handleBtnPick('card-3', 'home')">TB</button>
                 <div class="vs-divider">VS</div>
@@ -160,9 +200,9 @@
             </div>
         </div>
 
-        <!-- Card 2 -->
+        <!-- Card 2 (Middle of Stack) -->
         <div class="matchup-card" id="card-2" data-home="KC" data-away="BUF">
-            <span style="font-family: var(--pixel-font); color:#64748b; font-size:0.8rem;">MATCHUP 2</span>
+            <span class="matchup-number">MATCHUP 02</span>
             <div class="teams-wrapper">
                 <button class="team-btn" onclick="handleBtnPick('card-2', 'home')">KC</button>
                 <div class="vs-divider">VS</div>
@@ -172,90 +212,125 @@
 
         <!-- Card 1 (Top of Stack) -->
         <div class="matchup-card" id="card-1" data-home="UGA" data-away="UF">
-            <span style="font-family: var(--pixel-font); color:#64748b; font-size:0.8rem;">MATCHUP 1</span>
+            <span class="matchup-number">MATCHUP 01</span>
             <div class="teams-wrapper">
                 <button class="team-btn" onclick="handleBtnPick('card-1', 'home')">UGA</button>
                 <div class="vs-divider">VS</div>
                 <button class="team-btn" onclick="handleBtnPick('card-1', 'away')">UF</button>
             </div>
         </div>
+
     </div>
 
-    <div class="mobile-hint">&lt; SWIPE LEFT (HOME) | SWIPE RIGHT (AWAY) &gt;</div>
+    <!-- Mobile Screen Instructions Overlay -->
+    <div class="mobile-hint">
+        &lt; SWIPE LEFT FOR HOME | SWIPE RIGHT FOR AWAY &gt;
+    </div>
 
+    <!-- UI Interaction Engine -->
     <script>
         let currentCardIndex = 1;
         const totalCards = 3;
         const savedPicks = {};
 
-        // Touch Tracking Coordinates
-        let touchStartX = 0;
-        let touchEndX = 0;
+        // Native Drag State Configuration
+        let startX = 0;
+        let startY = 0;
+        let isDragging = false;
 
-        function initSwipeMechanic() {
+        function initSwipeEngine() {
             const cards = document.querySelectorAll('.matchup-card');
             
             cards.forEach(card => {
+                // 1. Touch Anchor Point Established
                 card.addEventListener('touchstart', e => {
-                    touchStartX = e.changedTouches[0].screenX;
-                }, { passive: true });
+                    isDragging = true;
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    card.style.transition = 'none'; // Snappy responsiveness during drag tracking
+                }, { passive: false });
 
+                // 2. Real-Time Physical Drag Tracking Engine
+                card.addEventListener('touchmove', e => {
+                    if (!isDragging) return;
+                    
+                    // Kill default browser actions completely (prevents scroll-bounce on GitHub Pages)
+                    e.preventDefault(); 
+
+                    const currentX = e.touches[0].clientX;
+                    const deltaX = currentX - startX;
+                    
+                    // Generate subtle natural card tilt rotation calculation
+                    const rotationDegree = deltaX * 0.06; 
+                    
+                    card.style.transform = `translateX(${deltaX}px) rotate(${rotationDegree}deg)`;
+                }, { passive: false });
+
+                // 3. Choice Determination Execution Layer
                 card.addEventListener('touchend', e => {
-                    touchEndX = e.changedTouches[0].screenX;
-                    handleSwipeGesture(card);
-                }, { passive: true });
+                    if (!isDragging) return;
+                    isDragging = false;
+                    
+                    // Re-enable smooth transition states for programmatic exits or resets
+                    card.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease';
+
+                    const endX = e.changedTouches[0].clientX;
+                    const swipeDistance = endX - startX;
+                    const threshold = 110; // Drag pixel volume required to execute selection choice
+
+                    if (swipeDistance < -threshold) {
+                        // Action Triggered Left -> Choose Home
+                        executePick(card, 'home', 'swipe-left');
+                    } else if (swipeDistance > threshold) {
+                        // Action Triggered Right -> Choose Away
+                        executePick(card, 'away', 'swipe-right');
+                    } else {
+                        // Spring back to base center position if drag criteria failed
+                        card.style.transform = 'translateX(0px) rotate(0deg)';
+                    }
+                }, { passive: false });
             });
         }
 
-        function handleSwipeGesture(cardElement) {
-            const swipeDistance = touchEndX - touchStartX;
-            const threshold = 60; // Minimum distance in pixels to trigger a swipe
-
-            if (swipeDistance < -threshold) {
-                // Swiped Left -> Choose Home Team
-                executePick(cardElement, 'home', 'swipe-left');
-            } else if (swipeDistance > threshold) {
-                // Swiped Right -> Choose Away Team
-                executePick(cardElement, 'away', 'swipe-right');
-            }
-        }
-
-        // Desktop Fallback Click Logic
+        // Desktop Fallback Grid Handling Architecture
         function handleBtnPick(cardId, pickType) {
             const card = document.getElementById(cardId);
             const animationClass = pickType === 'home' ? 'swipe-left' : 'swipe-right';
             executePick(card, pickType, animationClass);
         }
 
+        // Primary Core State Mutator Function
         function executePick(cardElement, pickType, animationClass) {
             const cardId = cardElement.id;
             const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
             
-            // Save selection
+            // Save state selection records cleanly
             savedPicks[cardId] = chosenTeam;
-            console.log(`Saved Pick for ${cardId}: ${chosenTeam}`);
+            console.log(`State Registered -> ${cardId}: Key Selection [${chosenTeam}]`);
 
-            // Trigger Arcade CSS Flight Animation
+            // Apply specific flight vector visual classes
             cardElement.classList.add(animationClass);
 
-            // Increment Progress
+            // Cycle active index calculations upwards
             currentCardIndex++;
-            updateProgressText();
+            renderProgressUpdates();
         }
 
-        function updateProgressText() {
-            const progressDisplay = document.getElementById('progress');
+        // Live Dashboard Text Synchronization Logic
+        function renderProgressUpdates() {
+            const display = document.getElementById('progress');
             if (currentCardIndex <= totalCards) {
-                progressDisplay.innerText = `GAME ${currentCardIndex} OF ${totalCards}`;
+                display.innerText = `GAME ${currentCardIndex} OF ${totalCards}`;
             } else {
-                progressDisplay.innerText = "ALL PICKS LOCKED IN!";
-                progressDisplay.style.color = var(--retro-green);
-                alert("Boom! All selections recorded. Saving directly to backend...");
+                display.innerText = "ALL PICKS LOCKED!";
+                display.style.color = var(--retro-green);
+                display.style.borderColor = var(--retro-green);
+                alert("Boom! All selections recorded. Ready to ship to database backend.");
             }
         }
 
-        // Initialize script logic
-        initSwipeMechanic();
+        // Boot the system engine lifecycle
+        initSwipeEngine();
     </script>
 </body>
 </html>
