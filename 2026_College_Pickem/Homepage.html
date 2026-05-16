@@ -3,301 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Pick'em Dashboard</title>
-    <!-- Google Fonts for the 8-bit Arcade Text and clean UI text -->
+    <title>Retro Swipe Pick'em</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <style>
-        /* --- RETRO BOWL SYSTEM DESIGN --- */
         :root {
-            --bg-canvas: #0f172a;       /* Deep slate arcade background */
-            --bg-card: #1e293b;         /* Lighter card block */
-            --retro-yellow: #facc15;    /* Primary headers / selection neon */
-            --retro-blue: #38bdf8;      /* UI Accent blue */
-            --retro-green: #4ade80;     /* Selected state / Success */
-            --retro-red: #f87171;       /* Locked state / Urgent */
+            --bg-canvas: #0f172a;
+            --bg-card: #1e293b;
+            --retro-yellow: #facc15;
+            --retro-blue: #38bdf8;
+            --retro-green: #4ade80;
             --pixel-font: 'Press Start 2P', monospace;
-            --ui-font: 'Inter', sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
         }
 
         body {
             background-color: var(--bg-canvas);
-            color: #ffffff;
-            font-family: var(--ui-font);
-            padding: 2rem 1rem;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Prevents bounce scrolling during swipes */
             display: flex;
             flex-direction: column;
             align-items: center;
+            height: 100vh;
+            padding: 1rem;
         }
 
-        /* --- HEADER SECTION --- */
         header {
             text-align: center;
-            margin-bottom: 2.5rem;
-            width: 100%;
-            max-width: 600px;
+            margin-top: 1rem;
+            margin-bottom: 2rem;
         }
 
-        .game-title {
+        .title {
             font-family: var(--pixel-font);
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             color: var(--retro-yellow);
-            text-shadow: 4px 4px 0px #000;
-            margin-bottom: 1rem;
-            letter-spacing: -1px;
-            line-height: 1.4;
+            margin-bottom: 0.5rem;
         }
 
-        .week-selector {
+        .progress-bar {
             font-family: var(--pixel-font);
-            font-size: 0.9rem;
+            font-size: 0.7rem;
             color: var(--retro-blue);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #000000;
-            padding: 0.75rem;
-            border: 4px solid #ffffff;
         }
 
-        .arrow-btn {
-            color: var(--retro-yellow);
-            cursor: pointer;
-            user-select: none;
-        }
-
-        /* --- THE MATCHUP CARD (The Recommended Interaction) --- */
-        .matchup-container {
+        /* --- DECK & CARD STRUCTURE --- */
+        .deck-container {
+            position: relative;
             width: 100%;
-            max-width: 600px;
-            margin-bottom: 1.5rem;
+            max-width: 400px;
+            height: 380px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .matchup-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
             background-color: var(--bg-card);
             border: 6px solid #000000;
-            display: flex;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Split-button logic: Each team is half the button */
-        .team-option {
-            flex: 1;
-            background: none;
-            border: none;
-            color: white;
-            padding: 2rem 1rem;
-            cursor: pointer;
+            box-shadow: 6px 6px 0px #000000;
             display: flex;
             flex-direction: column;
+            justify-content: space-around;
             align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            cursor: grab;
+            user-select: none;
+            touch-action: none; /* Critical for capturing clean mobile swipes */
+        }
+
+        /* Desktop Mode: Classic click layout */
+        .teams-wrapper {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
             gap: 1rem;
-            transition: background-color 0.1s ease;
-            position: relative;
         }
 
-        /* Team color identities mapped directly into the retro UI hover states */
-        .team-option.team-home:hover {
-            background-color: #991b1b; /* Deep Red Team Accent */
-        }
-
-        .team-option.team-away:hover {
-            background-color: #1e3a8a; /* Deep Blue Team Accent */
-        }
-
-        /* The Arcade Pixel Helmets built with CSS grid */
-        .helmet-icon {
-            width: 48px;
-            height: 40px;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            gap: 1px;
-        }
-        .pixel { background-color: transparent; }
-        .p-fill { background-color: var(--team-color); }
-        .p-face { background-color: #e2e8f0; } /* Facemask silver */
-        .p-dark { background-color: #000000; }
-
-        .team-name {
-            font-family: var(--pixel-font);
-            font-size: 1rem;
-            text-shadow: 2px 2px 0px #000;
-        }
-
-        .spread {
-            font-size: 0.85rem;
-            font-weight: 600;
-            opacity: 0.8;
-            color: #cbd5e1;
-        }
-
-        /* Center Arcade VS Element */
-        .vs-badge {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            font-family: var(--pixel-font);
-            font-size: 0.8rem;
+        .team-btn {
+            flex: 1;
             background: #000000;
-            color: var(--retro-yellow);
-            padding: 0.5rem;
             border: 3px solid #ffffff;
-            z-index: 10;
-            pointer-events: none;
+            color: white;
+            padding: 1.5rem 0.5rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.9rem;
         }
 
-        /* --- ACTIVE SELECTED STATE --- */
-        /* Massive chunky arcade flashing border when a pick is locked */
-        .matchup-card.has-pick {
-            border-color: var(--retro-green);
-            animation: retro-glow 1.5s infinite steps(2);
-        }
-
-        .team-option.is-selected {
-            background-color: rgba(74, 222, 128, 0.15);
-        }
-
-        .team-option.is-selected .team-name {
+        .team-btn:hover {
+            border-color: var(--retro-yellow);
             color: var(--retro-yellow);
         }
 
-        /* Dim the unselected team slightly to emphasize the choice */
-        .matchup-card.has-pick .team-option:not(.is-selected) {
-            opacity: 0.4;
-        }
-
-        @keyframes retro-glow {
-            0% { border-color: var(--retro-green); }
-            50% { border-color: #ffffff; }
-            100% { border-color: var(--retro-green); }
-        }
-
-        /* --- SUBMIT ACTIONS --- */
-        .action-container {
-            width: 100%;
-            max-width: 600px;
-            margin-top: 1rem;
-        }
-
-        .submit-btn {
-            width: 100%;
-            background-color: var(--retro-green);
-            color: #000000;
+        .vs-divider {
             font-family: var(--pixel-font);
             font-size: 1rem;
-            padding: 1.25rem;
-            border: 4px solid #000000;
-            cursor: pointer;
-            box-shadow: 4px 4px 0px #000000;
-            transition: transform 0.05s ease, box-shadow 0.05s ease;
+            color: var(--retro-yellow);
+            align-self: center;
         }
 
-        .submit-btn:hover {
-            background-color: #22c55e;
+        /* Swipe Animations */
+        .swipe-left {
+            transform: translateX(-150vw) rotate(-20deg) !important;
+            opacity: 0;
         }
 
-        .submit-btn:active {
-            transform: translate(4px, 4px);
-            box-shadow: 0px 0px 0px #000000;
+        .swipe-right {
+            transform: translateX(150vw) rotate(20deg) !important;
+            opacity: 0;
+        }
+
+        /* Responsive Mobile Layout adjustments */
+        @media (max-width: 600px) {
+            .vs-divider {
+                display: none; /* Hide VS on mobile to focus on the swipe instruction */
+            }
+            .mobile-hint {
+                display: block !important;
+                font-family: var(--pixel-font);
+                font-size: 0.6rem;
+                color: #64748b;
+                margin-top: 1.5rem;
+                text-align: center;
+                line-height: 1.5;
+            }
+        }
+
+        .mobile-hint {
+            display: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- Header / Main Dashboard Navigation -->
     <header>
-        <h1 class="game-title">RETRO PICK'EM PRO</h1>
-        <div class="week-selector">
-            <span class="arrow-btn">&lt;</span>
-            <span>WEEK 01</span>
-            <span class="arrow-btn">&gt;</span>
-        </div>
+        <div class="title">SWIPE PICKS</div>
+        <div class="progress-bar" id="progress">GAME 1 OF 3</div>
     </header>
 
-    <!-- Matchup Card 1 -->
-    <div class="matchup-container">
-        <div class="matchup-card" id="matchup-1">
-            <div class="vs-badge">VS</div>
-            
-            <!-- Team A Button (Home) -->
-            <button class="team-option team-home" onclick="makePick('matchup-1', 'home')">
-                <!-- 8-Bit Pixel Helmet Art via CSS Grid -->
-                <div class="helmet-icon" style="--team-color: #dc2626;">
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                </div>
-                <span class="team-name">UGA</span>
-                <span class="spread">-7.5</span>
-            </button>
+    <div class="deck-container" id="deck">
+        <!-- Card 3 -->
+        <div class="matchup-card" id="card-3" data-home="TB" data-away="DAL">
+            <span style="font-family: var(--pixel-font); color:#64748b; font-size:0.8rem;">MATCHUP 3</span>
+            <div class="teams-wrapper">
+                <button class="team-btn" onclick="handleBtnPick('card-3', 'home')">TB</button>
+                <div class="vs-divider">VS</div>
+                <button class="team-btn" onclick="handleBtnPick('card-3', 'away')">DAL</button>
+            </div>
+        </div>
 
-            <!-- Team B Button (Away) -->
-            <button class="team-option team-away" onclick="makePick('matchup-1', 'away')">
-                <div class="helmet-icon" style="--team-color: #2563eb;">
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                    <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                </div>
-                <span class="team-name">UF</span>
-                <span class="spread">+7.5</span>
-            </button>
+        <!-- Card 2 -->
+        <div class="matchup-card" id="card-2" data-home="KC" data-away="BUF">
+            <span style="font-family: var(--pixel-font); color:#64748b; font-size:0.8rem;">MATCHUP 2</span>
+            <div class="teams-wrapper">
+                <button class="team-btn" onclick="handleBtnPick('card-2', 'home')">KC</button>
+                <div class="vs-divider">VS</div>
+                <button class="team-btn" onclick="handleBtnPick('card-2', 'away')">BUF</button>
+            </div>
+        </div>
+
+        <!-- Card 1 (Top of Stack) -->
+        <div class="matchup-card" id="card-1" data-home="UGA" data-away="UF">
+            <span style="font-family: var(--pixel-font); color:#64748b; font-size:0.8rem;">MATCHUP 1</span>
+            <div class="teams-wrapper">
+                <button class="team-btn" onclick="handleBtnPick('card-1', 'home')">UGA</button>
+                <div class="vs-divider">VS</div>
+                <button class="team-btn" onclick="handleBtnPick('card-1', 'away')">UF</button>
+            </div>
         </div>
     </div>
 
-    <!-- Submit Action Area -->
-    <div class="action-container">
-        <button class="submit-btn" onclick="submitPicks()">LOCK IN PICKS</button>
-    </div>
+    <div class="mobile-hint">&lt; SWIPE LEFT (HOME) | SWIPE RIGHT (AWAY) &gt;</div>
 
-    <!-- UI Interaction Engine -->
     <script>
-        // Track the state of selections in-memory
-        const userPicks = {
-            'matchup-1': null
-        };
+        let currentCardIndex = 1;
+        const totalCards = 3;
+        const savedPicks = {};
 
-        function makePick(matchupId, selection) {
-            const card = document.getElementById(matchupId);
-            const buttons = card.querySelectorAll('.team-option');
+        // Touch Tracking Coordinates
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function initSwipeMechanic() {
+            const cards = document.querySelectorAll('.matchup-card');
             
-            // Update internal state
-            userPicks[matchupId] = selection;
+            cards.forEach(card => {
+                card.addEventListener('touchstart', e => {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, { passive: true });
 
-            // Clear previous visual classes
-            card.classList.add('has-pick');
-            buttons.forEach(btn => btn.classList.remove('is-selected'));
+                card.addEventListener('touchend', e => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipeGesture(card);
+                }, { passive: true });
+            });
+        }
 
-            // Assign active retro classes to the chosen button half
-            if (selection === 'home') {
-                buttons[0].classList.add('is-selected');
-            } else if (selection === 'away') {
-                buttons[1].classList.add('is-selected');
+        function handleSwipeGesture(cardElement) {
+            const swipeDistance = touchEndX - touchStartX;
+            const threshold = 60; // Minimum distance in pixels to trigger a swipe
+
+            if (swipeDistance < -threshold) {
+                // Swiped Left -> Choose Home Team
+                executePick(cardElement, 'home', 'swipe-left');
+            } else if (swipeDistance > threshold) {
+                // Swiped Right -> Choose Away Team
+                executePick(cardElement, 'away', 'swipe-right');
             }
         }
 
-        function submitPicks() {
-            if (!userPicks['matchup-1']) {
-                alert('CHOOSE A TEAM BEFORE LOCKING IN!');
-                return;
-            }
-            alert(`PICKS LOCKED! CURRENT CHOICE: ${userPicks['matchup-1'].toUpperCase()}`);
-            // This is where you will plug your Supabase integration logic later
+        // Desktop Fallback Click Logic
+        function handleBtnPick(cardId, pickType) {
+            const card = document.getElementById(cardId);
+            const animationClass = pickType === 'home' ? 'swipe-left' : 'swipe-right';
+            executePick(card, pickType, animationClass);
         }
+
+        function executePick(cardElement, pickType, animationClass) {
+            const cardId = cardElement.id;
+            const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
+            
+            // Save selection
+            savedPicks[cardId] = chosenTeam;
+            console.log(`Saved Pick for ${cardId}: ${chosenTeam}`);
+
+            // Trigger Arcade CSS Flight Animation
+            cardElement.classList.add(animationClass);
+
+            // Increment Progress
+            currentCardIndex++;
+            updateProgressText();
+        }
+
+        function updateProgressText() {
+            const progressDisplay = document.getElementById('progress');
+            if (currentCardIndex <= totalCards) {
+                progressDisplay.innerText = `GAME ${currentCardIndex} OF ${totalCards}`;
+            } else {
+                progressDisplay.innerText = "ALL PICKS LOCKED IN!";
+                progressDisplay.style.color = var(--retro-green);
+                alert("Boom! All selections recorded. Saving directly to backend...");
+            }
+        }
+
+        // Initialize script logic
+        initSwipeMechanic();
     </script>
 </body>
 </html>
