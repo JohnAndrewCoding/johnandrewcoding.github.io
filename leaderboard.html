@@ -69,6 +69,36 @@
 </head>
 <body>
   <h1>College Football Leaderboard (Current Week: Wk11)</h1>
+  <div class="container my-5">
+  <h2 class="text-center text-white mb-4">Select a Week to Make Your Picks</h2>
+  
+  <div class="row g-3 justify-content-center">
+    <!-- Week 1 -->
+    <div class="col-6 col-md-3">
+      <a href="picks.html?week=1" class="btn btn-outline-light w-100 py-3 fw-bold">Week 1</a>
+    </div>
+    
+    <!-- Week 2 -->
+    <div class="col-6 col-md-3">
+      <a href="picks.html?week=2" class="btn btn-outline-light w-100 py-3 fw-bold">Week 2</a>
+    </div>
+
+    <!-- Week 3 -->
+    <div class="col-6 col-md-3">
+      <a href="picks.html?week=3" class="btn btn-outline-light w-100 py-3 fw-bold">Week 3</a>
+    </div>
+
+    <!-- Week 4 -->
+    <div class="col-6 col-md-3">
+      <a href="picks.html?week=4" class="btn btn-outline-light w-100 py-3 fw-bold">Week 4</a>
+    </div>
+
+    <!-- Week 12 (Example matching your previous file) -->
+    <div class="col-6 col-md-3">
+      <a href="picks.html?week=12" class="btn btn-warning text-dark w-100 py-3 fw-bold">Week 12 (Current)</a>
+    </div>
+  </div>
+</div>
 
   <div class="button-group">
     <a href="Week1homepage.html"><button>Week 1</button></a>
@@ -201,5 +231,6 @@
       buildLeaderboard().catch(err => console.error("Error building leaderboard:", err));
     });
   </script>
+  <button >Test Page</button>
 </body>
 </html>
