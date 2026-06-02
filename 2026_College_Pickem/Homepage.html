@@ -348,16 +348,16 @@ const btn = document.getElementById("enable-alerts-btn");
 
 // Clean, instant click handler matching your original setup
 btn.addEventListener("click", function() {
-    // Check if the script is ready. If it is, trigger the native iOS prompt
-    if (typeof pushalert !== 'undefined') {
-        pushalert.subscribe();
+    // FIXED: Capitalized 'PushAlert' to match their unified script object exactly
+    if (typeof PushAlert !== 'undefined') {
+        PushAlert.subscribe();
         
         // Visual confirmation lock on success
         this.innerText = "ALERTS CONNECTED ✅";
         this.style.backgroundColor = "var(--retro-green)";
         this.style.color = "#000000";
     } else {
-        // Fallback safety if tapped at the exact millisecond of page load
+        // Fallback safety if tapped before the network loads the script
         alert("System initializing. Please wait a second and tap again!");
     }
 });
