@@ -1,33 +1,8 @@
-name: Daily Pickem Reminder
-
-on:
-  schedule:
-    # POSIX Cron Syntax (Runs in UTC Time)
-    # 15:10 UTC is exactly 11:10 AM EDT (Eastern Daylight Time)
-    - cron: '17 17 * * *'
-  
-  # This lets you manually trigger a notification from the GitHub UI whenever you want!
-  workflow_dispatch:
-    inputs:
-      custom_message:
-        description: 'Message to send to the crew'
-        required: true
-        default: 'Update your picks!'
-
-jobs:
-  send-push-notification:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Ping ntfy Gateway
-        run: |
-          # Determine if this was an automated cron run or a manual custom blast
-          MSG="${{ github.event.inputs.custom_message }}"
-          if [ -z "$MSG" ]; then
-            MSG="Update your picks!"
-          fi
-
-          # Fire the API call directly to the phones
-          curl -d "$MSG" \
-               -H "Title: CFB Pick'em" \
-               -H "Priority: high" \
-               https://ntfy.sh/cfb-pickem-boys-2026-9831a
+- name: Send Pickem Alert Broadcast
+      run: |
+        curl -X POST "https://api.pushalert.co/api/v1/send" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "api_key=your_pushalert_api_key" \
+        -d "title=CFB Pickem" \
+        -d "message=Update your picks before kickoff!" \
+        -d "url=https://yourusername.github.io/2026_College_Pickem/Homepage.html"
