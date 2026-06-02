@@ -4,7 +4,7 @@ on:
   schedule:
     # POSIX Cron Syntax (Runs in UTC Time)
     # 15:10 UTC is exactly 11:10 AM EDT (Eastern Daylight Time)
-    - cron: '10 17 * * *'
+    - cron: '13 17 * * *'
   
   # This lets you manually trigger a notification from the GitHub UI whenever you want!
   workflow_dispatch:
