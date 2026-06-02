@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <!-- Points locally to the file in the same folder -->
     <link rel="manifest" href="manifest.json">
     
     <style>
@@ -17,7 +16,7 @@
             --bg-card: #1e293b;         /* Lighter card block */
             --retro-yellow: #facc15;    /* Rank 1 / Title neon */
             --retro-blue: #38bdf8;      /* Secondary highlights */
-            --retro-green: #4ade80;     /* Positive momentum / High morale */
+            --retro-green: #4ade80;     /* Positive morale */
             --retro-red: #f87171;       /* Dead last / Danger zone */
             --pixel-font: 'Press Start 2P', monospace;
         }
@@ -41,7 +40,7 @@
             flex-direction: column;
             align-items: center;
             padding: 1.5rem 1rem;
-            overflow-y: auto; /* Allows scrolling down long leaderboards */
+            overflow-y: auto;
         }
 
         /* --- NAVIGATION HEADER --- */
@@ -61,7 +60,6 @@
             margin-bottom: 0.75rem;
         }
 
-        /* Sub-menu navigation blocks mirroring Retro Bowl's hub design */
         .hub-nav {
             display: flex;
             background: #000000;
@@ -92,7 +90,6 @@
             margin-bottom: 2rem;
         }
 
-        /* --- THE FRANCHISE ROW COMPONENT --- */
         .rank-row {
             background-color: var(--bg-card);
             border: 4px solid #000000;
@@ -103,17 +100,9 @@
             position: relative;
         }
 
-        /* Highlight Rank #1 */
-        .rank-row.rank-first {
-            border-color: var(--retro-yellow);
-        }
-        
-        /* Highlight Rank Last */
-        .rank-row.rank-last {
-            border-color: var(--retro-red);
-        }
+        .rank-row.rank-first { border-color: var(--retro-yellow); }
+        .rank-row.rank-last { border-color: var(--retro-red); }
 
-        /* Position / Place Number Block */
         .position-badge {
             font-family: var(--pixel-font);
             font-size: 0.85rem;
@@ -123,7 +112,6 @@
         .rank-first .position-badge { color: var(--retro-yellow); }
         .rank-last .position-badge { color: var(--retro-red); }
 
-        /* Custom 8-bit Mini Avatar (CSS Built) */
         .avatar-box {
             width: 32px;
             height: 32px;
@@ -137,9 +125,8 @@
             padding: 2px;
         }
         .av-p { background-color: var(--avatar-color, #38bdf8); }
-        .av-f { background-color: #ffedd5; } /* Face tone */
+        .av-f { background-color: #ffedd5; }
 
-        /* Text Details Layout block */
         .meta-block {
             flex: 1;
             display: flex;
@@ -153,13 +140,6 @@
             letter-spacing: -0.5px;
         }
 
-        .stat-line {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            font-weight: bold;
-        }
-
-        /* --- FAN SUPPORT / RECORD METERS --- */
         .support-wrapper {
             display: flex;
             align-items: center;
@@ -185,11 +165,8 @@
             background-color: var(--retro-green);
             width: var(--percentage, 50%);
         }
-        .rank-last .meter-fill {
-            background-color: var(--retro-red);
-        }
+        .rank-last .meter-fill { background-color: var(--retro-red); }
 
-        /* Right Hand Scoring Frame */
         .score-box {
             text-align: right;
             margin-left: 0.5rem;
@@ -200,9 +177,7 @@
             font-size: 0.9rem;
             color: var(--retro-green);
         }
-        .rank-first .total-points {
-            color: var(--retro-yellow);
-        }
+        .rank-first .total-points { color: var(--retro-yellow); }
 
         .trend-indicator {
             font-size: 0.65rem;
@@ -211,18 +186,46 @@
         }
         .trend-up { color: var(--retro-green); }
         .trend-down { color: var(--retro-red); }
+
+        /* --- LEAGUE ALERTS PANEL --- */
+        .alert-section {
+            margin: 10px 0 25px 0;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            background: #000000;
+            border: 3px dashed var(--retro-blue);
+            padding: 1rem;
+        }
+        .alert-section h3 {
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+            color: #ffffff;
+            margin-bottom: 0.75rem;
+        }
+        #enable-alerts-btn {
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            padding: 10px 20px;
+            background-color: var(--retro-blue);
+            color: #000000;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #ffffff;
+        }
+        #enable-alerts-btn:active {
+            box-shadow: 0px 0px 0px #ffffff;
+            transform: translate(3px, 3px);
+        }
     </style>
 </head>
 <body>
-    <a href="SamplePickemPage.html"><button>Sample Pickem Page</button></a>
-        <div class="alert-section" style="margin: 20px 0; text-align: center;">
-  <h3>League Alerts</h3>
-  <button id="enable-alerts-btn" style="padding: 10px 20px; font-weight: bold; cursor: pointer;">
-    Turn On Push Notifications
-  </button>
-</div>
 
-    <!-- Hub Header System Layout -->
+    <div class="alert-section">
+        <h3>LEAGUE ALERTS</h3>
+        <button id="enable-alerts-btn">CONNECT TO SYSTEM</button>
+    </div>
+
     <header>
         <h1 class="title">LEAGUE STANDINGS</h1>
         <nav class="hub-nav">
@@ -232,21 +235,16 @@
         </nav>
     </header>
 
-    <!-- Standings Leaderboard Block Stack -->
     <div class="leaderboard-container">
 
-        <!-- Rank 1 Card (The Leader) -->
         <div class="rank-row rank-first">
             <div class="position-badge">01</div>
-            
-            <!-- Custom CSS Avatar Component -->
             <div class="avatar-box" style="--avatar-color: var(--retro-yellow);">
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
             </div>
-
             <div class="meta-block">
                 <div class="coach-name">COACH ACE</div>
                 <div class="support-wrapper">
@@ -256,24 +254,20 @@
                     </div>
                 </div>
             </div>
-
             <div class="score-box">
                 <div class="total-points">14-2</div>
                 <div class="trend-indicator trend-up">▲ 1</div>
             </div>
         </div>
 
-        <!-- Rank 2 Card -->
         <div class="rank-row">
             <div class="position-badge">02</div>
-            
             <div class="avatar-box" style="--avatar-color: var(--retro-blue);">
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
             </div>
-
             <div class="meta-block">
                 <div class="coach-name">COACH JON</div>
                 <div class="support-wrapper">
@@ -283,24 +277,20 @@
                     </div>
                 </div>
             </div>
-
             <div class="score-box">
                 <div class="total-points">12-4</div>
                 <div class="trend-indicator trend-down">▼ 1</div>
             </div>
         </div>
 
-        <!-- Rank 3 Card -->
         <div class="rank-row">
             <div class="position-badge">03</div>
-            
             <div class="avatar-box" style="--avatar-color: #a855f7;">
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
             </div>
-
             <div class="meta-block">
                 <div class="coach-name">COACH SAM</div>
                 <div class="support-wrapper">
@@ -310,24 +300,20 @@
                     </div>
                 </div>
             </div>
-
             <div class="score-box">
                 <div class="total-points">10-6</div>
                 <div class="trend-indicator trend-up">▲ 2</div>
             </div>
         </div>
 
-        <!-- Rank 4 Card (The Clown / Last Place) -->
         <div class="rank-row rank-last">
             <div class="position-badge">04</div>
-            
             <div class="avatar-box" style="--avatar-color: var(--retro-red);">
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
                 <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
             </div>
-
             <div class="meta-block">
                 <div class="coach-name">COACH NOOB</div>
                 <div class="support-wrapper">
@@ -337,82 +323,44 @@
                     </div>
                 </div>
             </div>
-
             <div class="score-box">
                 <div class="total-points" style="color: var(--retro-red);">4-12</div>
                 <div class="trend-indicator trend-down">▼ 1</div>
             </div>
         </div>
-
     </div>
+
     <script>
-        const NTFY_TOPIC = "cfb-pickem-boys-2026-9831a"; // Keep your unique topic
+        const NTFY_TOPIC = "cfb-pickem-boys-2026-9831a";
 
-// 1. Register the background Service Worker file
-if ('serviceWorker' in navigator && 'PushManager' in window) {
-  // Registers sw.js from the current 2026_College_Pickem directory
-  navigator.serviceWorker.register('/2026_College_Pickem/sw.js', { scope: '/2026_College_Pickem/' })
-    .then(reg => console.log('Background Service Worker armed.'))
-    .catch(err => console.error('Service worker failed:', err));
-}
+        // Check and smooth run the Service Worker relative to the local subfolder
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js', { scope: './' })
+                .then(reg => console.log('Service Worker scoped to local folder.'))
+                .catch(err => console.error('Worker registration skipped:', err));
+        }
 
-// A strict URL-safe Base64 to Uint8Array converter
-function urlBase64ToUint8Array(base64String) {
-  // 1. Replace URL-safe characters with standard Base64 characters
-  let base64 = base64String.replace(/\-/g, '+').replace(/_/g, '/');
-  
-  // 2. Handle standard Base64 string padding requirements
-  while (base64.length % 4 !== 0) {
-    base64 += '=';
-  }
+        async function setupNativeAlerts() {
+            if (!("Notification" in window)) {
+                alert("Notifications are completely blocked inside this standard browser view. You MUST add this page to your Home Screen first!");
+                return;
+            }
 
-  // 3. Decode the string into raw binary data
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                // Show a smooth native visual confirmation inside the app interface
+                alert("System linked successfully!");
+                
+                const btn = document.getElementById("enable-alerts-btn");
+                btn.innerText = "ALERTS CONNECTED ✅";
+                btn.style.backgroundColor = "var(--retro-green)";
+                btn.style.color = "#000000";
+            } else {
+                alert("Permission denied. Check your iOS Settings -> Notifications.");
+            }
+        }
 
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-async function setupNativeAlerts() {
-  if (!("Notification" in window)) return alert("Not supported.");
-
-  const permission = await Notification.requestPermission();
-  if (permission === "granted") {
-    
-    // Explicitly target the full subdirectory scope for GitHub Pages
-    const registration = await navigator.serviceWorker.register('/2026_College_Pickem/sw.js', { scope: '/2026_College_Pickem/' });
-    await navigator.serviceWorker.ready;
-    
-    try {
-      // Pass the fully converted binary array
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array('BNoR69K9Rsn9CDZNo0ee-ST9S8YgN9SgD6A3509sD-A=') 
-      });
-
-      // Pass the subscription data back to ntfy
-      await fetch(`https://ntfy.sh/cfb-pickem-boys-2026-9831a/webpush`, {
-        method: 'POST',
-        body: JSON.stringify(subscription),
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      alert("Native alerts armed! You can close the app now.");
-      document.getElementById("enable-alerts-btn").innerText = "Alerts Active ✅";
-    } catch (e) {
-      alert("Subscription failed: " + e.message);
-      console.error(e);
-    }
-  }
-}
-
-// Utility function required to convert encryption keys for the browser
-
-document.getElementById("enable-alerts-btn").addEventListener("click", setupNativeAlerts);
+        document.getElementById("enable-alerts-btn").addEventListener("click", setupNativeAlerts);
     </script>
-
 </body>
 </html>
