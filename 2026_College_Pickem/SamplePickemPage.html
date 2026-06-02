@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Bowl Swipe Pick'em</title>
-    <a href="Homepage.html"><button>Homepage</button></a>
+    <a href="Homepage.html"><button style="position: absolute; top: 10px; left: 10px; z-index: 100;">Homepage</button></a>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -95,6 +95,11 @@
             touch-action: none; 
             transform-origin: center bottom;
             z-index: 10;
+            visibility: hidden; /* Hidden until stack index sorted */
+        }
+
+        .matchup-card.active-stack {
+            visibility: visible;
         }
 
         .matchup-card.dragging .teams-wrapper,
@@ -104,9 +109,11 @@
         }
 
         .matchup-number {
+            text-align: center;
             font-family: var(--pixel-font);
             color: #64748b;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
+            line-height: 1.4;
         }
 
         .teams-wrapper {
@@ -117,7 +124,6 @@
             gap: 1rem;
         }
 
-        /* Container structure holding helmet + button */
         .team-display-block {
             flex: 1;
             display: flex;
@@ -131,11 +137,12 @@
             background: #000000;
             border: 4px solid #ffffff;
             color: #ffffff;
-            padding: 1.25rem 0.5rem;
+            padding: 1rem 0.25rem;
             cursor: pointer;
             font-family: var(--pixel-font);
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+            word-wrap: break-word;
         }
 
         .team-btn:hover {
@@ -147,7 +154,7 @@
             font-family: var(--pixel-font);
             font-size: 0.9rem;
             color: var(--retro-yellow);
-            margin-top: 3.5rem; /* Pushes VS down to align with buttons */
+            margin-top: 3.5rem; 
         }
 
         /* --- THE 8-BIT GRID HELMET SPRITE --- */
@@ -160,18 +167,20 @@
             gap: 1px;
         }
         .pixel { background-color: transparent; }
-        .p-fill { background-color: var(--team-color); } /* Main Helmet Accent */
-        .p-face { background-color: #cbd5e1; }          /* Silver Facemask Grid */
-        .p-dark { background-color: #000000; }          /* Visor/Shadow depth */
+        .p-fill { background-color: var(--team-color, #ffffff); } 
+        .p-face { background-color: #cbd5e1; }          
+        .p-dark { background-color: #000000; }          
 
         .swipe-left {
             transform: translateX(-150vw) rotate(-25deg) !important;
             opacity: 0 !important;
+            transition: transform 0.4s ease, opacity 0.4s ease !important;
         }
 
         .swipe-right {
             transform: translateX(150vw) rotate(25deg) !important;
             opacity: 0 !important;
+            transition: transform 0.4s ease, opacity 0.4s ease !important;
         }
 
         .mobile-hint {
@@ -217,103 +226,13 @@
 
     <header>
         <h1 class="title">RETRO SWIPER</h1>
-        <div class="progress-bar" id="progress">GAME 1 OF 3</div>
+        <div class="progress-bar" id="progress">LOADING SEASON...</div>
     </header>
 
     <div class="retro-toast" id="toast">PICKED: UGA</div>
 
     <div class="deck-container" id="deck">
-        
-        <!-- Card 3 -->
-        <div class="matchup-card" id="card-3" data-home="TB" data-away="DAL">
-            <span class="matchup-number">MATCHUP 03</span>
-            <div class="teams-wrapper">
-                <div class="team-display-block">
-                    <!-- Red Helmet -->
-                    <div class="helmet-icon" style="--team-color: #dc2626;">
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    </div>
-                    <button class="team-btn" onclick="handleBtnPick('card-3', 'home')">TB</button>
-                </div>
-                <div class="vs-divider">VS</div>
-                <div class="team-display-block">
-                    <!-- Navy Blue Helmet -->
-                    <div class="helmet-icon" style="--team-color: #1e3a8a;">
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    </div>
-                    <button class="team-btn" onclick="handleBtnPick('card-3', 'away')">DAL</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 2 -->
-        <div class="matchup-card" id="card-2" data-home="KC" data-away="BUF">
-            <span class="matchup-number">MATCHUP 02</span>
-            <div class="teams-wrapper">
-                <div class="team-display-block">
-                    <!-- Red/Gold Helmet Accent -->
-                    <div class="helmet-icon" style="--team-color: #e11d48;">
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    </div>
-                    <button class="team-btn" onclick="handleBtnPick('card-2', 'home')">KC</button>
-                </div>
-                <div class="vs-divider">VS</div>
-                <div class="team-display-block">
-                    <!-- Royal Blue Helmet -->
-                    <div class="helmet-icon" style="--team-color: #2563eb;">
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    </div>
-                    <button class="team-btn" onclick="handleBtnPick('card-2', 'away')">BUF</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 1 -->
-        <div class="matchup-card" id="card-1" data-home="UGA" data-away="UF">
-            <span class="matchup-number">MATCHUP 01</span>
-            <div class="teams-wrapper">
-                <div class="team-display-block">
-                    <!-- Crimson Helmet -->
-                    <div class="helmet-icon" style="--team-color: #991b1b;">
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    </div>
-                    <button class="team-btn" onclick="handleBtnPick('card-1', 'home')">UGA</button>
-                </div>
-                <div class="vs-divider">VS</div>
-                <div class="team-display-block">
-                    <!-- Bright Orange/Blue Helmet -->
-                    <div class="helmet-icon" style="--team-color: #ea580c;">
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
-                        <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
-                    </div>
-                    <button class="team-btn" onclick="handleBtnPick('card-1', 'away')">UF</button>
-                </div>
-            </div>
-        </div>
-
+        <!-- Matchup cards render dynamically here -->
     </div>
 
     <div class="mobile-hint">
@@ -322,19 +241,124 @@
 
     <script>
         let currentCardIndex = 1;
-        const totalCards = 3;
+        let totalCards = 0;
         const savedPicks = {};
+        let gamesData = [];
 
         let startX = 0;
         let startY = 0;
         let isDragging = false;
         let toastTimeout = null; 
 
+        // 8-Bit Pixel Helmet Template Markup Helper
+        const helmetHTML = (color) => `
+            <div class="helmet-icon" style="--team-color: #${color};">
+                <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
+                <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div>
+                <div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-fill"></div><div class="pixel p-face"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+                <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
+                <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
+            </div>`;
+
+        // Async Load Week 1 Matchups via ESPN API
+        async function loadWeekOneGames() {
+            const deck = document.getElementById('deck');
+            const progressDisplay = document.getElementById('progress');
+
+            try {
+                // groups=80 isolates all relevant FBS level divisions, week=1 targets season openers
+                const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=1');
+                const data = await response.json();
+                
+                if (!data.events || data.events.length === 0) {
+                    progressDisplay.innerText = "NO GAMES FOUND";
+                    return;
+                }
+
+                gamesData = data.events;
+                totalCards = gamesData.length;
+                deck.innerHTML = ''; // Clean canvas
+
+                // Render components inside out (Card 1 goes on top, so we reverse append or manage via z-indexing)
+                gamesData.forEach((gameEvent, index) => {
+                    const matchupNum = index + 1;
+                    const competition = gameEvent.competitions[0];
+                    
+                    // ESPN references Home/Away parameters via structural array indices
+                    const homeTeamData = competition.competitors.find(c => c.homeAway === 'home');
+                    const awayTeamData = competition.competitors.find(c => c.homeAway === 'away');
+
+                    const home = {
+                        id: homeTeamData.team.id,
+                        name: homeTeamData.team.abbreviation || homeTeamData.team.shortDisplayName,
+                        color: homeTeamData.team.color || 'dc2626'
+                    };
+
+                    const away = {
+                        id: awayTeamData.team.id,
+                        name: awayTeamData.team.abbreviation || awayTeamData.team.shortDisplayName,
+                        color: awayTeamData.team.color || '1e3a8a'
+                    };
+
+                    const card = document.createElement('div');
+                    card.className = 'matchup-card';
+                    card.id = `card-${matchupNum}`;
+                    card.setAttribute('data-home', home.name);
+                    card.setAttribute('data-away', away.name);
+                    
+                    // Invert stacking mechanics so Matchup 1 rests visibly on top
+                    card.style.zIndex = totalCards - index;
+
+                    card.innerHTML = `
+                        <span class="matchup-number">MATCHUP ${String(matchupNum).padStart(2, '0')}<br><small style="font-size:9px; color:#475569;">${gameEvent.name}</small></span>
+                        <div class="teams-wrapper">
+                            <div class="team-display-block">
+                                ${helmetHTML(home.color)}
+                                <button class="team-btn" onclick="handleBtnPick('card-${matchupNum}', 'home')">${home.name}</button>
+                            </div>
+                            <div class="vs-divider">VS</div>
+                            <div class="team-display-block">
+                                ${helmetHTML(away.color)}
+                                <button class="team-btn" onclick="handleBtnPick('card-${matchupNum}', 'away')">${away.name}</button>
+                            </div>
+                        </div>
+                    `;
+
+                    deck.appendChild(card);
+                });
+
+                // Set initial visual structures
+                updateActiveCardVisibility();
+                renderProgressUpdates();
+                initSwipeEngine();
+
+            } catch (error) {
+                console.error("Failed to map ESPN payload structure:", error);
+                progressDisplay.innerText = "API CONNECTION ERROR";
+            }
+        }
+
+        function updateActiveCardVisibility() {
+            // Keep the current active card and the immediate next card visible for slick layout performance
+            document.querySelectorAll('.matchup-card').forEach(card => {
+                const cardIdNum = parseInt(card.id.split('-')[1]);
+                if (cardIdNum === currentCardIndex || cardIdNum === currentCardIndex + 1) {
+                    card.classList.add('active-stack');
+                } else {
+                    card.classList.remove('active-stack');
+                }
+            });
+        }
+
         function initSwipeEngine() {
             const cards = document.querySelectorAll('.matchup-card');
             
             cards.forEach(card => {
+                // Ensure touch mechanics bind correctly to the runtime elements
                 card.addEventListener('touchstart', e => {
+                    const cardIdNum = parseInt(card.id.split('-')[1]);
+                    if (cardIdNum !== currentCardIndex) return; // Only lock target to top card
+
                     isDragging = true;
                     card.classList.add('dragging');
                     startX = e.touches[0].clientX;
@@ -376,6 +400,11 @@
 
         function handleBtnPick(cardId, pickType) {
             const card = document.getElementById(cardId);
+            const cardIdNum = parseInt(cardId.split('-')[1]);
+            
+            // Verification line to ignore clicks targeting lower hidden levels
+            if (cardIdNum !== currentCardIndex) return;
+
             const animationClass = pickType === 'home' ? 'swipe-left' : 'swipe-right';
             executePick(card, pickType, animationClass);
         }
@@ -385,7 +414,7 @@
             const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
             
             savedPicks[cardId] = chosenTeam;
-            console.log(`Saved: ${cardId} -> ${chosenTeam}`);
+            console.log(`Saved Pick Array: ${cardId} -> ${chosenTeam}`);
 
             triggerToastNotification(chosenTeam);
 
@@ -393,6 +422,7 @@
             cardElement.classList.add(animationClass);
 
             currentCardIndex++;
+            updateActiveCardVisibility();
             renderProgressUpdates();
         }
 
@@ -413,12 +443,13 @@
                 display.innerText = `GAME ${currentCardIndex} OF ${totalCards}`;
             } else {
                 display.innerText = "ALL PICKS LOCKED!";
-                display.style.color = "#4ade80";      
-                display.style.borderColor = "#4ade80";
+                display.style.color = "var(--retro-green)";      
+                display.style.borderColor = "var(--retro-green)";
             }
         }
 
-        initSwipeEngine();
+        // Initialize execution on content render load
+        window.addEventListener('DOMContentLoaded', loadWeekOneGames);
     </script>
 </body>
 </html>
