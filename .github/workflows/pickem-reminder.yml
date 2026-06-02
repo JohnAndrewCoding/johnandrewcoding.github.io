@@ -1,8 +1,21 @@
-- name: Send Pickem Alert Broadcast
-      run: |
-        curl -X POST "https://api.pushalert.co/api/v1/send" \
-        -H "Content-Type: application/x-www-form-urlencoded" \
-        -d "api_key=your_pushalert_api_key" \
-        -d "title=CFB Pickem" \
-        -d "message=Update your picks before kickoff!" \
-        -d "url=https://yourusername.github.io/2026_College_Pickem/Homepage.html"
+name: Send CFB Pickem Reminders
+
+on:
+  # Allows you to manually trigger this anytime from the Actions tab
+  workflow_dispatch:
+  # Automated cron schedule (e.g., runs at 1:10 PM UTC)
+  schedule:
+    - cron: '10 16 * * *'
+
+jobs:
+  send-push-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Broadcast League Alert via PushAlert
+        run: |
+          curl -X POST "https://api.pushalert.co/api/v1/send" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "api_key=your_actual_api_key_here" \
+            -d "title=CFB Pickem" \
+            -d "message=Update your picks before kickoff!" \
+            -d "url=https://yourusername.github.io/2026_College_Pickem/Homepage.html"
