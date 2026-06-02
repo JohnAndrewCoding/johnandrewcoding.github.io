@@ -1,7 +1,7 @@
 {
   "name": "CFB Pickem",
   "short_name": "Pickem",
-  "start_url": ".",
+  "start_url": "Homepage.html",
   "display": "standalone",
   "background_color": "#111111",
   "theme_color": "#111111",
