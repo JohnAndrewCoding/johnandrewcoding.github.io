@@ -368,11 +368,11 @@ async function setupNativeAlerts() {
     // 3. Connect to ntfy's special Web Push bridge endpoint
     // This tells ntfy to bridge any incoming text directly into Apple's native push servers
     try {
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        // This public key allows ntfy to encrypt messages safely to your device
-        applicationServerKey: urlBase64ToUint8Array('BNoR69K9Rsn9CDZNo0ee-ST9S8YgN9SgD6A3509sD-A=') 
-      });
+    const subscription = await registration.pushManager.subscribe({
+  userVisibleOnly: true,
+  // Cleaned public key string with no trailing equals sign
+  applicationServerKey: urlBase64ToUint8Array('BNoR69K9Rsn9CDZNo0ee-ST9S8YgN9SgD6A3509sD-A') 
+});
 
       // 4. Send this registration link to ntfy so it saves your device token
       await fetch(`https://ntfy.sh/${NTFY_TOPIC}/webpush`, {
@@ -391,10 +391,15 @@ async function setupNativeAlerts() {
 
 // Utility function required to convert encryption keys for the browser
 function urlBase64ToUint8Array(base64String) {
+  // Remove padding characters (=) if present, as some browsers choke on them
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
+
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
