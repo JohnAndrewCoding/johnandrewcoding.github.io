@@ -384,7 +384,7 @@ async function setupNativeAlerts() {
       alert("Native alerts armed! You can close the app now.");
       document.getElementById("enable-alerts-btn").innerText = "Alerts Active ✅";
     } catch (e) {
-      alert("Subscription failed. Make sure you are using the Home Screen App version!");
+      alert("Subscription failed. Make sure you are using the Home Screen App version!" + e.message);
     }
   }
 }
