@@ -344,42 +344,61 @@
 
     </div>
     <script>
-        const NTFY_TOPIC = "cfb-pickem-boys-2026-9831a"; // Put your unique topic name here
+        const NTFY_TOPIC = "cfb-pickem-boys-2026-9831a"; // Keep your unique topic
 
-  async function setupAlerts() {
-   if (!("Notification" in window) || window.Notification === undefined) {
-    alert("To enable alerts on iOS, you MUST add this site to your Home Screen first! Tap the Share button below and select 'Add to Home Screen'.");
-    return;
-  }
-    // 1. Request iOS Permission
-    const permission = await Notification.requestPermission();
+// 1. Register the background Service Worker file
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => console.log('Background Service Worker armed.'))
+    .catch(err => console.error('Service worker failed:', err));
+}
+
+async function setupNativeAlerts() {
+  if (!("Notification" in window)) return alert("Not supported.");
+
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
     
-    if (permission === "granted") {
-      alert("Success! Notifications armed. Make sure you added this site to your Home Screen.");
-      
-      // 2. Connect to the ntfy Server Sent Events stream
-      const eventSource = new EventSource(`https://ntfy.sh/${NTFY_TOPIC}/sse`);
-      
-      eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        // 3. Trigger the native iOS alert UI
-        new Notification("CFB Pick'em", {
-          body: data.message || "Update your picks!",
-          icon: "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f3c8.png" // Path to your app icon if you have one
-        });
-      };
-      
-      // Update button state
-      const btn = document.getElementById("enable-alerts-btn");
-      btn.innerText = "1:17 Alerts Active ✅";
-      btn.disabled = true;
-    } else {
-      alert("Permission denied. Check your iOS settings.");
+    // 2. Wait for the service worker to be fully ready
+    const registration = await navigator.serviceWorker.ready;
+    
+    // 3. Connect to ntfy's special Web Push bridge endpoint
+    // This tells ntfy to bridge any incoming text directly into Apple's native push servers
+    try {
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        // This public key allows ntfy to encrypt messages safely to your device
+        applicationServerKey: urlBase64ToUint8Array('BNoR69K9Rsn9CDZNo0ee-ST9S8YgN9SgD6A3509sD-A=') 
+      });
+
+      // 4. Send this registration link to ntfy so it saves your device token
+      await fetch(`https://ntfy.sh/${NTFY_TOPIC}/webpush`, {
+        method: 'POST',
+        body: JSON.stringify(subscription),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      alert("Native alerts armed! You can close the app now.");
+      document.getElementById("enable-alerts-btn").innerText = "Alerts Active ✅";
+    } catch (e) {
+      alert("Subscription failed. Make sure you are using the Home Screen App version!");
     }
   }
+}
 
-  document.getElementById("enable-alerts-btn").addEventListener("click", setupAlerts);
+// Utility function required to convert encryption keys for the browser
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+document.getElementById("enable-alerts-btn").addEventListener("click", setupNativeAlerts);
     </script>
 
 </body>
