@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Test This (New Notify)</title>
+    <title>New Changes</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Points locally to the file in the same folder -->
+    <link rel="manifest" href="manifest.json">
     
     <style>
         :root {
@@ -348,7 +350,8 @@
 
 // 1. Register the background Service Worker file
 if ('serviceWorker' in navigator && 'PushManager' in window) {
-  navigator.serviceWorker.register('/sw.js')
+  // Registers sw.js from the current 2026_College_Pickem directory
+  navigator.serviceWorker.register('sw.js', { scope: './' })
     .then(reg => console.log('Background Service Worker armed.'))
     .catch(err => console.error('Service worker failed:', err));
 }
