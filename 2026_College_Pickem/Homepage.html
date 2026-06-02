@@ -347,11 +347,10 @@
         const NTFY_TOPIC = "cfb-pickem-boys-2026-9831a"; // Put your unique topic name here
 
   async function setupAlerts() {
-    if (!("Notification" in window)) {
-      alert("This browser does not support notifications.");
-      return;
-    }
-
+   if (!("Notification" in window) || window.Notification === undefined) {
+    alert("To enable alerts on iOS, you MUST add this site to your Home Screen first! Tap the Share button below and select 'Add to Home Screen'.");
+    return;
+  }
     // 1. Request iOS Permission
     const permission = await Notification.requestPermission();
     
