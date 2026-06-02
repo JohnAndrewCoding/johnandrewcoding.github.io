@@ -356,21 +356,44 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
     .catch(err => console.error('Service worker failed:', err));
 }
 
+// A strict URL-safe Base64 to Uint8Array converter
+function urlBase64ToUint8Array(base64String) {
+  // 1. Replace URL-safe characters with standard Base64 characters
+  let base64 = base64String.replace(/\-/g, '+').replace(/_/g, '/');
+  
+  // 2. Handle standard Base64 string padding requirements
+  while (base64.length % 4 !== 0) {
+    base64 += '=';
+  }
+
+  // 3. Decode the string into raw binary data
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 async function setupNativeAlerts() {
   if (!("Notification" in window)) return alert("Not supported.");
 
   const permission = await Notification.requestPermission();
   if (permission === "granted") {
     
-    const registration = await navigator.serviceWorker.ready;
+    // Explicitly target the full subdirectory scope for GitHub Pages
+    const registration = await navigator.serviceWorker.register('/2026_College_Pickem/sw.js', { scope: '/2026_College_Pickem/' });
+    await navigator.serviceWorker.ready;
     
     try {
-      // We pass the key directly as an object property without the conversion function
+      // Pass the fully converted binary array
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: 'BNoR69K9Rsn9CDZNo0ee-ST9S8YgN9SgD6A3509sD-A=' 
+        applicationServerKey: urlBase64ToUint8Array('BNoR69K9Rsn9CDZNo0ee-ST9S8YgN9SgD6A3509sD-A=') 
       });
 
+      // Pass the subscription data back to ntfy
       await fetch(`https://ntfy.sh/cfb-pickem-boys-2026-9831a/webpush`, {
         method: 'POST',
         body: JSON.stringify(subscription),
@@ -380,7 +403,6 @@ async function setupNativeAlerts() {
       alert("Native alerts armed! You can close the app now.");
       document.getElementById("enable-alerts-btn").innerText = "Alerts Active ✅";
     } catch (e) {
-      // This will give us the exact string if it fails again
       alert("Subscription failed: " + e.message);
       console.error(e);
     }
