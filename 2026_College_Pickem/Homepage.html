@@ -337,6 +337,45 @@
         </div>
 
     </div>
+    <script>
+        const NTFY_TOPIC = "cfb-pickem-boys-2026-9831a"; // Put your unique topic name here
+
+  async function setupAlerts() {
+    if (!("Notification" in window)) {
+      alert("This browser does not support notifications.");
+      return;
+    }
+
+    // 1. Request iOS Permission
+    const permission = await Notification.requestPermission();
+    
+    if (permission === "granted") {
+      alert("Success! Notifications armed. Make sure you added this site to your Home Screen.");
+      
+      // 2. Connect to the ntfy Server Sent Events stream
+      const eventSource = new EventSource(`https://ntfy.sh/${NTFY_TOPIC}/sse`);
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        // 3. Trigger the native iOS alert UI
+        new Notification("CFB Pick'em", {
+          body: data.message || "Update your picks!",
+          icon: "/icon.png" // Path to your app icon if you have one
+        });
+      };
+      
+      // Update button state
+      const btn = document.getElementById("enable-alerts-btn");
+      btn.innerText = "Alerts Active ✅";
+      btn.disabled = true;
+    } else {
+      alert("Permission denied. Check your iOS settings.");
+    }
+  }
+
+  document.getElementById("enable-alerts-btn").addEventListener("click", setupAlerts);
+    </script>
 
 </body>
 </html>
