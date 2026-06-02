@@ -1,14 +1,14 @@
 {
   "name": "CFB Pickem",
   "short_name": "Pickem",
-  "start_url": "/index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#111111",
   "theme_color": "#111111",
   "icons": [
     {
-      "src": "icon.png",
-      "sizes": "192x192",
+      "src": "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f3c8.png",
+      "sizes": "72x72",
       "type": "image/png"
     }
   ]
