@@ -351,7 +351,7 @@
 // 1. Register the background Service Worker file
 if ('serviceWorker' in navigator && 'PushManager' in window) {
   // Registers sw.js from the current 2026_College_Pickem directory
-  navigator.serviceWorker.register('sw.js', { scope: './' })
+  navigator.serviceWorker.register('/2026_College_Pickem/sw.js', { scope: '/2026_College_Pickem/' })
     .then(reg => console.log('Background Service Worker armed.'))
     .catch(err => console.error('Service worker failed:', err));
 }
