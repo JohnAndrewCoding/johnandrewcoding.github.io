@@ -331,68 +331,21 @@
     </div>
 
     <script>
-        const NTFY_TOPIC = "cfb-pickem-boys-2026-9831a";
+       // No more manual service worker registrations or conversion math here!
 
-// 1. Register the Service Worker smoothly using the local folder path
-if ('serviceWorker' in navigator && 'PushManager' in window) {
-    navigator.serviceWorker.register('sw.js', { scope: './' })
-        .then(reg => console.log('Service Worker scoped locally.'))
-        .catch(err => console.error('Worker registration failed:', err));
-}
-
-// 2. Public VAPID key provided by ntfy for app-free web push browser integration
-function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-}
-
-async function setupNativeAlerts() {
-    if (!("Notification" in window)) {
-        alert("Launch this app from your iPhone Home Screen icon to enable alerts!");
-        return;
-    }
-
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            
-            // Request a secure, unique device token from Apple's push servers via ntfy's public key
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array('BNoR69K9Rsn9CDZNo0ee-ST9S8YgN9SgD6A3509sD-A=')
-            });
-
-            // Hand your phone's secret token directly to your ntfy topic channel
-            await fetch(`https://ntfy.sh/${NTFY_TOPIC}/webpush`, {
-                method: 'POST',
-                body: JSON.stringify(subscription),
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            alert("Main screen alerts armed! System linked.");
-            const btn = document.getElementById("enable-alerts-btn");
-            btn.innerText = "ALERTS CONNECTED ✅";
-            btn.style.backgroundColor = "var(--retro-green)";
-            btn.style.color = "#000000";
-        } catch (e) {
-            alert("Connection error: " + e.message);
-            console.error(e);
-        }
+document.getElementById("enable-alerts-btn").addEventListener("click", function() {
+    // If the PushAlert script is loaded, trigger their native iOS prompt
+    if (typeof pushalert !== 'undefined') {
+        pushalert.subscribe();
+        
+        // Match your beautiful retro styling on success
+        this.innerText = "ALERTS CONNECTED ✅";
+        this.style.backgroundColor = "var(--retro-green)";
+        this.style.color = "#000000";
     } else {
-        alert("Permission denied. Check iOS Settings -> Notifications -> Safari.");
+        alert("System initializing. Please wait a second and tap again!");
     }
-}
-
-document.getElementById("enable-alerts-btn").addEventListener("click", setupNativeAlerts);
-
-        document.getElementById("enable-alerts-btn").addEventListener("click", setupNativeAlerts);
+});
     </script>
 </body>
 </html>
