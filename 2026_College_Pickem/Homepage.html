@@ -344,22 +344,37 @@
     <script>
        // No more manual service worker registrations or conversion math here!
 
-const btn = document.getElementById("enable-alerts-btn");
+// Wrap everything in a window load event to give the network time to breathe
+window.addEventListener('load', () => {
+    const btn = document.getElementById("enable-alerts-btn");
+    
+    // Check if the user has already added the app to their Home Screen
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
 
-// Clean, instant click handler matching your original setup
-btn.addEventListener("click", function() {
-    // FIXED: Capitalized 'PushAlert' to match their unified script object exactly
-    if (typeof PushAlert !== 'undefined') {
-        PushAlert.subscribe();
-        
-        // Visual confirmation lock on success
-        this.innerText = "ALERTS CONNECTED ✅";
-        this.style.backgroundColor = "var(--retro-green)";
-        this.style.color = "#000000";
-    } else {
-        // Fallback safety if tapped before the network loads the script
-        alert("System initializing. Please wait a second and tap again!");
+    if (!isStandalone) {
+        btn.innerText = "INSTALL APP FOR ALERTS 📥";
+        btn.style.backgroundColor = "var(--retro-yellow)";
+        btn.style.color = "#000000";
     }
+
+    btn.addEventListener("click", function() {
+        if (!isStandalone) {
+            alert("To enable alerts on iPhone:\n\n1. Tap the Share button at the bottom of Safari (square with up arrow).\n2. Scroll down and tap 'Add to Home Screen'.\n3. Launch the app from your home screen icon to activate!");
+            return;
+        }
+
+        // Check the global window object explicitly
+        if (typeof window.PushAlert !== 'undefined' || typeof PushAlert !== 'undefined') {
+            const paEngine = window.PushAlert || PushAlert;
+            paEngine.subscribe();
+            
+            this.innerText = "ALERTS CONNECTED ✅";
+            this.style.backgroundColor = "var(--retro-green)";
+            this.style.color = "#000000";
+        } else {
+            alert("Push engine initializing. Please wait a second and tap again!");
+        }
+    });
 });
     </script>
 </body>
