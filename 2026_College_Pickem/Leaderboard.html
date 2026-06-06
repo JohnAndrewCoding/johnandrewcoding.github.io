@@ -3,28 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Work?</title>
+    <title>League Standings</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
-    <!-- PushAlert Web Push Notifications Script -->
-<!-- PushAlert Unified Code -->
-<script type="text/javascript">
-    (function(d, t) {
-        var g = d.createElement(t),
-        s = d.getElementsByTagName(t)[0];
-        g.src = "https://cdn.pushalert.co/unified_1f01dca52f87f02d3c59cdddb88f5c30.js";
-        s.parentNode.insertBefore(g, s);
-    }(document, "script"));
-</script>
-<!-- End PushAlert Unified Code -->
-<!-- End PushAlert Script -->
+    
+    <!-- PushAlert Unified Code -->
+    <script type="text/javascript">
+        (function(d, t) {
+            var g = d.createElement(t),
+            s = d.getElementsByTagName(t)[0];
+            g.src = "https://cdn.pushalert.co/unified_1f01dca52f87f02d3c59cdddb88f5c30.js";
+            s.parentNode.insertBefore(g, s);
+        }(document, "script"));
+    </script>
+    
     <style>
         :root {
             --bg-canvas: #0f172a;       /* Deep slate arcade background */
-            --bg-card: #1e293b;         /* Lighter card block */
+            --bg-card: #1e293b;          /* Lighter card block */
             --retro-yellow: #facc15;    /* Rank 1 / Title neon */
             --retro-blue: #38bdf8;      /* Secondary highlights */
             --retro-green: #4ade80;     /* Positive morale */
@@ -52,6 +51,37 @@
             align-items: center;
             padding: 1.5rem 1rem;
             overflow-y: auto;
+        }
+
+        /* --- LEAGUE ALERTS PANEL --- */
+        .alert-section {
+            margin: 10px 0 25px 0;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            background: #000000;
+            border: 3px dashed var(--retro-blue);
+            padding: 1rem;
+        }
+        .alert-section h3 {
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+            color: #ffffff;
+            margin-bottom: 0.75rem;
+        }
+        #enable-alerts-btn {
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            padding: 10px 20px;
+            background-color: var(--retro-blue);
+            color: #000000;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #ffffff;
+        }
+        #enable-alerts-btn:active {
+            box-shadow: 0px 0px 0px #ffffff;
+            transform: translate(3px, 3px);
         }
 
         /* --- NAVIGATION HEADER --- */
@@ -197,36 +227,17 @@
         }
         .trend-up { color: var(--retro-green); }
         .trend-down { color: var(--retro-red); }
+        .trend-flat { color: #64748b; }
 
-        /* --- LEAGUE ALERTS PANEL --- */
-        .alert-section {
-            margin: 10px 0 25px 0;
-            text-align: center;
-            width: 100%;
-            max-width: 500px;
-            background: #000000;
-            border: 3px dashed var(--retro-blue);
-            padding: 1rem;
-        }
-        .alert-section h3 {
+        .footer-link {
+            text-decoration: none;
+            color: var(--retro-blue);
             font-family: var(--pixel-font);
             font-size: 0.75rem;
-            color: #ffffff;
-            margin-bottom: 0.75rem;
+            margin-top: 1rem;
         }
-        #enable-alerts-btn {
-            font-family: var(--pixel-font);
-            font-size: 0.6rem;
-            padding: 10px 20px;
-            background-color: var(--retro-blue);
-            color: #000000;
-            border: 2px solid #ffffff;
-            cursor: pointer;
-            box-shadow: 3px 3px 0px #ffffff;
-        }
-        #enable-alerts-btn:active {
-            box-shadow: 0px 0px 0px #ffffff;
-            transform: translate(3px, 3px);
+        .footer-link:hover {
+            color: var(--retro-yellow);
         }
     </style>
 </head>
@@ -246,138 +257,117 @@
         </nav>
     </header>
 
-    <div class="leaderboard-container">
-
-        <div class="rank-row rank-first">
-            <div class="position-badge">01</div>
-            <div class="avatar-box" style="--avatar-color: var(--retro-yellow);">
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-            </div>
-            <div class="meta-block">
-                <div class="coach-name">COACH ACE</div>
-                <div class="support-wrapper">
-                    <span class="meter-label">FAN SUPPORT</span>
-                    <div class="support-meter">
-                        <div class="meter-fill" style="--percentage: 95%;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="score-box">
-                <div class="total-points">14-2</div>
-                <div class="trend-indicator trend-up">▲ 1</div>
-            </div>
-        </div>
-
-        <div class="rank-row">
-            <div class="position-badge">02</div>
-            <div class="avatar-box" style="--avatar-color: var(--retro-blue);">
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-            </div>
-            <div class="meta-block">
-                <div class="coach-name">COACH JON</div>
-                <div class="support-wrapper">
-                    <span class="meter-label">FAN SUPPORT</span>
-                    <div class="support-meter">
-                        <div class="meter-fill" style="--percentage: 75%;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="score-box">
-                <div class="total-points">12-4</div>
-                <div class="trend-indicator trend-down">▼ 1</div>
-            </div>
-        </div>
-
-        <div class="rank-row">
-            <div class="position-badge">03</div>
-            <div class="avatar-box" style="--avatar-color: #a855f7;">
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-            </div>
-            <div class="meta-block">
-                <div class="coach-name">COACH SAM</div>
-                <div class="support-wrapper">
-                    <span class="meter-label">FAN SUPPORT</span>
-                    <div class="support-meter">
-                        <div class="meter-fill" style="--percentage: 60%;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="score-box">
-                <div class="total-points">10-6</div>
-                <div class="trend-indicator trend-up">▲ 2</div>
-            </div>
-        </div>
-
-        <div class="rank-row rank-last">
-            <div class="position-badge">04</div>
-            <div class="avatar-box" style="--avatar-color: var(--retro-red);">
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-            </div>
-            <div class="meta-block">
-                <div class="coach-name">COACH NOOB</div>
-                <div class="support-wrapper">
-                    <span class="meter-label">FAN SUPPORT</span>
-                    <div class="support-meter">
-                        <div class="meter-fill" style="--percentage: 15%;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="score-box">
-                <div class="total-points" style="color: var(--retro-red);">4-12</div>
-                <div class="trend-indicator trend-down">▼ 1</div>
-            </div>
-        </div>
+    <!-- Target injection container for real data -->
+    <div class="leaderboard-container" id="standings-list">
+        <!-- Content gets generated dynamically by JavaScript -->
     </div>
-<a href="SamplePickemPage.html"><h3>Pickem Page</h3></a>
+
+    <a href="SamplePickemPage.html" class="footer-link"><h3>GO TO PICKS PAGE</h3></a>
+
     <script>
-       // No more manual service worker registrations or conversion math here!
+        // 1. DYNAMIC DATA CONFIGURATION
+        // Swap this array with an API fetch call (e.g., fetch('/api/standings')) when your database is online!
+        const leagueData = [
+            { name: "COACH ACE", wins: 14, losses: 2, support: 95, trend: "up", trendValue: 1, color: "var(--retro-yellow)" },
+            { name: "COACH JON", wins: 12, losses: 4, support: 75, trend: "down", trendValue: 1, color: "var(--retro-blue)" },
+            { name: "COACH SAM", wins: 10, losses: 6, support: 60, trend: "up", trendValue: 2, color: "#a855f7" },
+            { name: "COACH NOOB", wins: 4, losses: 12, support: 15, trend: "down", trendValue: 1, color: "var(--retro-red)" }
+        ];
 
-window.addEventListener('load', () => {
-    const btn = document.getElementById("enable-alerts-btn");
-    
-    // Check if the user has already added the app to their Home Screen
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        // 2. RENDER ENGINE FOR THE STANDINGS BOARD
+        function renderStandings(data) {
+            const container = document.getElementById('standings-list');
+            container.innerHTML = ''; // Clear out old placeholders
 
-    if (!isStandalone) {
-        btn.innerText = "INSTALL APP FOR ALERTS 📥";
-        btn.style.backgroundColor = "var(--retro-yellow)";
-        btn.style.color = "#000000";
-    }
+            // Sort data by wins (descending), then losses (ascending) to guarantee real math ranks
+            const sortedData = [...data].sort((a, b) => (b.wins - a.wins) || (a.losses - b.losses));
 
-    btn.addEventListener("click", function() {
-        if (!isStandalone) {
-            alert("To enable alerts on iPhone:\n\n1. Tap the Share button at the bottom of Safari (square with up arrow).\n2. Scroll down and tap 'Add to Home Screen'.\n3. Launch the app from your home screen icon to activate!");
-            return;
+            sortedData.forEach((coach, index) => {
+                const rank = index + 1;
+                const isFirst = rank === 1;
+                const isLast = rank === sortedData.length;
+                
+                // Track style modifiers
+                let rowClass = 'rank-row';
+                if (isFirst) rowClass += ' rank-first';
+                if (isLast) rowClass += ' rank-last';
+
+                // Format the rank string (e.g., "01", "02")
+                const rankString = rank.toString().padStart(2, '0');
+
+                // Determine trend icon and color
+                let trendHtml = `<div class="trend-indicator trend-flat">▬ 0</div>`;
+                if (coach.trend === 'up') {
+                    trendHtml = `<div class="trend-indicator trend-up">▲ ${coach.trendValue}</div>`;
+                } else if (coach.trend === 'down') {
+                    trendHtml = `<div class="trend-indicator trend-down">▼ ${coach.trendValue}</div>`;
+                }
+
+                // Force score color modifications for bottom ranking
+                let scoreStyle = isFirst ? '' : (isLast ? 'style="color: var(--retro-red);"' : '');
+
+                // Generate row layout matching your pixel aesthetic
+                const rowHTML = `
+                    <div class="${rowClass}">
+                        <div class="position-badge">${rankString}</div>
+                        <div class="avatar-box" style="--avatar-color: ${coach.color};">
+                            <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
+                            <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
+                            <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
+                            <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
+                        </div>
+                        <div class="meta-block">
+                            <div class="coach-name">${coach.name}</div>
+                            <div class="support-wrapper">
+                                <span class="meter-label">FAN SUPPORT</span>
+                                <div class="support-meter">
+                                    <div class="meter-fill" style="--percentage: ${coach.support}%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="score-box">
+                            <div class="total-points" ${scoreStyle}>${coach.wins}-${coach.losses}</div>
+                            ${trendHtml}
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', rowHTML);
+            });
         }
 
-        // Since the push engine is confirmed working, force the button 
-        // straight to success when clicked from the home screen icon
-        try {
-            if (typeof PushAlert !== 'undefined') {
-                PushAlert.subscribe();
+        // 3. APP UTILITIES & ALERTS
+        window.addEventListener('load', () => {
+            // Run UI initialization
+            renderStandings(leagueData);
+
+            const btn = document.getElementById("enable-alerts-btn");
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+            if (!isStandalone) {
+                btn.innerText = "INSTALL APP FOR ALERTS 📥";
+                btn.style.backgroundColor = "var(--retro-yellow)";
+                btn.style.color = "#000000";
             }
-        } catch (e) {
-            console.log("PushAlert background execution handled automatically.");
-        }
-        
-        // Give the user instant visual confirmation that they are armed
-        this.innerText = "ALERTS CONNECTED ✅";
-        this.style.backgroundColor = "var(--retro-green)";
-        this.style.color = "#000000";
-    });
-});
+
+            btn.addEventListener("click", function() {
+                if (!isStandalone) {
+                    alert("To enable alerts on iPhone:\n\n1. Tap the Share button at the bottom of Safari (square with up arrow).\n2. Scroll down and tap 'Add to Home Screen'.\n3. Launch the app from your home screen icon to activate!");
+                    return;
+                }
+
+                try {
+                    if (typeof PushAlert !== 'undefined') {
+                        PushAlert.subscribe();
+                    }
+                } catch (e) {
+                    console.log("PushAlert background execution handled automatically.");
+                }
+                
+                this.innerText = "ALERTS CONNECTED ✅";
+                this.style.backgroundColor = "var(--retro-green)";
+                this.style.color = "#000000";
+            });
+        });
     </script>
 </body>
 </html>
