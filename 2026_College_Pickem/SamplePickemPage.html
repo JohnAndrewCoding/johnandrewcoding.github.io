@@ -267,6 +267,32 @@
             opacity: 1;
             transform: translateY(0px);
         }
+        /* --- UNDO BUTTON STYLE --- */
+        .undo-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+            z-index: 100;
+        }
+
+        .undo-btn {
+            background: #000000;
+            color: #cbd5e1;
+            border: 3px solid #cbd5e1;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.65rem;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+            display: none; /* Hidden by default, shown when a pick is made */
+        }
+
+        .undo-btn:hover {
+            border-color: var(--retro-yellow);
+            color: var(--retro-yellow);
+        }
 
         @media (max-width: 600px) {
             .vs-divider { display: none; }
