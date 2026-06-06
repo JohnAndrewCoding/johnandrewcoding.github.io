@@ -1,1 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Pick'em - Registration</title>
+    <style>
+        /* --- RETRO CONFIG VARIABLES --- */
+        :root {
+            --pixel-font: 'Courier New', Courier, monospace; /* Swap with your custom pixel font family if needed */
+            --retro-yellow: #fde047;
+            --slate-gray: #cbd5e1;
+            --dark-gray: #64748b;
+        }
 
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: var(--pixel-font);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- AUTH GRID OVERLAY --- */
+        .register-container {
+            width: 100%;
+            max-width: 320px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .register-box {
+            background: #000000;
+            border: 3px solid var(--slate-gray);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            box-shadow: 4px 4px 0px rgba(255, 255, 255, 0.1);
+        }
+
+        .pixel-title {
+            color: var(--retro-yellow);
+            font-size: 0.95rem;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .pixel-field {
+            text-align: left;
+            margin-bottom: 1.25rem;
+        }
+
+        .pixel-field label {
+            display: block;
+            font-size: 0.6rem;
+            color: var(--dark-gray);
+            margin-bottom: 0.4rem;
+            font-weight: bold;
+        }
+
+        .pixel-field input {
+            width: 100%;
+            background: #111111;
+            border: 2px solid var(--slate-gray);
+            color: #ffffff;
+            padding: 0.6rem;
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+            box-sizing: border-box;
+            outline: none;
+            text-transform: uppercase;
+        }
+
+        .pixel-field input:focus {
+            border-color: var(--retro-yellow);
+        }
+
+        /* --- ARCADE BUTTON STYLE --- */
+        .submit-btn {
+            background: #000000;
+            color: var(--slate-gray);
+            border: 3px solid var(--slate-gray);
+            width: 100%;
+            padding: 0.75rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.7rem;
+            font-weight: bold;
+            box-shadow: 3px 3px 0px rgba(255,255,255,0.1);
+            margin-top: 0.75rem;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        @media (hover: hover) {
+            .submit-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+                box-shadow: 3px 3px 0px var(--retro-yellow);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="register-container">
+        <div class="register-box">
+            <h2 class="pixel-title">[ CREATE PLAYER PROFILE ]</h2>
+            
+            <div class="pixel-field">
+                <label>YOUR NAME</label>
+                <input type="text" id="reg-player-name" placeholder="E.G., BIG AL" maxlength="12" autocomplete="off">
+            </div>
+
+            <div class="pixel-field">
+                <label>COACH NAME</label>
+                <input type="text" id="reg-coach-name" placeholder="E.G., SABAN" maxlength="12" autocomplete="off">
+            </div>
+
+            <button class="submit-btn" id="submit-btn" ontouchend="saveProfileAndRedirect(); event.preventDefault();" onclick="saveProfileAndRedirect()">
+                START SEASON
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Check phone memory instantly on page parse
+        (function checkExistingMemory() {
+            const savedCoach = localStorage.getItem('my_coach_name');
+            const savedPlayer = localStorage.getItem('my_player_name');
+
+            // If this phone already has profile values stored, auto-forward past this page
+            if (savedCoach && savedPlayer) {
+                window.location.replace("index.html"); // Change to your game file name
+            }
+        })();
+
+        // Process inputs and lock them into device memory
+        function saveProfileAndRedirect() {
+            const nameVal = document.getElementById('reg-player-name').value.trim().toUpperCase();
+            const coachVal = document.getElementById('reg-coach-name').value.trim().toUpperCase();
+
+            // Form validation check
+            if (!nameVal || !coachVal) {
+                alert("BOTH FIELDS REQUIRED FOR LEADERBOARD REGISTRATION!");
+                return;
+            }
+
+            // Write items directly into mobile sandbox storage core
+            localStorage.setItem('my_player_name', nameVal);
+            localStorage.setItem('my_coach_name', coachVal);
+
+            // Forward the user to the active matchup swiper deck
+            window.location.href = "Homepage.html"; // Change to match your main game file name
+        }
+    </script>
+</body>
+</html>
