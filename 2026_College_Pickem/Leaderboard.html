@@ -10,7 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
     
-    <!-- PushAlert Unified Code -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://your-project-id.supabase.co';
+        const SUPABASE_ANON_KEY = 'your-actual-anon-public-key-string';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
     <script type="text/javascript">
         (function(d, t) {
             var g = d.createElement(t),
@@ -257,45 +263,70 @@
         </nav>
     </header>
 
-    <!-- Target injection container for real data -->
     <div class="leaderboard-container" id="standings-list">
-        <!-- Content gets generated dynamically by JavaScript -->
-    </div>
+        </div>
 
-    <a href="SamplePickemPage.html" class="footer-link"><h3>GO TO PICKS PAGE</h3></a>
+    <a href="index.html" class="footer-link"><h3>GO TO PICKS PAGE</h3></a>
 
     <script>
-        // 1. DYNAMIC DATA CONFIGURATION
-        // Swap this array with an API fetch call (e.g., fetch('/api/standings')) when your database is online!
-        const leagueData = [
-            { name: "COACH ACE", wins: 14, losses: 2, support: 95, trend: "up", trendValue: 1, color: "var(--retro-yellow)" },
-            { name: "COACH JON", wins: 12, losses: 4, support: 75, trend: "down", trendValue: 1, color: "var(--retro-blue)" },
-            { name: "COACH SAM", wins: 10, losses: 6, support: 60, trend: "up", trendValue: 2, color: "#a855f7" },
-            { name: "COACH NOOB", wins: 4, losses: 12, support: 15, trend: "down", trendValue: 1, color: "var(--retro-red)" }
-        ];
+        // 1. LIVE SUPABASE STREAMING SYSTEM
+        async function fetchLiveCloudStandings() {
+            try {
+                // Fetch all profiles from your database
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('coach_name');
+
+                if (error) throw error;
+
+                // Map database entries to fit your retro layout styling engine
+                const formattedLeague = data.map((user, i) => {
+                    // Cyclic color balancer so players get different retro color accents
+                    const pixelColors = ["var(--retro-yellow)", "var(--retro-blue)", "#a855f7", "var(--retro-green)"];
+                    
+                    return {
+                        name: user.coach_name || "UNNAMED COACH",
+                        wins: 0,       // Synchronizes with game tables as season plays
+                        losses: 0,
+                        support: 50,   // Starter status values
+                        trend: "flat",
+                        trendValue: 0,
+                        color: pixelColors[i % pixelColors.length]
+                    };
+                });
+
+                // Send mapped active records straight into the rendering framework
+                renderStandings(formattedLeague);
+
+            } catch(err) {
+                console.error("Cloud Retrieval Error:", err.message);
+                document.getElementById('standings-list').innerHTML = `<p style="font-family:var(--pixel-font); font-size:0.5rem; text-align:center; color:var(--retro-red);">DATABASE ERROR: UNABLE TO SYNC PLAYERS</p>`;
+            }
+        }
 
         // 2. RENDER ENGINE FOR THE STANDINGS BOARD
         function renderStandings(data) {
             const container = document.getElementById('standings-list');
-            container.innerHTML = ''; // Clear out old placeholders
+            container.innerHTML = ''; 
 
-            // Sort data by wins (descending), then losses (ascending) to guarantee real math ranks
+            if (data.length === 0) {
+                container.innerHTML = `<p style="font-family:var(--pixel-font); font-size:0.6rem; text-align:center; color:#64748b;">NO ACTIVE COACHES ENROLLED</p>`;
+                return;
+            }
+
             const sortedData = [...data].sort((a, b) => (b.wins - a.wins) || (a.losses - b.losses));
 
             sortedData.forEach((coach, index) => {
                 const rank = index + 1;
                 const isFirst = rank === 1;
-                const isLast = rank === sortedData.length;
+                const isLast = rank === sortedData.length && sortedData.length > 1;
                 
-                // Track style modifiers
                 let rowClass = 'rank-row';
                 if (isFirst) rowClass += ' rank-first';
                 if (isLast) rowClass += ' rank-last';
 
-                // Format the rank string (e.g., "01", "02")
                 const rankString = rank.toString().padStart(2, '0');
 
-                // Determine trend icon and color
                 let trendHtml = `<div class="trend-indicator trend-flat">▬ 0</div>`;
                 if (coach.trend === 'up') {
                     trendHtml = `<div class="trend-indicator trend-up">▲ ${coach.trendValue}</div>`;
@@ -303,10 +334,8 @@
                     trendHtml = `<div class="trend-indicator trend-down">▼ ${coach.trendValue}</div>`;
                 }
 
-                // Force score color modifications for bottom ranking
                 let scoreStyle = isFirst ? '' : (isLast ? 'style="color: var(--retro-red);"' : '');
 
-                // Generate row layout matching your pixel aesthetic
                 const rowHTML = `
                     <div class="${rowClass}">
                         <div class="position-badge">${rankString}</div>
@@ -337,8 +366,8 @@
 
         // 3. APP UTILITIES & ALERTS
         window.addEventListener('load', () => {
-            // Run UI initialization
-            renderStandings(leagueData);
+            // Trigger dynamic data fetch query instantly on execution load
+            fetchLiveCloudStandings();
 
             const btn = document.getElementById("enable-alerts-btn");
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
