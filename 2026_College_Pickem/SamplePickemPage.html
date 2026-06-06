@@ -352,6 +352,7 @@
             currentCardIndex = 1;
             progressDisplay.removeAttribute('style');
             progressDisplay.innerText = "LOADING MATCHUPS...";
+            document.getElementById('undo-btn').style.display = 'none';
 
             try {
                 const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
@@ -550,6 +551,7 @@
             currentCardIndex++;
             updateActiveCardVisibility();
             renderProgressUpdates();
+            document.getElementById('undo-btn').style.display = 'block';
         }
 
         function triggerToastNotification(teamName) {
@@ -572,6 +574,41 @@
                 display.style.color = "var(--retro-green)";      
                 display.style.borderColor = "var(--retro-green)";
             }
+        }
+        function undoLastPick() {
+            // Check if we are at the first card (nothing to undo)
+            if (currentCardIndex <= 1) return;
+
+            // Step back one card index
+            currentCardIndex--;
+
+            // Find the targeted card element
+            const previousCard = document.getElementById(`card-${currentCardIndex}`);
+            if (!previousCard) return;
+
+            // Remove saved pick entry from storage
+            if (savedPicks[`week-${currentWeek}`]) {
+                delete savedPicks[`week-${currentWeek}`][`card-${currentCardIndex}`];
+            }
+
+            // Reset animation positioning classes completely
+            previousCard.className = 'matchup-card';
+            previousCard.removeAttribute('style');
+
+            // Force z-index realignment to place it perfectly on top of the pile
+            previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
+
+            // Re-sync visual components
+            updateActiveCardVisibility();
+            renderProgressUpdates();
+
+            // Hide the undo button if we rolled back all the way to the first game
+            if (currentCardIndex === 1) {
+                document.getElementById('undo-btn').style.display = 'none';
+            }
+            
+            // Temporary confirmation alert
+            triggerToastNotification("PICK REMOVED");
         }
 
         window.addEventListener('DOMContentLoaded', loadWeekGames);
