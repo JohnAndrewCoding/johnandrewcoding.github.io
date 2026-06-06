@@ -44,7 +44,7 @@
 
         header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             width: 100%;
             max-width: 400px;
             user-select: none;
@@ -56,6 +56,40 @@
             color: var(--retro-yellow);
             text-shadow: 3px 3px 0px #000;
             margin-bottom: 0.75rem;
+        }
+
+        /* --- WEEKLY CONTROLS STYLING --- */
+        .week-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 1rem;
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+            user-select: none;
+        }
+
+        .week-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 3px solid #ffffff;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+        }
+
+        .week-btn:hover {
+            border-color: var(--retro-yellow);
+            color: var(--retro-yellow);
+        }
+
+        .week-display {
+            color: var(--retro-yellow);
+            align-self: center;
+            text-shadow: 2px 2px 0px #000;
         }
 
         .progress-bar {
@@ -95,7 +129,7 @@
             touch-action: none; 
             transform-origin: center bottom;
             z-index: 10;
-            visibility: hidden; /* Hidden until stack index sorted */
+            visibility: hidden; 
         }
 
         .matchup-card.active-stack {
@@ -157,7 +191,6 @@
             margin-top: 3.5rem; 
         }
 
-        /* --- THE 8-BIT GRID HELMET SPRITE --- */
         .helmet-icon {
             width: 48px;
             height: 40px;
@@ -229,17 +262,23 @@
         <div class="progress-bar" id="progress">LOADING SEASON...</div>
     </header>
 
+    <div class="week-controls">
+        <button class="week-btn" id="prev-week-btn" onclick="changeWeek(-1)">&lt; PREV</button>
+        <span class="week-display" id="week-display">WEEK 01</span>
+        <button class="week-btn" id="next-week-btn" onclick="changeWeek(1)">NEXT &gt;</button>
+    </div>
+
     <div class="retro-toast" id="toast">PICKED: UGA</div>
 
     <div class="deck-container" id="deck">
-        <!-- Matchup cards render dynamically here -->
-    </div>
+        </div>
 
     <div class="mobile-hint">
         &lt; SWIPE LEFT FOR HOME | SWIPE RIGHT FOR AWAY &gt;
     </div>
 
     <script>
+        let currentWeek = 1; // Dynamic tracker for current season week
         let currentCardIndex = 1;
         let totalCards = 0;
         const savedPicks = {};
@@ -250,7 +289,6 @@
         let isDragging = false;
         let toastTimeout = null; 
 
-        // 8-Bit Pixel Helmet Template Markup Helper
         const helmetHTML = (color) => `
             <div class="helmet-icon" style="--team-color: #${color};">
                 <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel"></div><div class="pixel"></div>
@@ -260,18 +298,26 @@
                 <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
             </div>`;
 
-        // Async Load Week 1 Matchups via ESPN API
-        async function loadWeekOneGames() {
+        // Async Load Dynamic Matchups via ESPN API
+        async function loadWeekGames() {
             const deck = document.getElementById('deck');
             const progressDisplay = document.getElementById('progress');
 
+            // Reset engine indices cleanly on every data fetch cycle
+            currentCardIndex = 1;
+            
+            // Re-apply original loading theme colors if user previously completed a week
+            progressDisplay.removeAttribute('style');
+            progressDisplay.innerText = "LOADING MATCHUPS...";
+
             try {
-                // groups=80 isolates all relevant FBS level divisions, week=1 targets season openers
-                const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=1');
+                // Accepts dynamic currentWeek parameter inside API fetch string
+                const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const data = await response.json();
                 
                 if (!data.events || data.events.length === 0) {
                     progressDisplay.innerText = "NO GAMES FOUND";
+                    deck.innerHTML = ''; 
                     return;
                 }
 
@@ -279,12 +325,10 @@
                 totalCards = gamesData.length;
                 deck.innerHTML = ''; // Clean canvas
 
-                // Render components inside out (Card 1 goes on top, so we reverse append or manage via z-indexing)
                 gamesData.forEach((gameEvent, index) => {
                     const matchupNum = index + 1;
                     const competition = gameEvent.competitions[0];
                     
-                    // ESPN references Home/Away parameters via structural array indices
                     const homeTeamData = competition.competitors.find(c => c.homeAway === 'home');
                     const awayTeamData = competition.competitors.find(c => c.homeAway === 'away');
 
@@ -306,7 +350,6 @@
                     card.setAttribute('data-home', home.name);
                     card.setAttribute('data-away', away.name);
                     
-                    // Invert stacking mechanics so Matchup 1 rests visibly on top
                     card.style.zIndex = totalCards - index;
 
                     card.innerHTML = `
@@ -327,7 +370,6 @@
                     deck.appendChild(card);
                 });
 
-                // Set initial visual structures
                 updateActiveCardVisibility();
                 renderProgressUpdates();
                 initSwipeEngine();
@@ -338,8 +380,25 @@
             }
         }
 
+        // Handles switching between game weeks
+        function changeWeek(direction) {
+            currentWeek += direction;
+            
+            // Bound setting to prevent dipping below week 1
+            if (currentWeek < 1) {
+                currentWeek = 1;
+                return;
+            }
+
+            // Update Week text readout element
+            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            
+            // Clean deck node and fetch clean dataset
+            document.getElementById('deck').innerHTML = '';
+            loadWeekGames();
+        }
+
         function updateActiveCardVisibility() {
-            // Keep the current active card and the immediate next card visible for slick layout performance
             document.querySelectorAll('.matchup-card').forEach(card => {
                 const cardIdNum = parseInt(card.id.split('-')[1]);
                 if (cardIdNum === currentCardIndex || cardIdNum === currentCardIndex + 1) {
@@ -354,10 +413,9 @@
             const cards = document.querySelectorAll('.matchup-card');
             
             cards.forEach(card => {
-                // Ensure touch mechanics bind correctly to the runtime elements
                 card.addEventListener('touchstart', e => {
                     const cardIdNum = parseInt(card.id.split('-')[1]);
-                    if (cardIdNum !== currentCardIndex) return; // Only lock target to top card
+                    if (cardIdNum !== currentCardIndex) return; 
 
                     isDragging = true;
                     card.classList.add('dragging');
@@ -402,7 +460,6 @@
             const card = document.getElementById(cardId);
             const cardIdNum = parseInt(cardId.split('-')[1]);
             
-            // Verification line to ignore clicks targeting lower hidden levels
             if (cardIdNum !== currentCardIndex) return;
 
             const animationClass = pickType === 'home' ? 'swipe-left' : 'swipe-right';
@@ -413,8 +470,12 @@
             const cardId = cardElement.id;
             const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
             
-            savedPicks[cardId] = chosenTeam;
-            console.log(`Saved Pick Array: ${cardId} -> ${chosenTeam}`);
+            // Scopes active picks under unique week arrays inside local storage model
+            if(!savedPicks[`week-${currentWeek}`]) {
+                savedPicks[`week-${currentWeek}`] = {};
+            }
+            savedPicks[`week-${currentWeek}`][cardId] = chosenTeam;
+            console.log(`Saved Week ${currentWeek} Pick Array: ${cardId} -> ${chosenTeam}`);
 
             triggerToastNotification(chosenTeam);
 
@@ -448,8 +509,7 @@
             }
         }
 
-        // Initialize execution on content render load
-        window.addEventListener('DOMContentLoaded', loadWeekOneGames);
+        window.addEventListener('DOMContentLoaded', loadWeekGames);
     </script>
 </body>
 </html>
