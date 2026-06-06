@@ -4,10 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Pick'em - Registration</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Global credentials configuration linking backend infrastructure
+        const SUPABASE_URL = 'https://your-project-id.supabase.co';
+        const SUPABASE_ANON_KEY = 'your-actual-anon-public-key-string';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
     <style>
         /* --- RETRO CONFIG VARIABLES --- */
         :root {
-            --pixel-font: 'Courier New', Courier, monospace; /* Swap with your custom pixel font family if needed */
+            --pixel-font: 'Courier New', Courier, monospace;
             --retro-yellow: #fde047;
             --slate-gray: #cbd5e1;
             --dark-gray: #64748b;
@@ -129,34 +138,70 @@
     </div>
 
     <script>
-        // Check phone memory instantly on page parse
-        (function checkExistingMemory() {
+        // Check local device memory instantly and run a silent cloud check
+        async function checkExistingMemory() {
             const savedCoach = localStorage.getItem('my_coach_name');
             const savedPlayer = localStorage.getItem('my_player_name');
 
-            // If this phone already has profile values stored, auto-forward past this page
             if (savedCoach && savedPlayer) {
-                window.location.replace("Leaderboard.html"); // Change to your game file name
-            }
-        })();
+                let deviceUID = localStorage.getItem('my_device_uid');
+                
+                // If they have names saved but no device token (like you right now), make one!
+                if (!deviceUID) {
+                    deviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
+                    localStorage.setItem('my_device_uid', deviceUID);
+                }
 
-        // Process inputs and lock them into device memory
-        function saveProfileAndRedirect() {
+                // Silently ensure this profile row exists up in Supabase before moving forward
+                try {
+                    await supabase.from('profiles').upsert({
+                        device_uid: deviceUID,
+                        player_name: savedPlayer.toUpperCase(),
+                        coach_name: savedCoach.toUpperCase()
+                    }, { onConflict: 'device_uid' });
+                } catch(err) {
+                    console.error("Background auto-sync holding error:", err);
+                }
+
+                window.location.replace("Leaderboard.html");
+            }
+        }
+
+        // Run verification routine immediately upon script parse
+        checkExistingMemory();
+
+        // Process new form submissions, sync them locally and to the cloud database
+        async function saveProfileAndRedirect() {
             const nameVal = document.getElementById('reg-player-name').value.trim().toUpperCase();
             const coachVal = document.getElementById('reg-coach-name').value.trim().toUpperCase();
 
-            // Form validation check
             if (!nameVal || !coachVal) {
                 alert("BOTH FIELDS REQUIRED FOR LEADERBOARD REGISTRATION!");
                 return;
             }
 
-            // Write items directly into mobile sandbox storage core
+            // Generate an immutable tracking hash token for this client instance
+            const newDeviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
+
+            // 1. Commit values immediately to cloud table pipeline
+            const { error } = await supabase.from('profiles').insert([{
+                device_uid: newDeviceUID,
+                player_name: nameVal,
+                coach_name: coachVal
+            }]);
+
+            if (error) {
+                alert("DATABASE SYNC ERROR: " + error.message);
+                return;
+            }
+
+            // 2. Lock elements down into system device memory safely
             localStorage.setItem('my_player_name', nameVal);
             localStorage.setItem('my_coach_name', coachVal);
+            localStorage.setItem('my_device_uid', newDeviceUID);
 
-            // Forward the user to the active matchup swiper deck
-            window.location.href = "Leaderboard.html"; // Change to match your main game file name
+            // Forward user to live scoreboard view hub
+            window.location.href = "Leaderboard.html";
         }
     </script>
 </body>
