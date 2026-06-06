@@ -369,6 +369,18 @@
                         color: awayTeamData.team.color || '1e3a8a',
                         record: awayRecord
                     };
+                    // Extract Kickoff Date and Time safely
+        const kickoffDate = new Date(gameEvent.date);
+        const formattedTime = kickoffDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) + 
+                      " @ " + 
+                      kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+// Extract Venue details safely
+        const venue = competition.venue || {};
+        const stadiumName = venue.fullName ? venue.fullName.toUpperCase() : "UNKNOWN STADIUM";
+        const stadiumLoc = (venue.address && venue.address.city && venue.address.state) 
+    ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
+    : "LOCATION N/A";
 
                     const card = document.createElement('div');
                     card.className = 'matchup-card';
@@ -379,9 +391,14 @@
                     card.style.zIndex = totalCards - index;
 
                     card.innerHTML = `
-                        <span class="matchup-number">MATCHUP ${String(matchupNum).padStart(2, '0')}<br><small style="font-size:9px; color:#475569;">${gameEvent.name}</small></span>
-                        
-                        <div class="teams-wrapper">
+                        card.innerHTML = `
+    <span class="matchup-number" style="font-size: 0.55rem; color: var(--retro-yellow);">
+        ${formattedTime}<br>
+        <small style="font-size: 0.5rem; color: #64748b; line-height: 1.5;">
+            ${stadiumName}<br>${stadiumLoc}
+        </small>
+    </span>
+                         <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
                                 <button class="team-btn" onclick="handleBtnPick('card-${matchupNum}', 'home')">${home.name}</button>
