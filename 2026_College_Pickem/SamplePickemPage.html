@@ -326,9 +326,10 @@
 
     <div class="deck-container" id="deck">
         </div>
-    <div class="undo-container">
-        <button class="undo-btn" id="undo-btn" onclick="undoLastPick()">[ ] UNDO LAST PICK</button>
-    </div>
+   <!-- Change this container in your HTML -->
+<div class="undo-container">
+    <button class="undo-btn" id="undo-btn" ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO LAST PICK</button>
+</div>
     <div class="mobile-hint">
         &lt; SWIPE LEFT FOR HOME | SWIPE RIGHT FOR AWAY &gt;
     </div>
