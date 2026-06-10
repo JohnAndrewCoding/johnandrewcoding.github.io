@@ -10,10 +10,11 @@
         // Global credentials configuration linking backend infrastructure
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
         
-        // IMPORTANT: Paste your FULL hidden key string from the copy icon here!
-        const SUPABASE_ANON_KEY = 'PASTE_YOUR_FULL_LONG_KEY_HERE';
+        // FIXED: Swapped in your full active 2026 project anon key
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // FIXED: Changed variable name to supabaseClient to prevent global library initialization crashes
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
     <style>
@@ -155,7 +156,8 @@
                 }
 
                 try {
-                    await supabase.from('profiles').upsert({
+                    // FIXED: Reallocated call to map smoothly across updated client variable
+                    await supabaseClient.from('profiles').upsert({
                         device_uid: deviceUID,
                         player_name: savedPlayer.toUpperCase(),
                         coach_name: savedCoach.toUpperCase()
@@ -185,7 +187,8 @@
                 const newDeviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
 
                 // 1. Commit values immediately to cloud table pipeline
-                const { error } = await supabase.from('profiles').insert([{
+                // FIXED: Reallocated call to map smoothly across updated client variable
+                const { error } = await supabaseClient.from('profiles').insert([{
                     device_uid: newDeviceUID,
                     player_name: nameVal,
                     coach_name: coachVal
