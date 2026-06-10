@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Waffle House Numbers</title>
   
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="WH Numbers">
@@ -34,13 +35,13 @@
   <main class="max-w-md mx-auto p-4 space-y-4">
     
     <div class="bg-white p-1.5 rounded-xl shadow-xs flex gap-1 border border-slate-100">
-      <button onclick="switchStore('2417')" id="tab-2417" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 bg-blue-600 text-white shadow-xs">
+      <button type="button" onclick="switchStore('2417')" id="tab-2417" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 bg-blue-600 text-white shadow-xs">
         Store 2417
       </button>
-      <button onclick="switchStore('2067')" id="tab-2067" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
+      <button type="button" onclick="switchStore('2067')" id="tab-2067" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
         Store 2067
       </button>
-      <button onclick="switchStore('738')" id="tab-738" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
+      <button type="button" onclick="switchStore('738')" id="tab-738" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-800">
         Store 738
       </button>
     </div>
@@ -61,7 +62,9 @@
     // --- CONNECTED SUPABASE CONFIGURATION ---
     const SUPABASE_URL = "https://jkxgemajbqomkhyzhuak.supabase.co"; 
     const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Renamed instance to 'sb' to prevent naming collision with CDN global object
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // --- APP GLOBAL STATE ---
     let activeStore = '2417';
@@ -147,8 +150,8 @@
       }
 
       try {
-        // Safe database ingestion with transactional upsert conflict handling
-        const { error } = await supabase
+        // Safe database ingestion using the updated 'sb' instance variable
+        const { error } = await sb
           .from('daily_metrics')
           .upsert(rowsToInsert, { onConflict: 'store_id,entry_date,label' });
 
