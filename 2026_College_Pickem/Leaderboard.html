@@ -12,13 +12,12 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Updated with your active project credentials
+        // Active 2026 project credentials
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-        
-        // Fixed: Swapped in your full, working project key string
         const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9'; 
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // FIXED: Changed variable name to supabaseClient to prevent global naming syntax crashes
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
     <script type="text/javascript">
@@ -275,30 +274,27 @@
         // 1. LIVE SUPABASE STREAMING SYSTEM
         async function fetchLiveCloudStandings() {
             try {
-                // Fetch all profiles from your database
-                const { data, error } = await supabase
+                // FIXED: Using our clean supabaseClient instance here
+                const { data, error } = await supabaseClient
                     .from('profiles')
                     .select('coach_name');
 
                 if (error) throw error;
 
-                // Map database entries to fit your retro layout styling engine
                 const formattedLeague = data.map((user, i) => {
-                    // Cyclic color balancer so players get different retro color accents
                     const pixelColors = ["var(--retro-yellow)", "var(--retro-blue)", "#a855f7", "var(--retro-green)"];
                     
                     return {
                         name: user.coach_name || "UNNAMED COACH",
-                        wins: 0,       // Synchronizes with game tables as season plays
+                        wins: 0,
                         losses: 0,
-                        support: 50,   // Starter status values
+                        support: 50,
                         trend: "flat",
                         trendValue: 0,
                         color: pixelColors[i % pixelColors.length]
                     };
                 });
 
-                // Send mapped active records straight into the rendering framework
                 renderStandings(formattedLeague);
 
             } catch(err) {
@@ -369,7 +365,6 @@
 
         // 3. APP UTILITIES & ALERTS
         window.addEventListener('load', () => {
-            // Trigger dynamic data fetch query instantly on execution load
             fetchLiveCloudStandings();
 
             const btn = document.getElementById("enable-alerts-btn");
