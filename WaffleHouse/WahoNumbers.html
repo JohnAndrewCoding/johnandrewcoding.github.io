@@ -14,7 +14,6 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   
   <style>
-    /* Custom Waffle House Night-Mode Aesthetics */
     input:focus {
       border-color: #facc15 !important;
       border-width: 2px !important;
@@ -23,9 +22,17 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
-    /* Style native date inputs smoothly for dark theme */
     input[type="date"]::-webkit-calendar-picker-indicator {
       filter: invert(73%) sepia(63%) saturate(1000%) hue-rotate(359deg) brightness(103%) contrast(104%);
+    }
+    /* Hide native number input arrows for a tighter mobile layout */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
     }
   </style>
 </head>
@@ -56,8 +63,18 @@
       </button>
     </div>
 
-    <form id="metricsForm" class="bg-stone-900 rounded-2xl shadow-xl border border-stone-800/80 p-5 space-y-4">
-      <div id="inputsContainer" class="space-y-3.5">
+    <form id="metricsForm" class="bg-stone-900 rounded-2xl shadow-xl border border-stone-800/80 p-4 space-y-4">
+      
+      <div class="flex text-[10px] font-black uppercase font-mono tracking-wider text-stone-500 px-1 border-b border-stone-800 pb-1">
+        <div class="flex-1">Metric</div>
+        <div class="w-72 flex gap-2 justify-end text-center">
+          <div class="w-22">Today</div>
+          <div class="w-22">Last Year</div>
+          <div class="w-22">+/-</div>
+        </div>
+      </div>
+
+      <div id="inputsContainer" class="space-y-4">
         </div>
 
       <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-wider py-4 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.99] transition-transform border-b-4 border-yellow-600 mt-6 text-base">
@@ -76,7 +93,11 @@
 
     // --- APP GLOBAL STATE ---
     let activeStore = '2417';
+    
+    // Labels array matching your strict business requirement configurations
     const LABELS = ['1st Shift', '2nd Shift', '3rd Shift', 'D', 'WK', '2/2', 'FC', 'PR', 'Training', 'Extra'];
+    const COMPARISON_FIELDS = ['1st Shift', '2nd Shift', '3rd Shift', 'D'];
+    
     const storeIdMap = { '2417': 1, '2067': 2, '738': 3 };
 
     const dateInput = document.getElementById('entryDate');
@@ -89,21 +110,80 @@
 
       LABELS.forEach(label => {
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between gap-4 border-b border-stone-800 pb-3 last:border-0 last:pb-0';
+        row.className = 'flex items-center justify-between gap-2 border-b border-stone-800/40 pb-3 last:border-0 last:pb-0';
         
-        row.innerHTML = `
-          <label class="font-black text-stone-300 text-sm uppercase font-mono tracking-tight flex-1">${label}</label>
-          <input 
-            type="number" 
-            step="any" 
-            inputmode="decimal"
-            data-label="${label}"
-            placeholder="0" 
-            class="w-32 bg-stone-950 border-2 border-stone-800 rounded-lg py-2 px-3 text-right font-bold text-yellow-400 placeholder-stone-700 focus:bg-black focus:outline-none transition-all"
-          >
-        `;
+        const isComp = COMPARISON_FIELDS.includes(label);
+
+        if (isComp) {
+          // Double-input row configuration with active math delta engine processing
+          row.innerHTML = `
+            <label class="font-black text-stone-300 text-xs uppercase font-mono tracking-tight flex-1 break-words pr-1">${label}</label>
+            <div class="flex gap-2 items-center justify-end w-72">
+              <input 
+                type="number" step="any" inputmode="decimal" placeholder="0"
+                id="today-${label.replace(' ', '_')}"
+                oninput="calculateVariance('${label}')"
+                class="w-22 bg-stone-950 border border-stone-800 rounded-lg py-2 px-2 text-right font-bold text-yellow-400 placeholder-stone-800 focus:outline-none text-sm transition-all"
+              >
+              <input 
+                type="number" step="any" inputmode="decimal" placeholder="0"
+                id="ly-${label.replace(' ', '_')}"
+                oninput="calculateVariance('${label}')"
+                class="w-22 bg-stone-950 border border-stone-800 rounded-lg py-2 px-2 text-right font-bold text-stone-400 placeholder-stone-800 focus:outline-none text-sm transition-all"
+              >
+              <div 
+                id="var-${label.replace(' ', '_')}" 
+                class="w-22 py-2 px-1 text-right font-black font-mono text-sm text-stone-500 bg-stone-950/40 border border-stone-900 rounded-lg select-none"
+              >
+                0
+              </div>
+            </div>
+          `;
+        } else {
+          // Standard single row format configuration targeting traditional tracking fields
+          row.innerHTML = `
+            <label class="font-black text-stone-300 text-xs uppercase font-mono tracking-tight flex-1">${label}</label>
+            <div class="flex gap-2 items-center justify-end w-72">
+              <input 
+                type="number" step="any" inputmode="decimal" placeholder="0"
+                id="today-${label.replace(' ', '_')}"
+                class="w-22 bg-stone-950 border border-stone-800 rounded-lg py-2 px-2 text-right font-bold text-yellow-400 placeholder-stone-800 focus:outline-none text-sm transition-all"
+              >
+              <div class="w-22"></div>
+              <div class="w-22"></div>
+            </div>
+          `;
+        }
         container.appendChild(row);
       });
+    }
+
+    // --- REAL-TIME CALCULATION ENGINE ---
+    function calculateVariance(label) {
+      const safeId = label.replace(' ', '_');
+      const todayVal = parseFloat(document.getElementById(`today-${safeId}`).value);
+      const lyVal = parseFloat(document.getElementById(`ly-${safeId}`).value);
+      const displayDiv = document.getElementById(`var-${safeId}`);
+
+      // If either field is left completely clean, reset to natural neutrality baseline
+      if (isNaN(todayVal) || isNaN(lyVal)) {
+        displayDiv.innerText = '0';
+        displayDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-stone-500 bg-stone-950/40 border border-stone-900 rounded-lg select-none";
+        return;
+      }
+
+      const diff = todayVal - lyVal;
+
+      if (diff > 0) {
+        displayDiv.innerText = `+${diff}`;
+        displayDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-emerald-400 bg-emerald-950/20 border border-emerald-900/40 rounded-lg select-none";
+      } else if (diff < 0) {
+        displayDiv.innerText = `${diff}`; // Native string already provides negative minus symbol '-'
+        displayDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-rose-500 bg-rose-950/20 border border-rose-900/40 rounded-lg select-none";
+      } else {
+        displayDiv.innerText = '0';
+        displayDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-stone-100 bg-stone-800/40 border border-stone-700/40 rounded-lg select-none";
+      }
     }
 
     // --- INTERACTIVE TAB SWITCHER ---
@@ -124,27 +204,46 @@
     }
 
     function clearFormValues() {
-      const inputs = document.querySelectorAll('#inputsContainer input');
-      inputs.forEach(input => input.value = '');
+      LABELS.forEach(label => {
+        const safeId = label.replace(' ', '_');
+        const todayInput = document.getElementById(`today-${safeId}`);
+        const lyInput = document.getElementById(`ly-${safeId}`);
+        const varDiv = document.getElementById(`var-${safeId}`);
+
+        if (todayInput) todayInput.value = '';
+        if (lyInput) lyInput.value = '';
+        if (varDiv) {
+          varDiv.innerText = '0';
+          varDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-stone-500 bg-stone-950/40 border border-stone-900 rounded-lg select-none";
+        }
+      });
     }
 
     // --- BULK DATA TRANSMISSION ---
     document.getElementById('metricsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const inputs = document.querySelectorAll('#inputsContainer input');
       const selectedDate = dateInput.value;
       const dbStoreId = storeIdMap[activeStore];
-
       const rowsToInsert = [];
-      inputs.forEach(input => {
-        if (input.value.trim() !== '') {
-          rowsToInsert.push({
+
+      LABELS.forEach(label => {
+        const safeId = label.replace(' ', '_');
+        const todayVal = parseFloat(document.getElementById(`today-${safeId}`).value);
+        const lyInput = document.getElementById(`ly-${safeId}`);
+        const lyVal = lyInput ? parseFloat(lyInput.value) : null;
+
+        // Ensure we only insert row profiles containing at least primary metric records
+        if (!isNaN(todayVal)) {
+          const rowPayload = {
             store_id: dbStoreId,
             entry_date: selectedDate,
-            label: input.dataset.label,
-            value: parseFloat(input.value)
-          });
+            label: label,
+            value: todayVal,
+            last_year_value: !isNaN(lyVal) ? lyVal : null,
+            variance: (!isNaN(lyVal)) ? (todayVal - lyVal) : null
+          };
+          rowsToInsert.push(rowPayload);
         }
       });
 
