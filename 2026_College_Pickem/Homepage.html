@@ -9,7 +9,9 @@
     <script>
         // Global credentials configuration linking backend infrastructure
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l7phmC-3LQNQn_bFQ_KxmpV'; // Fixed key string
+        
+        // IMPORTANT: Paste your FULL hidden key string from the copy icon here!
+        const SUPABASE_ANON_KEY = 'PASTE_YOUR_FULL_LONG_KEY_HERE';
 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
@@ -147,13 +149,11 @@
             if (savedCoach && savedPlayer) {
                 let deviceUID = localStorage.getItem('my_device_uid');
                 
-                // If they have names saved but no device token (like you right now), make one!
                 if (!deviceUID) {
                     deviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
                     localStorage.setItem('my_device_uid', deviceUID);
                 }
 
-                // Silently ensure this profile row exists up in Supabase before moving forward
                 try {
                     await supabase.from('profiles').upsert({
                         device_uid: deviceUID,
@@ -173,36 +173,39 @@
 
         // Process new form submissions, sync them locally and to the cloud database
         async function saveProfileAndRedirect() {
-            const nameVal = document.getElementById('reg-player-name').value.trim().toUpperCase();
-            const coachVal = document.getElementById('reg-coach-name').value.trim().toUpperCase();
+            try {
+                const nameVal = document.getElementById('reg-player-name').value.trim().toUpperCase();
+                const coachVal = document.getElementById('reg-coach-name').value.trim().toUpperCase();
 
-            if (!nameVal || !coachVal) {
-                alert("BOTH FIELDS REQUIRED FOR LEADERBOARD REGISTRATION!");
-                return;
+                if (!nameVal || !coachVal) {
+                    alert("BOTH FIELDS REQUIRED FOR LEADERBOARD REGISTRATION!");
+                    return;
+                }
+
+                const newDeviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
+
+                // 1. Commit values immediately to cloud table pipeline
+                const { error } = await supabase.from('profiles').insert([{
+                    device_uid: newDeviceUID,
+                    player_name: nameVal,
+                    coach_name: coachVal
+                }]);
+
+                if (error) {
+                    alert("DATABASE SYNC ERROR: " + error.message);
+                    return;
+                }
+
+                // 2. Lock elements down into system device memory safely
+                localStorage.setItem('my_player_name', nameVal);
+                localStorage.setItem('my_coach_name', coachVal);
+                localStorage.setItem('my_device_uid', newDeviceUID);
+
+                // Forward user to live scoreboard view hub
+                window.location.href = "Leaderboard.html";
+            } catch (formError) {
+                alert("APPLICATION ERROR: " + formError.message);
             }
-
-            // Generate an immutable tracking hash token for this client instance
-            const newDeviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
-
-            // 1. Commit values immediately to cloud table pipeline
-            const { error } = await supabase.from('profiles').insert([{
-                device_uid: newDeviceUID,
-                player_name: nameVal,
-                coach_name: coachVal
-            }]);
-
-            if (error) {
-                alert("DATABASE SYNC ERROR: " + error.message);
-                return;
-            }
-
-            // 2. Lock elements down into system device memory safely
-            localStorage.setItem('my_player_name', nameVal);
-            localStorage.setItem('my_coach_name', coachVal);
-            localStorage.setItem('my_device_uid', newDeviceUID);
-
-            // Forward user to live scoreboard view hub
-            window.location.href = "Leaderboard.html";
         }
     </script>
 </body>
