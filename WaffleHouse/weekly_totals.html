@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>WH Weekly Totals Dashboard</title>
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(73%) sepia(63%) saturate(1000%) hue-rotate(359deg) brightness(103%) contrast(104%);
+    }
+  </style>
+</head>
+<body class="bg-stone-950 text-stone-100 font-sans antialiased min-h-screen pb-12">
+
+  <!-- STICKY HEADER WITH WEEK SELECTOR -->
+  <header class="bg-black text-yellow-400 pt-6 pb-5 px-4 sticky top-0 shadow-2xl z-50 border-b-4 border-yellow-400">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-black tracking-tighter uppercase flex items-center gap-1.5 font-mono">
+        <span class="bg-yellow-400 text-black px-1.5 py-0.5 rounded-xs">W</span>
+        <span class="bg-yellow-400 text-black px-1.5 py-0.5 rounded-xs">H</span>
+        <span class="text-yellow-400 ml-1">WEEKLY TOTALS</span>
+      </h1>
+      <div class="flex flex-col items-end gap-1">
+        <label for="weekCommencing" class="text-[9px] font-black uppercase tracking-widest text-stone-500 font-mono">Select Start Monday</label>
+        <input type="date" id="weekCommencing" onchange="handleDateChange(this.value)" class="bg-stone-900 text-yellow-400 font-bold px-3 py-1.5 rounded-lg border border-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto p-4 space-y-4">
+    
+    <!-- STORE SELECTION TAB LAYER -->
+    <div class="bg-black p-1.5 rounded-xl shadow-lg flex gap-1.5 border border-stone-900">
+      <button type="button" onclick="switchStore('2417')" id="tab-2417" class="flex-1 py-3 text-center font-black text-sm rounded-lg transition-all duration-200 bg-yellow-400 text-black shadow-md uppercase tracking-wider">
+        Store 2417
+      </button>
+      <button type="button" onclick="switchStore('2067')" id="tab-2067" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 text-stone-500 hover:text-yellow-400 bg-transparent uppercase tracking-wider">
+        Store 2067
+      </button>
+      <button type="button" onclick="switchStore('738')" id="tab-738" class="flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 text-stone-500 hover:text-yellow-400 bg-transparent uppercase tracking-wider">
+        Store 738
+      </button>
+    </div>
+
+    <!-- OPERATIONAL WEEK DISPLAY WINDOW CARD -->
+    <div class="bg-stone-900 border border-stone-800 rounded-xl p-4 flex items-start gap-3">
+      <div class="bg-yellow-400/10 text-yellow-400 p-2 rounded-lg mt-0.5">
+        <i data-lucide="calendar-range" class="w-5 h-5 stroke-[2.5]"></i>
+      </div>
+      <div>
+        <h3 class="text-xs font-black font-mono text-stone-400 uppercase tracking-wider">Operational Window</h3>
+        <p id="dateRangeDisplay" class="text-sm font-bold text-white mt-1 font-mono">Loading window info...</p>
+        <p class="text-[10px] text-stone-500 font-medium mt-1">Calculated as Mon 2nd Shift → Next Mon 1st Shift.</p>
+      </div>
+    </div>
+
+    <!-- PRIMARY CALCULATION DISPLAY CONTAINER -->
+    <div class="bg-stone-900 rounded-2xl shadow-xl border border-stone-800/80 p-4 space-y-5">
+      
+      <div class="flex text-[10px] font-black uppercase font-mono tracking-wider text-stone-500 px-1 border-b border-stone-800 pb-1">
+        <div class="flex-1">Metric Description</div>
+        <div class="w-48 flex gap-2 justify-end text-center">
+          <div class="w-22">Total Today</div>
+          <div class="w-22">Total LY</div>
+        </div>
+      </div>
+
+      <!-- DYNAMIC METRICS OUTPUT TARGET AREA -->
+      <div id="totalsContainer" class="space-y-4">
+        <!-- Totals append here dynamically -->
+      </div>
+
+      <button type="button" onclick="loadWeeklyData()" class="w-full bg-stone-950 hover:bg-stone-900 text-yellow-400 border border-stone-800 font-black uppercase tracking-wider py-3.5 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.99] transition-transform cursor-pointer mt-2 text-sm font-mono">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync Cloud Totals
+      </button>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <script>
+    // --- CONNECTED SUPABASE CONFIGURATION ---
+    const SUPABASE_URL = "https://jkxgemajbqomkhyzhuak.supabase.co"; 
+    const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // --- APP GLOBAL STATE ---
+    let activeStore = '2417';
+    const storeIdMap = { '2417': 1, '2067': 2, '738': 3 };
+    const ALL_LABELS = ['1st Shift', '2nd Shift', '3rd Shift', 'D', 'WK', '2/2', 'FC', 'PR', 'Training', 'Extra'];
+
+    // --- CONSTRUCT CURRENT MONDAY DEFAULT ON LOAD ---
+    const dateInput = document.getElementById('weekCommencing');
+    
+    function getNearestPastMonday(d) {
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+      return new Date(d.setDate(diff));
+    }
+    
+    const initialMonday = getNearestPastMonday(new Date());
+    dateInput.value = initialMonday.toISOString().split('T')[0];
+
+    // --- DATE VALIDATION PROTECTION ---
+    function handleDateChange(value) {
+      const pickedDate = new Date(value + 'T00:00:00');
+      // If the user didn't pick a Monday, snap back cleanly to the closest Monday
+      if (pickedDate.getDay() !== 1) {
+        alert("Please choose a Monday to verify custom operational weeks.");
+        const forcedMon = getNearestPastMonday(pickedDate);
+        dateInput.value = forcedMon.toISOString().split('T')[0];
+      }
+      loadWeeklyData();
+    }
+
+    // --- INTERACTIVE TAB SWITCHER ---
+    function switchStore(storeName) {
+      activeStore = storeName;
+      ['2417', '2067', '738'].forEach(t => {
+        const tabBtn = document.getElementById(`tab-${t}`);
+        if (t === storeName) {
+          tabBtn.className = "flex-1 py-3 text-center font-black text-sm rounded-lg transition-all duration-200 bg-yellow-400 text-black shadow-md uppercase tracking-wider";
+        } else {
+          tabBtn.className = "flex-1 py-3 text-center font-bold text-sm rounded-lg transition-all duration-200 text-stone-500 hover:text-yellow-400 bg-transparent uppercase tracking-wider";
+        }
+      });
+      loadWeeklyData();
+    }
+
+    // --- TIME WINDOW ENGINE CALCULATOR ---
+    function buildTargetDateRangeStrings(mondayStr) {
+      const startMon = new Date(mondayStr + 'T00:00:00');
+      
+      // Target End Monday is 7 calendar days ahead
+      const endMon = new Date(startMon);
+      endMon.setDate(startMon.getDate() + 7);
+
+      const targetStartStr = startMon.toISOString().split('T')[0];
+      const targetEndStr = endMon.toISOString().split('T')[0];
+
+      // Format clean UI labels
+      const fmtOptions = { month: 'short', day: 'numeric' };
+      document.getElementById('dateRangeDisplay').innerText = 
+        `${startMon.toLocaleDateString('en-US', fmtOptions)} (2nd Shift) ➔ ${endMon.toLocaleDateString('en-US', fmtOptions)} (1st Shift)`;
+
+      return { targetStartStr, targetEndStr };
+    }
+
+    // --- CORE DATA AGGREGATION & FILTERING ENGINE ---
+    async function loadWeeklyData() {
+      const container = document.getElementById('totalsContainer');
+      container.innerHTML = '<p class="text-center font-bold text-sm text-stone-500 py-6 font-mono animate-pulse">COMPUTING WEEKLY MATRIX...</p>';
+
+      const mondayStr = dateInput.value;
+      const { targetStartStr, targetEndStr } = buildTargetDateRangeStrings(mondayStr);
+      const dbStoreId = storeIdMap[activeStore];
+
+      try {
+        // Query the range covering both Mondays completely
+        const { data, error } = await sb
+          .from('daily_metrics')
+          .select('*')
+          .eq('store_id', dbStoreId)
+          .gte('entry_date', targetStartStr)
+          .lte('entry_date', targetEndStr);
+
+        if (error) throw error;
+
+        // Initialize structured aggregation buckets
+        const weeklyAggregates = {};
+        ALL_LABELS.forEach(l => {
+          weeklyAggregates[l] = { todaySum: 0, lySum: 0, hasData: false };
+        });
+
+        if (data && data.length > 0) {
+          data.forEach(row => {
+            const rowDate = row.entry_date;
+            const label = row.label;
+
+            if (!weeklyAggregates[label]) return; // Safeguard anomaly labels
+
+            let balanceMetric = false;
+
+            // Apply strict shift validation window boundary filtering Rules:
+            if (rowDate === targetStartStr) {
+              // Start Monday: Exclude 1st Shift
+              if (label !== '1st Shift') balanceMetric = true;
+            } else if (rowDate === targetEndStr) {
+              // Ending Monday: Include *only* 1st Shift
+              if (label === '1st Shift') balanceMetric = true;
+            } else {
+              // Any day directly between the two Mondays is completely inside the week boundary
+              balanceMetric = true;
+            }
+
+            if (balanceMetric) {
+              weeklyAggregates[label].todaySum += (row.value || 0);
+              if (row.last_year_value !== null) {
+                weeklyAggregates[label].lySum += row.last_year_value;
+              }
+              weeklyAggregates[label].hasData = true;
+            }
+          });
+        }
+
+        // --- RENDER COMPILED AGGREGATIONS ---
+        container.innerHTML = '';
+        
+        ALL_LABELS.forEach(label => {
+          const mData = weeklyAggregates[label];
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between gap-2 border-b border-stone-800/40 pb-3 last:border-0 last:pb-0';
+          
+          // Render data cleanly or show flat placeholder lines if no inputs exist for that tracking week
+          const todayDisplay = mData.hasData ? mData.todaySum.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2}) : '—';
+          const lyDisplay = (mData.hasData && mData.lySum > 0) ? mData.lySum.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2}) : '—';
+
+          row.innerHTML = `
+            <div class="flex flex-col flex-1">
+              <span class="font-black text-stone-200 text-xs uppercase font-mono tracking-tight">${label}</span>
+              <span class="text-[9px] text-stone-500 font-mono tracking-tighter uppercase font-bold mt-0.5">Weekly Aggregation</span>
+            </div>
+            <div class="flex gap-2 items-center justify-end w-48 font-mono">
+              <div class="w-22 text-right font-black text-sm text-yellow-400 bg-stone-950/60 border border-stone-900 rounded-lg py-1.5 px-2 select-none">
+                ${todayDisplay}
+              </div>
+              <div class="w-22 text-right font-bold text-sm text-stone-400 bg-stone-950/20 border border-stone-900/60 rounded-lg py-1.5 px-2 select-none">
+                ${lyDisplay}
+              </div>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = `<p class="text-center text-rose-500 font-bold text-xs font-mono py-6 uppercase">TOTALS PROCESSING ERROR: ${err.message || err}</p>`;
+      }
+    }
+
+    // --- INSTANTIATE ON PAGE BOOT ---
+    loadWeeklyData();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
