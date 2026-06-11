@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mama's Store Hub</title>
+    <title>Mama's Store Hub - Weekly Totals</title>
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
-            --primary: #2563eb;
-            --background: #f8fafc;
-            --card: #ffffff;
-            --text: #1e293b;
-            --border: #e2e8f0;
+            --wh-yellow: #facc15;
+            --wh-yellow-hover: #eab308;
+            --bg-dark: #0c0a09;
+            --card-dark: #1c1917;
+            --border-dark: #292524;
+            --text-light: #f5f5f4;
+            --text-muted: #a8a29e;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--background);
-            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
             margin: 0;
             padding: 0;
             display: flex;
@@ -32,101 +33,173 @@
             overflow: hidden;
         }
 
-        /* Header Container */
+        /* Waffle House Stark Header Block */
         .app-header {
-            background: white;
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border);
+            background: #000000;
+            padding: 16px;
+            border-bottom: 4px solid var(--wh-yellow);
             text-align: center;
             flex-shrink: 0;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
         }
-        .app-header h1 { font-size: 1.3rem; margin: 0 0 10px 0; font-weight: 700; }
+        
+        .logo-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .logo-block {
+            background: var(--wh-yellow);
+            color: #000000;
+            font-family: monospace;
+            font-weight: 900;
+            font-size: 1.4rem;
+            padding: 2px 8px;
+            border-radius: 2px;
+        }
+        .logo-text {
+            color: var(--wh-yellow);
+            font-weight: 900;
+            font-family: monospace;
+            font-size: 1.4rem;
+            letter-spacing: -1px;
+            margin-left: 4px;
+        }
 
-        .store-tabs { display: flex; justify-content: center; gap: 8px; }
+        .store-tabs { display: flex; justify-content: center; gap: 6px; max-width: 400px; margin: 0 auto; }
         .tab-btn {
-            flex: 1; max-width: 100px; padding: 8px; border: none;
-            background: #e2e8f0; font-weight: bold; border-radius: 20px; font-size: 0.85rem;
-            cursor: pointer;
+            flex: 1; padding: 10px; border: 1px solid var(--border-dark);
+            background: var(--card-dark); color: var(--text-muted); font-weight: 800; 
+            border-radius: 8px; font-size: 0.8rem; text-transform: uppercase; cursor: pointer;
+            transition: all 0.15s ease;
         }
-        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-btn.active { background: var(--wh-yellow); color: #000000; border-color: var(--wh-yellow); }
 
-        /* Scrollable Container Window Area */
+        /* Scrollable Work Viewframe Window */
         .app-container {
             flex: 1;
             overflow-y: auto;
-            padding: 16px 16px 90px 16px; /* Extra bottom cushion padding for navigation tray */
+            padding: 16px 16px 90px 16px;
         }
 
-        /* Visibility toggling system */
         .app-view { display: none; }
         .app-view.active-view { display: block; }
 
-        /* Form Elements Layout */
-        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
-        label { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: #475569; }
-        input { padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: white; width: 100%; }
-        h3 { font-size: 1rem; margin: 20px 0 10px 0; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
-        .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        /* Forms Card Grid Layouts */
+        .wh-card {
+            background: var(--card-dark);
+            border: 1px solid var(--border-dark);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-group { display: flex; flex-direction: column; margin-bottom: 14px; }
+        label { font-size: 0.75rem; font-weight: 800; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        input { 
+            padding: 14px; border: 1px solid var(--border-dark); border-radius: 10px; 
+            font-size: 1rem; background: #000000; color: #ffffff; width: 100%; 
+            font-weight: 600;
+        }
+        input:focus { outline: 2px solid var(--wh-yellow); }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(80%) sepia(50%) saturate(1000%) hue-rotate(360deg);
+        }
+
+        h3 { font-size: 0.9rem; margin: 24px 0 12px 0; border-bottom: 2px solid var(--border-dark); padding-bottom: 6px; color: var(--wh-yellow); text-transform: uppercase; letter-spacing: 1px;}
+        .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         .submit-btn {
-            width: 100%; padding: 15px; background: #10b981; color: white;
-            border: none; font-weight: bold; border-radius: 8px; font-size: 1rem; margin-top: 15px;
-            cursor: pointer;
+            width: 100%; padding: 16px; background: var(--wh-yellow); color: #000000;
+            border: none; font-weight: 900; border-radius: 12px; font-size: 1rem; margin-top: 10px;
+            text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: transform 0.1s active;
         }
+        .submit-btn:active { transform: scale(0.99); }
+
+        /* Totals View Elements */
+        .info-banner {
+            display: flex; align-items: center; gap: 12px; background: rgba(250, 204, 21, 0.08);
+            border: 1px dashed var(--wh-yellow); border-radius: 12px; padding: 12px; margin-bottom: 16px;
+        }
+        .info-banner ion-icon { font-size: 1.6rem; color: var(--wh-yellow); flex-shrink: 0; }
+        .info-banner p { margin: 0; font-size: 0.8rem; color: var(--text-light); font-weight: 500; }
+
+        .total-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px; border-bottom: 1px solid var(--border-dark); font-family: monospace;
+        }
+        .total-row span:first-child { font-weight: 700; color: var(--text-muted); font-size: 0.95rem; }
+        .total-row span:last-child { font-weight: 900; color: #ffffff; font-size: 1.1rem; }
+
+        .grand-total-card {
+            background: linear-gradient(135deg, #292524 0%, #000000 100%);
+            border: 2px solid var(--wh-yellow); border-radius: 14px; padding: 18px;
+            text-align: center; margin-top: 20px;
+        }
+        .grand-total-card h4 { margin: 0 0 6px 0; color: var(--wh-yellow); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1.5px; }
+        .grand-total-card .grand-value { font-size: 2.2rem; font-weight: 900; font-family: monospace; color: #ffffff; }
 
         /* History Interface Cards */
         .entries-list { display: flex; flex-direction: column; gap: 10px; }
         .entry-card {
-            background: white; border-radius: 12px; padding: 14px;
+            background: var(--card-dark); border-radius: 12px; padding: 14px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border);
+            border: 1px solid var(--border-dark);
         }
         .entry-info { flex-grow: 1; cursor: pointer; }
-        .entry-info h4 { margin: 0 0 2px 0; font-size: 1rem; }
-        .entry-info p { margin: 0; font-size: 0.8rem; color: #64748b; }
+        .entry-info h4 { margin: 0 0 4px 0; font-size: 1rem; font-family: monospace; color: var(--wh-yellow); }
+        .entry-info p { margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
         .entry-actions { display: flex; gap: 16px; align-items: center; }
-        .btn-view { color: var(--primary); font-size: 1.3rem; cursor: pointer; }
-        .btn-delete { color: #ef4444; font-size: 1.3rem; cursor: pointer; }
-
-        /* Charts Layout view context wrapper constraints */
-        .chart-container { position: relative; width: 100%; height: 60vh; background: white; padding: 10px; border-radius: 12px; }
+        .btn-view { color: var(--text-light); font-size: 1.4rem; cursor: pointer; }
+        .btn-delete { color: #ef4444; font-size: 1.4rem; cursor: pointer; }
 
         /* Dynamic Sheet Modal Window Layer */
         .modal {
             display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.4); align-items: flex-end;
+            background-color: rgba(0,0,0,0.8); align-items: flex-end;
         }
         .modal-content {
-            background: white; width: 100%; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 20px; max-height: 75vh; overflow-y: auto; animation: slideUp 0.25s ease-out;
+            background: var(--card-dark); width: 100%; border-top-left-radius: 20px; border-top-right-radius: 20px;
+            border-t: 4px solid var(--wh-yellow); padding: 22px; max-height: 80vh; overflow-y: auto; animation: slideUp 0.2s ease-out;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-        .close-modal { font-size: 24px; font-weight: bold; color: #94a3b8; cursor: pointer; }
-        .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8fafc; font-size: 0.95rem; }
-        .detail-row span:last-child { font-weight: 600; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-dark); padding-bottom: 10px; }
+        .modal-header h3 { margin: 0; border: none; padding: 0; }
+        .close-modal { font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-dark); font-size: 0.95rem; font-family: monospace;}
+        .detail-row span:last-child { font-weight: bold; color: var(--wh-yellow); }
 
         /* Bottom Menu Dock Configuration Tray */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 68px;
-            background: white; border-top: 1px solid var(--border);
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 72px;
+            background: #000000; border-top: 2px solid var(--border-dark);
             display: flex; justify-content: space-around; align-items: center;
-            padding-bottom: env(safe-area-inset-bottom); /* Fixes iPhone home-bar clipping issues */
+            padding-bottom: env(safe-area-inset-bottom);
             z-index: 1500;
         }
         .nav-item {
             display: flex; flex-direction: column; align-items: center;
-            color: #64748b; font-size: 0.75rem; font-weight: 500; cursor: pointer; flex: 1;
+            color: var(--text-muted); font-size: 0.7rem; font-weight: 700; cursor: pointer; flex: 1;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .nav-item  ion-icon { font-size: 1.5rem; margin-bottom: 2px; }
-        .nav-item.active-nav { color: var(--primary); }
-        .status-text { text-align: center; color: #64748b; padding-top: 20px; }
+        .nav-item ion-icon { font-size: 1.5rem; margin-bottom: 3px; }
+        .nav-item.active-nav { color: var(--wh-yellow); }
+        .status-text { text-align: center; color: var(--text-muted); padding-top: 30px; font-weight: bold; font-family: monospace; }
     </style>
 </head>
 <body>
 
     <header class="app-header">
-        <h1 id="app-title">Daily Log</h1>
+        <div class="logo-box">
+            <span class="logo-block">W</span>
+            <span class="logo-block">H</span>
+            <span class="logo-text">NUMBERS</span>
+        </div>
         <div class="store-tabs">
             <button class="tab-btn active" onclick="switchStore('Store 1')">Store 1</button>
             <button class="tab-btn" onclick="switchStore('Store 2')">Store 2</button>
@@ -137,47 +210,47 @@
     <main class="app-container">
 
         <section id="view-form" class="app-view active-view">
-            <form id="daily-form">
+            <form id="daily-form" class="wh-card">
                 <div class="form-group">
-                    <label for="log-date">Date:</label>
+                    <label for="log-date">Log Target Date</label>
                     <input type="date" id="log-date" required>
                 </div>
 
-                <h3>Shifts & Variance (vs Last Year)</h3>
+                <h3>Shifts & Variance</h3>
                 <div class="grid-2col">
                     <div class="form-group">
                         <label>1st Shift</label>
-                        <input type="number" id="shift1" placeholder="e.g. 1125">
+                        <input type="number" id="shift1" placeholder="0">
                     </div>
                     <div class="form-group">
                         <label>1st Shift LY (+/-)</label>
-                        <input type="number" id="shift1_ly" placeholder="e.g. 28">
+                        <input type="number" id="shift1_ly" placeholder="0">
                     </div>
                 </div>
 
                 <div class="grid-2col">
                     <div class="form-group">
                         <label>2nd Shift</label>
-                        <input type="number" id="shift2" placeholder="e.g. 543">
+                        <input type="number" id="shift2" placeholder="0">
                     </div>
                     <div class="form-group">
                         <label>2nd Shift LY (+/-)</label>
-                        <input type="number" id="shift2_ly" placeholder="e.g. -13">
+                        <input type="number" id="shift2_ly" placeholder="0">
                     </div>
                 </div>
 
                 <div class="grid-2col">
                     <div class="form-group">
                         <label>3rd Shift</label>
-                        <input type="number" id="shift3" placeholder="e.g. 1234">
+                        <input type="number" id="shift3" placeholder="0">
                     </div>
                     <div class="form-group">
                         <label>3rd Shift LY (+/-)</label>
-                        <input type="number" id="shift3_ly" placeholder="e.g. -75">
+                        <input type="number" id="shift3_ly" placeholder="0">
                     </div>
                 </div>
 
-                <h3>Other Metrics</h3>
+                <h3>System Parameters</h3>
                 <div class="grid-2col">
                     <div class="form-group"><label>D (Daily Total)</label><input type="number" id="metric_d"></div>
                     <div class="form-group"><label>D LY (+/-)</label><input type="number" id="metric_d_ly"></div>
@@ -194,8 +267,28 @@
         </section>
 
         <section id="view-dashboard" class="app-view">
-            <div class="chart-container">
-                <canvas id="trendChart"></canvas>
+            <div class="wh-card">
+                <div class="form-group">
+                    <label for="weekly-total-date">Select Week Commencing (Monday)</label>
+                    <input type="date" id="weekly-total-date" onchange="validateAndRefreshWeek(this.value)">
+                </div>
+
+                <div class="info-banner">
+                    <ion-icon name="time-outline"></ion-icon>
+                    <p id="week-range-label">Calculated from Monday 2nd shift directly through the following Monday 1st shift.</p>
+                </div>
+
+                <h3>Aggregated Operational Windows</h3>
+                <div id="totals-output-box">
+                    <div class="total-row"><span>Total 1st Shifts:</span><span id="tot-shift1">$0</span></div>
+                    <div class="total-row"><span>Total 2nd Shifts:</span><span id="tot-shift2">$0</span></div>
+                    <div class="total-row"><span>Total 3rd Shifts:</span><span id="tot-shift3">$0</span></div>
+                    
+                    <div class="grand-total-card">
+                        <h4>Grand Combined Revenue</h4>
+                        <div class="grand-value" id="tot-grand">$0</div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -213,56 +306,53 @@
                 <h3 id="modal-title">Entry Details</h3>
                 <span class="close-modal" onclick="closeModal()">&times;</span>
             </div>
-            <div id="modal-body" class="modal-body"></div>
+            <div id="modal-body"></div>
         </div>
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="navigateTo('form', 'Daily Log')">
+        <div class="nav-item active-nav" onclick="navigateTo('form')">
             <ion-icon name="add-circle-outline"></ion-icon>
             <span>Log Data</span>
         </div>
-        <div class="nav-item" onclick="navigateTo('dashboard', 'Weekly Trends')">
-            <ion-icon name="trending-up-outline"></ion-icon>
-            <span>Dashboard</span>
+        <div class="nav-item" onclick="navigateTo('dashboard')">
+            <ion-icon name="calculator-outline"></ion-icon>
+            <span>Weekly Totals</span>
         </div>
-        <div class="nav-item" onclick="navigateTo('history', 'Past History')">
-            <ion-icon name="list-outline"></ion-icon>
+        <div class="nav-item" onclick="navigateTo('history')">
+            <ion-icon name="layers-outline"></ion-icon>
             <span>History</span>
         </div>
     </nav>
 
     <script>
-        // Initialize Supabase Connection
-        // ⚠️ REPLACE THESE VALUES WITH YOUR ACTUAL SUPABASE CREDENTIALS
-       // Initialize Supabase Connection
-const SUPABASE_URL = "https://jkxgemajbqomkhyzhuak.supabase.co"; 
-const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Connect Database Clients
+        const SUPABASE_URL = "https://jkxgemajbqomkhyzhuak.supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentStore = "Store 1";
         let currentView = "form";
-        let trendChart = null;
         let cachedLogs = [];
 
+        // Seed Default Selection Dates
         document.getElementById('log-date').valueAsDate = new Date();
+        
+        function getNearestPastMonday(d) {
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+        document.getElementById('weekly-total-date').value = getNearestPastMonday(new Date()).toISOString().split('T')[0];
 
-        window.onload = () => {
-            refreshDataAndViews();
-        };
+        window.onload = () => { refreshDataAndViews(); };
 
-        // Handle Navigation Routing Taps
-        function navigateTo(viewId, headerTitle) {
+        function navigateTo(viewId) {
             currentView = viewId;
-            document.getElementById('app-title').innerText = headerTitle;
-            
-            // Toggle active classes across visual components
             document.querySelectorAll('.app-view').forEach(view => view.classList.remove('active-view'));
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active-nav'));
             
             document.getElementById(`view-${viewId}`).classList.add('active-view');
-            
-            // Highlight correct navigation icon array reference target
             const navIndex = viewId === 'form' ? 0 : viewId === 'dashboard' ? 1 : 2;
             document.querySelectorAll('.nav-item')[navIndex].classList.add('active-nav');
             
@@ -277,15 +367,13 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
             refreshDataAndViews();
         }
 
-        // Master Refresh Controller Engine
         async function refreshDataAndViews() {
-            if (currentView === 'form') return; // Entry form doesn't need data fetching logic
+            if (currentView === 'form') return;
+            await fetchAllData();
             
             if (currentView === 'dashboard') {
-                await fetchAllData();
-                updateDashboardView();
+                calculateCustomWeeklyTotals();
             } else if (currentView === 'history') {
-                await fetchAllData();
                 renderHistoryView();
             }
         }
@@ -295,18 +383,81 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
                 .from('daily_logs')
                 .select('*')
                 .order('log_date', { ascending: true });
-
-            if (!error && data) {
-                cachedLogs = data;
-            }
+            if (!error && data) cachedLogs = data;
         }
 
-        // Save Entry Handler Routine Interception
+        function validateAndRefreshWeek(val) {
+            const pickedDate = new Date(val + 'T00:00:00');
+            if (pickedDate.getDay() !== 1) {
+                alert("Operational tracking parameters require selecting a Monday.");
+                document.getElementById('weekly-total-date').value = getNearestPastMonday(pickedDate).toISOString().split('T')[0];
+            }
+            calculateCustomWeeklyTotals();
+        }
+
+        // Custom Mathematical Operational Week Processing Engine
+        function calculateCustomWeeklyTotals() {
+            const baseMondayStr = document.getElementById('weekly-total-date').value;
+            if (!baseMondayStr) return;
+
+            const startMon = new Date(baseMondayStr + 'T00:00:00');
+            const endMon = new Date(startMon);
+            endMon.setDate(startMon.getDate() + 7);
+
+            const startMonISO = startMon.toISOString().split('T')[0];
+            const endMonISO = endMon.toISOString().split('T')[0];
+
+            // Render Dynamic Time Header Bounds Label Indicators
+            const fmt = { month: 'short', day: 'numeric' };
+            document.getElementById('week-range-label').innerText = 
+                `Active Window: ${startMon.toLocaleDateString('en-US', fmt)} (2nd Shift) through ${endMon.toLocaleDateString('en-US', fmt)} (1st Shift).`;
+
+            const storeData = cachedLogs.filter(item => item.store_name === currentStore);
+
+            let sumShift1 = 0;
+            let sumShift2 = 0;
+            let sumShift3 = 0;
+
+            storeData.forEach(log => {
+                const curDateStr = log.log_date;
+
+                // Ensure data falls inside our Monday-to-Monday database window range boundaries
+                if (curDateStr >= startMonISO && curDateStr <= endMonISO) {
+                    if (curDateStr === startMonISO) {
+                        // Start Monday: Drop 1st Shift completely
+                        sumShift2 += (Number(log.shift2) || 0);
+                        sumShift3 += (Number(log.shift3) || 0);
+                    } else if (curDateStr === endMonISO) {
+                        // Following Monday: Take 1st Shift *only*
+                        sumShift1 += (Number(log.shift1) || 0);
+                    } else {
+                        // Full capture interior days
+                        sumShift1 += (Number(log.shift1) || 0);
+                        sumShift2 += (Number(log.shift2) || 0);
+                        sumShift3 += (Number(log.shift3) || 0);
+                    }
+                }
+            });
+
+            const grandTotal = sumShift1 + sumShift2 + sumShift3;
+
+            // Update UI Outputs cleanly
+            document.getElementById('tot-shift1').innerText = `$${sumShift1.toLocaleString()}`;
+            document.getElementById('tot-shift2').innerText = `$${sumShift2.toLocaleString()}`;
+            document.getElementById('tot-shift3').innerText = `$${sumShift3.toLocaleString()}`;
+            document.getElementById('tot-grand').innerText = `$${grandTotal.toLocaleString()}`;
+        }
+
+        // Form Submit Handler
         document.getElementById('daily-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const dateVal = document.getElementById('log-date').value;
-            const weekKey = getWeekYearString(new Date(dateVal));
+            
+            // Generate basic standard ISO week string representation for table row fallback indexing
+            const dObj = new Date(dateVal + 'T00:00:00');
+            dObj.setDate(dObj.getDate() + 4 - (dObj.getDay() || 7));
+            const yearStart = new Date(dObj.getFullYear(), 0, 1);
+            const weekKey = `${dObj.getFullYear()}-W${Math.ceil((((dObj - yearStart) / 86400000) + 1)/7)}`;
 
             const entry = {
                 store_name: currentStore, log_date: dateVal, week_string: weekKey,
@@ -327,40 +478,15 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
             };
 
             const { error } = await supabaseClient.from('daily_logs').upsert([entry], { onConflict: 'store_name,log_date' });
-
             if (error) {
-                alert("Error: " + error.message);
+                alert("Transmission Fault: " + error.message);
             } else {
-                alert("Log successfully synced!");
+                alert("Data synced securely to Cloud Storage.");
                 this.reset();
                 document.getElementById('log-date').valueAsDate = new Date();
             }
         });
 
-        function getWeekYearString(date) {
-            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getUTCDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-            return `${d.getUTCFullYear()}-W${Math.ceil((((d - yearStart) / 86400000) + 1)/7)}`;
-        }
-
-        // Generate Trend Line Matrix Output
-        function updateDashboardView() {
-            const storeData = cachedLogs.filter(item => item.store_name === currentStore);
-            const weeklyAggregation = {};
-            
-            storeData.forEach(item => {
-                const wk = item.week_string;
-                if (!weeklyAggregation[wk]) weeklyAggregation[wk] = { totalRevenue: 0, totalVariance: 0 };
-                weeklyAggregation[wk].totalRevenue += (Number(item.shift1) + Number(item.shift2) + Number(item.shift3));
-                weeklyAggregation[wk].totalVariance += (Number(item.shift1_ly) + Number(item.shift2_ly) + Number(item.shift3_ly));
-            });
-
-            const sortedWeeks = Object.keys(weeklyAggregation).sort();
-            renderChart(sortedWeeks, sortedWeeks.map(w => weeklyAggregation[w].totalRevenue), sortedWeeks.map(w => weeklyAggregation[w].totalVariance));
-        }
-
-        // Build List of History Cards
         function renderHistoryView() {
             const container = document.getElementById('entries-list');
             const filteredData = cachedLogs.filter(item => item.store_name === currentStore).slice().reverse();
@@ -373,7 +499,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
             container.innerHTML = "";
             filteredData.forEach(log => {
                 const parsedDate = new Date(log.log_date + 'T00:00:00');
-                const formattedDate = parsedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const formattedDate = parsedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
                 const totalRev = Number(log.shift1) + Number(log.shift2) + Number(log.shift3);
 
                 const card = document.createElement('div');
@@ -381,7 +507,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
                 card.innerHTML = `
                     <div class="entry-info" onclick="openDetails(${log.id})">
                         <h4>${formattedDate}</h4>
-                        <p>Rev: $${totalRev.toLocaleString()} | D Total: ${log.metric_d}</p>
+                        <p>Total Revenue Output: $${totalRev.toLocaleString()}</p>
                     </div>
                     <div class="entry-actions">
                         <span class="btn-view" onclick="openDetails(${log.id})"><ion-icon name="eye-outline"></ion-icon></span>
@@ -392,16 +518,15 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
             });
         }
 
-        // View Detail Drawer Interactions
         function openDetails(logId) {
             const log = cachedLogs.find(item => item.id === logId);
             if (!log) return;
 
             document.getElementById('modal-title').innerText = log.log_date;
             document.getElementById('modal-body').innerHTML = `
-                <div class="detail-row"><span>1st Shift</span> <span>$${log.shift1} (${log.shift1_ly >= 0 ? '+' : ''}${log.shift1_ly})</span></div>
-                <div class="detail-row"><span>2nd Shift</span> <span>$${log.shift2} (${log.shift2_ly >= 0 ? '+' : ''}${log.shift2_ly})</span></div>
-                <div class="detail-row"><span>3rd Shift</span> <span>$${log.shift3} (${log.shift3_ly >= 0 ? '+' : ''}${log.shift3_ly})</span></div>
+                <div class="detail-row"><span>1st Shift Revenue</span> <span>$${log.shift1.toLocaleString()} (${log.shift1_ly >= 0 ? '+' : ''}${log.shift1_ly})</span></div>
+                <div class="detail-row"><span>2nd Shift Revenue</span> <span>$${log.shift2.toLocaleString()} (${log.shift2_ly >= 0 ? '+' : ''}${log.shift2_ly})</span></div>
+                <div class="detail-row"><span>3rd Shift Revenue</span> <span>$${log.shift3.toLocaleString()} (${log.shift3_ly >= 0 ? '+' : ''}${log.shift3_ly})</span></div>
                 <div class="detail-row"><span>D (Daily Total)</span> <span>${log.metric_d} (${log.metric_d_ly >= 0 ? '+' : ''}${log.metric_d_ly})</span></div>
                 <div class="detail-row"><span>WK Cumulative</span> <span>${log.metric_wk}</span></div>
                 <div class="detail-row"><span>2/2 Score</span> <span>${log.metric_22}</span></div>
@@ -414,12 +539,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
         }
 
         function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
-
-        // Close modal when clicking on the dark transparent backdrop
-        window.onclick = function(event) {
-            const modal = document.getElementById('detail-modal');
-            if (event.target === modal) { closeModal(); }
-        }
+        window.onclick = function(e) { if (e.target === document.getElementById('detail-modal')) closeModal(); }
 
         async function deleteEntry(logId, logDate) {
             if (!confirm(`Wipe out record data for ${logDate}?`)) return;
@@ -428,28 +548,6 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
                 cachedLogs = cachedLogs.filter(item => item.id !== logId);
                 renderHistoryView();
             }
-        }
-
-        function renderChart(labels, revenue, variance) {
-            const ctx = document.getElementById('trendChart').getContext('2d');
-            if (trendChart) trendChart.destroy();
-            trendChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Revenue ($)', data: revenue, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', yAxisID: 'y', tension: 0.15 },
-                        { label: 'LY Var (+/-)', data: variance, borderColor: '#10b981', borderDash: [4, 4], yAxisID: 'y1', tension: 0.15 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        y: { type: 'linear', display: true, position: 'left' },
-                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } }
-                    }
-                }
-            });
         }
     </script>
 </body>
