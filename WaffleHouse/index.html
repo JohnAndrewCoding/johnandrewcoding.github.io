@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mama's Store Hub - Weekly Totals</title>
+    <title>Mama's Store Hub - Weekly Totals View</title>
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -33,7 +33,7 @@
             overflow: hidden;
         }
 
-        /* Waffle House Stark Header Block */
+        /* Waffle House Header Block */
         .app-header {
             background: #000000;
             padding: 16px;
@@ -77,33 +77,30 @@
         }
         .tab-btn.active { background: var(--wh-yellow); color: #000000; border-color: var(--wh-yellow); }
 
-        /* Scrollable Work Viewframe Window */
+        /* View Content Framer */
         .app-container {
             flex: 1;
             overflow-y: auto;
-            padding: 16px 16px 90px 16px;
+            padding: 20px 16px;
         }
 
-        .app-view { display: none; }
-        .app-view.active-view { display: block; }
-
-        /* Forms Card Grid Layouts */
         .wh-card {
             background: var(--card-dark);
             border: 1px solid var(--border-dark);
             border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 8px 16px -2px rgba(0, 0, 0, 0.4);
         }
 
-        .form-group { display: flex; flex-direction: column; margin-bottom: 14px; }
-        label { font-size: 0.75rem; font-weight: 800; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
+        .form-group { display: flex; flex-direction: column; margin-bottom: 16px; }
+        label { font-size: 0.75rem; font-weight: 800; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
         
         input { 
             padding: 14px; border: 1px solid var(--border-dark); border-radius: 10px; 
             font-size: 1rem; background: #000000; color: #ffffff; width: 100%; 
-            font-weight: 600;
+            font-weight: 600; text-align: center;
         }
         input:focus { outline: 2px solid var(--wh-yellow); }
         
@@ -111,85 +108,39 @@
             filter: invert(80%) sepia(50%) saturate(1000%) hue-rotate(360deg);
         }
 
-        h3 { font-size: 0.9rem; margin: 24px 0 12px 0; border-bottom: 2px solid var(--border-dark); padding-bottom: 6px; color: var(--wh-yellow); text-transform: uppercase; letter-spacing: 1px;}
-        .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        h3 { font-size: 0.9rem; margin: 24px 0 12px 0; border-bottom: 2px solid var(--border-dark); padding-bottom: 8px; color: var(--wh-yellow); text-transform: uppercase; letter-spacing: 1px;}
 
-        .submit-btn {
-            width: 100%; padding: 16px; background: var(--wh-yellow); color: #000000;
-            border: none; font-weight: 900; border-radius: 12px; font-size: 1rem; margin-top: 10px;
-            text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: transform 0.1s active;
-        }
-        .submit-btn:active { transform: scale(0.99); }
-
-        /* Totals View Elements */
+        /* Boundary Info Window Banner */
         .info-banner {
-            display: flex; align-items: center; gap: 12px; background: rgba(250, 204, 21, 0.08);
-            border: 1px dashed var(--wh-yellow); border-radius: 12px; padding: 12px; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 12px; background: rgba(250, 204, 21, 0.05);
+            border: 1px dashed rgba(250, 204, 21, 0.4); border-radius: 12px; padding: 12px; margin-bottom: 20px;
         }
         .info-banner ion-icon { font-size: 1.6rem; color: var(--wh-yellow); flex-shrink: 0; }
-        .info-banner p { margin: 0; font-size: 0.8rem; color: var(--text-light); font-weight: 500; }
+        .info-banner p { margin: 0; font-size: 0.8rem; color: var(--text-light); font-weight: 500; line-height: 1.3; }
 
+        /* Dynamic Calculation Rows */
         .total-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 14px; border-bottom: 1px solid var(--border-dark); font-family: monospace;
+            padding: 16px 8px; border-bottom: 1px solid var(--border-dark); font-family: monospace;
         }
         .total-row span:first-child { font-weight: 700; color: var(--text-muted); font-size: 0.95rem; }
-        .total-row span:last-child { font-weight: 900; color: #ffffff; font-size: 1.1rem; }
+        .total-row span:last-child { font-weight: 900; color: #ffffff; font-size: 1.15rem; }
 
+        /* Massive Grand Total Highlight Card */
         .grand-total-card {
             background: linear-gradient(135deg, #292524 0%, #000000 100%);
-            border: 2px solid var(--wh-yellow); border-radius: 14px; padding: 18px;
-            text-align: center; margin-top: 20px;
+            border: 2px solid var(--wh-yellow); border-radius: 14px; padding: 20px;
+            text-align: center; margin-top: 24px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
         }
-        .grand-total-card h4 { margin: 0 0 6px 0; color: var(--wh-yellow); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1.5px; }
-        .grand-total-card .grand-value { font-size: 2.2rem; font-weight: 900; font-family: monospace; color: #ffffff; }
+        .grand-total-card h4 { margin: 0 0 8px 0; color: var(--wh-yellow); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1.5px; }
+        .grand-total-card .grand-value { font-size: 2.4rem; font-weight: 900; font-family: monospace; color: #ffffff; letter-spacing: -1px; }
 
-        /* History Interface Cards */
-        .entries-list { display: flex; flex-direction: column; gap: 10px; }
-        .entry-card {
-            background: var(--card-dark); border-radius: 12px; padding: 14px;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid var(--border-dark);
+        .sync-indicator {
+            text-align: center; color: var(--text-muted); font-size: 0.7rem; font-weight: bold;
+            margin-top: 16px; text-transform: uppercase; letter-spacing: 1px; display: flex;
+            align-items: center; justify-content: center; gap: 4px;
         }
-        .entry-info { flex-grow: 1; cursor: pointer; }
-        .entry-info h4 { margin: 0 0 4px 0; font-size: 1rem; font-family: monospace; color: var(--wh-yellow); }
-        .entry-info p { margin: 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
-        .entry-actions { display: flex; gap: 16px; align-items: center; }
-        .btn-view { color: var(--text-light); font-size: 1.4rem; cursor: pointer; }
-        .btn-delete { color: #ef4444; font-size: 1.4rem; cursor: pointer; }
-
-        /* Dynamic Sheet Modal Window Layer */
-        .modal {
-            display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8); align-items: flex-end;
-        }
-        .modal-content {
-            background: var(--card-dark); width: 100%; border-top-left-radius: 20px; border-top-right-radius: 20px;
-            border-t: 4px solid var(--wh-yellow); padding: 22px; max-height: 80vh; overflow-y: auto; animation: slideUp 0.2s ease-out;
-        }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-dark); padding-bottom: 10px; }
-        .modal-header h3 { margin: 0; border: none; padding: 0; }
-        .close-modal { font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
-        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-dark); font-size: 0.95rem; font-family: monospace;}
-        .detail-row span:last-child { font-weight: bold; color: var(--wh-yellow); }
-
-        /* Bottom Menu Dock Configuration Tray */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 72px;
-            background: #000000; border-top: 2px solid var(--border-dark);
-            display: flex; justify-content: space-around; align-items: center;
-            padding-bottom: env(safe-area-inset-bottom);
-            z-index: 1500;
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: var(--text-muted); font-size: 0.7rem; font-weight: 700; cursor: pointer; flex: 1;
-            text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .nav-item ion-icon { font-size: 1.5rem; margin-bottom: 3px; }
-        .nav-item.active-nav { color: var(--wh-yellow); }
-        .status-text { text-align: center; color: var(--text-muted); padding-top: 30px; font-weight: bold; font-family: monospace; }
+        .sync-indicator ion-icon { color: #10b981; }
     </style>
 </head>
 <body>
@@ -198,7 +149,7 @@
         <div class="logo-box">
             <span class="logo-block">W</span>
             <span class="logo-block">H</span>
-            <span class="logo-text">NUMBERS</span>
+            <span class="logo-text">WEEKLY TOTALS</span>
         </div>
         <div class="store-tabs">
             <button class="tab-btn active" onclick="switchStore('Store 1')">Store 1</button>
@@ -208,136 +159,46 @@
     </header>
 
     <main class="app-container">
+        <div class="wh-card">
+            
+            <div class="form-group">
+                <label for="weekly-total-date">Select Week Commencing (Monday)</label>
+                <input type="date" id="weekly-total-date" onchange="validateAndRefreshWeek(this.value)">
+            </div>
 
-        <section id="view-form" class="app-view active-view">
-            <form id="daily-form" class="wh-card">
-                <div class="form-group">
-                    <label for="log-date">Log Target Date</label>
-                    <input type="date" id="log-date" required>
-                </div>
+            <div class="info-banner">
+                <ion-icon name="git-commit-outline"></ion-icon>
+                <p id="week-range-label">Filtering live parameters from Monday 2nd shift directly through the following Monday 1st shift.</p>
+            </div>
 
-                <h3>Shifts & Variance</h3>
-                <div class="grid-2col">
-                    <div class="form-group">
-                        <label>1st Shift</label>
-                        <input type="number" id="shift1" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>1st Shift LY (+/-)</label>
-                        <input type="number" id="shift1_ly" placeholder="0">
-                    </div>
-                </div>
-
-                <div class="grid-2col">
-                    <div class="form-group">
-                        <label>2nd Shift</label>
-                        <input type="number" id="shift2" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>2nd Shift LY (+/-)</label>
-                        <input type="number" id="shift2_ly" placeholder="0">
-                    </div>
-                </div>
-
-                <div class="grid-2col">
-                    <div class="form-group">
-                        <label>3rd Shift</label>
-                        <input type="number" id="shift3" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label>3rd Shift LY (+/-)</label>
-                        <input type="number" id="shift3_ly" placeholder="0">
-                    </div>
-                </div>
-
-                <h3>System Parameters</h3>
-                <div class="grid-2col">
-                    <div class="form-group"><label>D (Daily Total)</label><input type="number" id="metric_d"></div>
-                    <div class="form-group"><label>D LY (+/-)</label><input type="number" id="metric_d_ly"></div>
-                    <div class="form-group"><label>WK (Weekly Cum.)</label><input type="number" id="metric_wk"></div>
-                    <div class="form-group"><label>2/2 Metric</label><input type="number" step="0.1" id="metric_22"></div>
-                    <div class="form-group"><label>FC Metric</label><input type="number" step="0.1" id="metric_fc"></div>
-                    <div class="form-group"><label>PR Metric</label><input type="number" step="0.1" id="metric_pr"></div>
-                    <div class="form-group"><label>Training</label><input type="number" id="training"></div>
-                    <div class="form-group"><label>Extra</label><input type="number" id="extra"></div>
-                </div>
-
-                <button type="submit" class="submit-btn">Sync Entry to Cloud</button>
-            </form>
-        </section>
-
-        <section id="view-dashboard" class="app-view">
-            <div class="wh-card">
-                <div class="form-group">
-                    <label for="weekly-total-date">Select Week Commencing (Monday)</label>
-                    <input type="date" id="weekly-total-date" onchange="validateAndRefreshWeek(this.value)">
-                </div>
-
-                <div class="info-banner">
-                    <ion-icon name="time-outline"></ion-icon>
-                    <p id="week-range-label">Calculated from Monday 2nd shift directly through the following Monday 1st shift.</p>
-                </div>
-
-                <h3>Aggregated Operational Windows</h3>
-                <div id="totals-output-box">
-                    <div class="total-row"><span>Total 1st Shifts:</span><span id="tot-shift1">$0</span></div>
-                    <div class="total-row"><span>Total 2nd Shifts:</span><span id="tot-shift2">$0</span></div>
-                    <div class="total-row"><span>Total 3rd Shifts:</span><span id="tot-shift3">$0</span></div>
-                    
-                    <div class="grand-total-card">
-                        <h4>Grand Combined Revenue</h4>
-                        <div class="grand-value" id="tot-grand">$0</div>
-                    </div>
+            <h3>Aggregated Shifts Output</h3>
+            <div id="totals-output-box">
+                <div class="total-row"><span>Total 1st Shifts:</span><span id="tot-shift1">$0</span></div>
+                <div class="total-row"><span>Total 2nd Shifts:</span><span id="tot-shift2">$0</span></div>
+                <div class="total-row"><span>Total 3rd Shifts:</span><span id="tot-shift3">$0</span></div>
+                
+                <div class="grand-total-card">
+                    <h4>Grand Combined Total</h4>
+                    <div class="grand-value" id="tot-grand">$0</div>
                 </div>
             </div>
-        </section>
 
-        <section id="view-history" class="app-view">
-            <div id="entries-list" class="entries-list">
-                <p class="status-text">Loading past records...</p>
+            <div class="sync-indicator">
+                <ion-icon name="checkmark-circle"></ion-icon> Live database tracking online
             </div>
-        </section>
-
+        </div>
     </main>
 
-    <div id="detail-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Entry Details</h3>
-                <span class="close-modal" onclick="closeModal()">&times;</span>
-            </div>
-            <div id="modal-body"></div>
-        </div>
-    </div>
-
-    <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="navigateTo('form')">
-            <ion-icon name="add-circle-outline"></ion-icon>
-            <span>Log Data</span>
-        </div>
-        <div class="nav-item" onclick="navigateTo('dashboard')">
-            <ion-icon name="calculator-outline"></ion-icon>
-            <span>Weekly Totals</span>
-        </div>
-        <div class="nav-item" onclick="navigateTo('history')">
-            <ion-icon name="layers-outline"></ion-icon>
-            <span>History</span>
-        </div>
-    </nav>
-
     <script>
-        // Connect Database Clients
+        // Database Connection Infrastructure
         const SUPABASE_URL = "https://jkxgemajbqomkhyzhuak.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentStore = "Store 1";
-        let currentView = "form";
         let cachedLogs = [];
 
-        // Seed Default Selection Dates
-        document.getElementById('log-date').valueAsDate = new Date();
-        
+        // Automatic Calendar Initialization
         function getNearestPastMonday(d) {
             const day = d.getDay();
             const diff = d.getDate() - day + (day === 0 ? -6 : 1);
@@ -345,57 +206,36 @@
         }
         document.getElementById('weekly-total-date').value = getNearestPastMonday(new Date()).toISOString().split('T')[0];
 
-        window.onload = () => { refreshDataAndViews(); };
-
-        function navigateTo(viewId) {
-            currentView = viewId;
-            document.querySelectorAll('.app-view').forEach(view => view.classList.remove('active-view'));
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active-nav'));
-            
-            document.getElementById(`view-${viewId}`).classList.add('active-view');
-            const navIndex = viewId === 'form' ? 0 : viewId === 'dashboard' ? 1 : 2;
-            document.querySelectorAll('.nav-item')[navIndex].classList.add('active-nav');
-            
-            refreshDataAndViews();
-        }
+        window.onload = () => { refreshData(); };
 
         function switchStore(storeName) {
             currentStore = storeName;
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.innerText === storeName);
             });
-            refreshDataAndViews();
+            calculateCustomWeeklyTotals();
         }
 
-        async function refreshDataAndViews() {
-            if (currentView === 'form') return;
-            await fetchAllData();
-            
-            if (currentView === 'dashboard') {
-                calculateCustomWeeklyTotals();
-            } else if (currentView === 'history') {
-                renderHistoryView();
-            }
-        }
-
-        async function fetchAllData() {
+        async function refreshData() {
             const { data, error } = await supabaseClient
                 .from('daily_logs')
-                .select('*')
-                .order('log_date', { ascending: true });
-            if (!error && data) cachedLogs = data;
+                .select('*');
+            if (!error && data) {
+                cachedLogs = data;
+                calculateCustomWeeklyTotals();
+            }
         }
 
         function validateAndRefreshWeek(val) {
             const pickedDate = new Date(val + 'T00:00:00');
             if (pickedDate.getDay() !== 1) {
-                alert("Operational tracking parameters require selecting a Monday.");
+                alert("Please select a Monday to accurately view operational weeks.");
                 document.getElementById('weekly-total-date').value = getNearestPastMonday(pickedDate).toISOString().split('T')[0];
             }
             calculateCustomWeeklyTotals();
         }
 
-        // Custom Mathematical Operational Week Processing Engine
+        // Custom Mathematical Operational Shift Processing Engine
         function calculateCustomWeeklyTotals() {
             const baseMondayStr = document.getElementById('weekly-total-date').value;
             if (!baseMondayStr) return;
@@ -407,7 +247,7 @@
             const startMonISO = startMon.toISOString().split('T')[0];
             const endMonISO = endMon.toISOString().split('T')[0];
 
-            // Render Dynamic Time Header Bounds Label Indicators
+            // Render Dynamic UI Label Bounds Indicators
             const fmt = { month: 'short', day: 'numeric' };
             document.getElementById('week-range-label').innerText = 
                 `Active Window: ${startMon.toLocaleDateString('en-US', fmt)} (2nd Shift) through ${endMon.toLocaleDateString('en-US', fmt)} (1st Shift).`;
@@ -421,14 +261,13 @@
             storeData.forEach(log => {
                 const curDateStr = log.log_date;
 
-                // Ensure data falls inside our Monday-to-Monday database window range boundaries
                 if (curDateStr >= startMonISO && curDateStr <= endMonISO) {
                     if (curDateStr === startMonISO) {
-                        // Start Monday: Drop 1st Shift completely
+                        // Start Monday: Drop 1st shift, keep 2nd and 3rd
                         sumShift2 += (Number(log.shift2) || 0);
                         sumShift3 += (Number(log.shift3) || 0);
                     } else if (curDateStr === endMonISO) {
-                        // Following Monday: Take 1st Shift *only*
+                        // Following Monday: Take 1st shift only
                         sumShift1 += (Number(log.shift1) || 0);
                     } else {
                         // Full capture interior days
@@ -441,113 +280,11 @@
 
             const grandTotal = sumShift1 + sumShift2 + sumShift3;
 
-            // Update UI Outputs cleanly
+            // Update UI Interface Targets cleanly
             document.getElementById('tot-shift1').innerText = `$${sumShift1.toLocaleString()}`;
             document.getElementById('tot-shift2').innerText = `$${sumShift2.toLocaleString()}`;
             document.getElementById('tot-shift3').innerText = `$${sumShift3.toLocaleString()}`;
             document.getElementById('tot-grand').innerText = `$${grandTotal.toLocaleString()}`;
-        }
-
-        // Form Submit Handler
-        document.getElementById('daily-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const dateVal = document.getElementById('log-date').value;
-            
-            // Generate basic standard ISO week string representation for table row fallback indexing
-            const dObj = new Date(dateVal + 'T00:00:00');
-            dObj.setDate(dObj.getDate() + 4 - (dObj.getDay() || 7));
-            const yearStart = new Date(dObj.getFullYear(), 0, 1);
-            const weekKey = `${dObj.getFullYear()}-W${Math.ceil((((dObj - yearStart) / 86400000) + 1)/7)}`;
-
-            const entry = {
-                store_name: currentStore, log_date: dateVal, week_string: weekKey,
-                shift1: Number(document.getElementById('shift1').value) || 0,
-                shift1_ly: Number(document.getElementById('shift1_ly').value) || 0,
-                shift2: Number(document.getElementById('shift2').value) || 0,
-                shift2_ly: Number(document.getElementById('shift2_ly').value) || 0,
-                shift3: Number(document.getElementById('shift3').value) || 0,
-                shift3_ly: Number(document.getElementById('shift3_ly').value) || 0,
-                metric_d: Number(document.getElementById('metric_d').value) || 0,
-                metric_d_ly: Number(document.getElementById('metric_d_ly').value) || 0,
-                metric_wk: Number(document.getElementById('metric_wk').value) || 0,
-                metric_22: Number(document.getElementById('metric_22').value) || 0,
-                metric_fc: Number(document.getElementById('metric_fc').value) || 0,
-                metric_pr: Number(document.getElementById('metric_pr').value) || 0,
-                training: Number(document.getElementById('training').value) || 0,
-                extra: Number(document.getElementById('extra').value) || 0
-            };
-
-            const { error } = await supabaseClient.from('daily_logs').upsert([entry], { onConflict: 'store_name,log_date' });
-            if (error) {
-                alert("Transmission Fault: " + error.message);
-            } else {
-                alert("Data synced securely to Cloud Storage.");
-                this.reset();
-                document.getElementById('log-date').valueAsDate = new Date();
-            }
-        });
-
-        function renderHistoryView() {
-            const container = document.getElementById('entries-list');
-            const filteredData = cachedLogs.filter(item => item.store_name === currentStore).slice().reverse();
-
-            if (filteredData.length === 0) {
-                container.innerHTML = `<p class="status-text">No recorded items found for ${currentStore}.</p>`;
-                return;
-            }
-
-            container.innerHTML = "";
-            filteredData.forEach(log => {
-                const parsedDate = new Date(log.log_date + 'T00:00:00');
-                const formattedDate = parsedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-                const totalRev = Number(log.shift1) + Number(log.shift2) + Number(log.shift3);
-
-                const card = document.createElement('div');
-                card.className = 'entry-card';
-                card.innerHTML = `
-                    <div class="entry-info" onclick="openDetails(${log.id})">
-                        <h4>${formattedDate}</h4>
-                        <p>Total Revenue Output: $${totalRev.toLocaleString()}</p>
-                    </div>
-                    <div class="entry-actions">
-                        <span class="btn-view" onclick="openDetails(${log.id})"><ion-icon name="eye-outline"></ion-icon></span>
-                        <span class="btn-delete" onclick="deleteEntry(${log.id}, '${log.log_date}')"><ion-icon name="trash-outline"></ion-icon></span>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function openDetails(logId) {
-            const log = cachedLogs.find(item => item.id === logId);
-            if (!log) return;
-
-            document.getElementById('modal-title').innerText = log.log_date;
-            document.getElementById('modal-body').innerHTML = `
-                <div class="detail-row"><span>1st Shift Revenue</span> <span>$${log.shift1.toLocaleString()} (${log.shift1_ly >= 0 ? '+' : ''}${log.shift1_ly})</span></div>
-                <div class="detail-row"><span>2nd Shift Revenue</span> <span>$${log.shift2.toLocaleString()} (${log.shift2_ly >= 0 ? '+' : ''}${log.shift2_ly})</span></div>
-                <div class="detail-row"><span>3rd Shift Revenue</span> <span>$${log.shift3.toLocaleString()} (${log.shift3_ly >= 0 ? '+' : ''}${log.shift3_ly})</span></div>
-                <div class="detail-row"><span>D (Daily Total)</span> <span>${log.metric_d} (${log.metric_d_ly >= 0 ? '+' : ''}${log.metric_d_ly})</span></div>
-                <div class="detail-row"><span>WK Cumulative</span> <span>${log.metric_wk}</span></div>
-                <div class="detail-row"><span>2/2 Score</span> <span>${log.metric_22}</span></div>
-                <div class="detail-row"><span>FC Value</span> <span>${log.metric_fc}</span></div>
-                <div class="detail-row"><span>PR Value</span> <span>${log.metric_pr}</span></div>
-                <div class="detail-row"><span>Training Hours</span> <span>${log.training}</span></div>
-                <div class="detail-row"><span>Extra Log</span> <span>${log.extra}</span></div>
-            `;
-            document.getElementById('detail-modal').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('detail-modal').style.display = 'none'; }
-        window.onclick = function(e) { if (e.target === document.getElementById('detail-modal')) closeModal(); }
-
-        async function deleteEntry(logId, logDate) {
-            if (!confirm(`Wipe out record data for ${logDate}?`)) return;
-            const { error } = await supabaseClient.from('daily_logs').delete().eq('id', logId);
-            if (!error) {
-                cachedLogs = cachedLogs.filter(item => item.id !== logId);
-                renderHistoryView();
-            }
         }
     </script>
 </body>
