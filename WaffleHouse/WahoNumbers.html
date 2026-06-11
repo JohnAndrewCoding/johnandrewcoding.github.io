@@ -34,6 +34,13 @@
     input[type=number] {
       -moz-appearance: textfield;
     }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-animate-up {
+      animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
   </style>
 </head>
 <body class="bg-stone-950 text-stone-100 font-sans antialiased min-h-screen pb-12">
@@ -45,7 +52,13 @@
         <span class="bg-yellow-400 text-black px-1.5 py-0.5 rounded-xs">H</span>
         <span class="text-yellow-400 ml-1">NUMBERS</span>
       </h1>
-      <input type="date" id="entryDate" class="bg-stone-900 text-yellow-400 font-bold px-3 py-1.5 rounded-lg border border-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+      <div class="flex items-center gap-2">
+        <input type="date" id="entryDate" class="bg-stone-900 text-yellow-400 font-bold px-3 py-1.5 rounded-lg border border-stone-800 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+        
+        <button type="button" onclick="openHistoryModal()" class="bg-stone-900 hover:bg-stone-850 text-yellow-400 border border-stone-800 p-2 rounded-lg active:scale-95 transition-transform cursor-pointer" title="View Past Entries">
+          <i data-lucide="list-ordered" class="w-5 h-5 stroke-[2.5]"></i>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -74,14 +87,31 @@
         </div>
       </div>
 
-      <div id="inputsContainer" class="space-y-4">
-        </div>
+      <div id="inputsContainer" class="space-y-4"></div>
 
-      <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-wider py-4 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.99] transition-transform border-b-4 border-yellow-600 mt-6 text-base">
+      <button type="submit" class="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-black uppercase tracking-wider py-4 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.99] transition-transform border-b-4 border-yellow-600 mt-6 text-base cursor-pointer">
         <i data-lucide="check-square" class="w-5 h-5 stroke-[2.5]"></i> Submit System Logs
       </button>
     </form>
   </main>
+
+  <div id="historyModal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-end">
+    <div class="bg-stone-900 w-full max-w-md mx-auto border-t-4 border-yellow-400 rounded-t-2xl max-h-[85vh] flex flex-col modal-animate-up">
+      
+      <div class="p-4 border-b border-stone-800 flex justify-between items-center shrink-0">
+        <div class="flex flex-col">
+          <span class="text-[10px] font-black uppercase tracking-widest text-yellow-400 font-mono">Records Management</span>
+          <h2 id="historyModalTitle" class="text-base font-black tracking-tight text-white uppercase font-mono">Store 2417 History</h2>
+        </div>
+        <button onclick="closeHistoryModal()" class="bg-stone-800 text-stone-400 hover:text-white p-2 rounded-lg focus:outline-none cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="historyEntriesContainer" class="p-4 overflow-y-auto space-y-3 flex-1">
+        </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
@@ -94,7 +124,6 @@
     // --- APP GLOBAL STATE ---
     let activeStore = '2417';
     
-    // Labels array matching your strict business requirement configurations
     const LABELS = ['1st Shift', '2nd Shift', '3rd Shift', 'D', 'WK', '2/2', 'FC', 'PR', 'Training', 'Extra'];
     const COMPARISON_FIELDS = ['1st Shift', '2nd Shift', '3rd Shift', 'D'];
     
@@ -115,7 +144,6 @@
         const isComp = COMPARISON_FIELDS.includes(label);
 
         if (isComp) {
-          // Double-input row configuration with active math delta engine processing
           row.innerHTML = `
             <label class="font-black text-stone-300 text-xs uppercase font-mono tracking-tight flex-1 break-words pr-1">${label}</label>
             <div class="flex gap-2 items-center justify-end w-72">
@@ -140,7 +168,6 @@
             </div>
           `;
         } else {
-          // Standard single row format configuration targeting traditional tracking fields
           row.innerHTML = `
             <label class="font-black text-stone-300 text-xs uppercase font-mono tracking-tight flex-1">${label}</label>
             <div class="flex gap-2 items-center justify-end w-72">
@@ -165,7 +192,6 @@
       const lyVal = parseFloat(document.getElementById(`ly-${safeId}`).value);
       const displayDiv = document.getElementById(`var-${safeId}`);
 
-      // If either field is left completely clean, reset to natural neutrality baseline
       if (isNaN(todayVal) || isNaN(lyVal)) {
         displayDiv.innerText = '0';
         displayDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-stone-500 bg-stone-950/40 border border-stone-900 rounded-lg select-none";
@@ -178,7 +204,7 @@
         displayDiv.innerText = `+${diff}`;
         displayDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-emerald-400 bg-emerald-950/20 border border-emerald-900/40 rounded-lg select-none";
       } else if (diff < 0) {
-        displayDiv.innerText = `${diff}`; // Native string already provides negative minus symbol '-'
+        displayDiv.innerText = `${diff}`;
         displayDiv.className = "w-22 py-2 px-1 text-right font-black font-mono text-sm text-rose-500 bg-rose-950/20 border border-rose-900/40 rounded-lg select-none";
       } else {
         displayDiv.innerText = '0';
@@ -201,6 +227,10 @@
       });
       
       clearFormValues();
+      
+      if(!document.getElementById('historyModal').classList.contains('hidden')) {
+        loadHistoryData();
+      }
     }
 
     function clearFormValues() {
@@ -233,7 +263,6 @@
         const lyInput = document.getElementById(`ly-${safeId}`);
         const lyVal = lyInput ? parseFloat(lyInput.value) : null;
 
-        // Ensure we only insert row profiles containing at least primary metric records
         if (!isNaN(todayVal)) {
           const rowPayload = {
             store_id: dbStoreId,
@@ -267,6 +296,114 @@
         alert(`Error saving metrics: ${err.message || err}`);
       }
     });
+
+    // --- HISTORY VIEWER PANEL CONFIGURATION ---
+    function openHistoryModal() {
+      document.getElementById('historyModal').classList.remove('hidden');
+      loadHistoryData();
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.add('hidden');
+    }
+
+    async function loadHistoryData() {
+      document.getElementById('historyModalTitle').innerText = `Store ${activeStore} History`;
+      const container = document.getElementById('historyEntriesContainer');
+      container.innerHTML = '<p class="text-center font-bold text-sm text-stone-500 py-6 font-mono animate-pulse">CONNECTING TO CLOUD...</p>';
+
+      try {
+        const { data, error } = await sb
+          .from('daily_metrics')
+          .select('*')
+          .eq('store_id', storeIdMap[activeStore])
+          .order('entry_date', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          container.innerHTML = '<p class="text-center text-stone-500 text-sm font-bold font-mono py-6">NO PAST LOGS RECORDED</p>';
+          return;
+        }
+
+        const groupedByDate = {};
+        data.forEach(row => {
+          if (!groupedByDate[row.entry_date]) {
+            groupedByDate[row.entry_date] = [];
+          }
+          groupedByDate[row.entry_date].push(row);
+        });
+
+        container.innerHTML = '';
+
+        Object.keys(groupedByDate).forEach(dateStr => {
+          const metrics = groupedByDate[dateStr];
+          
+          const dateObj = new Date(dateStr + 'T00:00:00');
+          const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+          const logCard = document.createElement('div');
+          logCard.className = 'bg-black border border-stone-800 rounded-xl p-3.5 space-y-2 relative shadow-md';
+
+          let innerHTML = `
+            <div class="flex justify-between items-start border-b border-stone-800/80 pb-2">
+              <div>
+                <h4 class="font-black text-sm text-yellow-400 font-mono uppercase tracking-tight">${formattedDate}</h4>
+                <p class="text-[9px] font-bold text-stone-500 font-mono uppercase tracking-widest mt-0.5">${metrics.length} metrics captured</p>
+              </div>
+              <button onclick="deleteEntireDay('${dateStr}', ${storeIdMap[activeStore]})" class="text-stone-600 hover:text-rose-500 p-1 transition-colors cursor-pointer" title="Delete Logs">
+                <i data-lucide="trash-2" class="w-4 h-4 stroke-[2.5]"></i>
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1 pt-1 text-xs">
+          `;
+
+          metrics.forEach(m => {
+            let varSpan = '';
+            if (m.variance !== null) {
+              if (m.variance > 0) varSpan = `<span class="text-emerald-400 font-mono font-bold text-[11px] ml-1">(+${m.variance})</span>`;
+              else if (m.variance < 0) varSpan = `<span class="text-rose-500 font-mono font-bold text-[11px] ml-1">(${m.variance})</span>`;
+              else varSpan = `<span class="text-stone-600 font-mono font-bold text-[11px] ml-1">(0)</span>`;
+            }
+
+            innerHTML += `
+              <div class="flex justify-between py-0.5 border-b border-stone-900/40">
+                <span class="text-stone-400 font-medium font-mono text-[11px]">${m.label}:</span>
+                <span class="text-stone-200 font-black font-mono text-[11px]">${m.value}${varSpan}</span>
+              </div>
+            `;
+          });
+
+          innerHTML += `</div>`;
+          logCard.innerHTML = innerHTML;
+          container.appendChild(logCard);
+        });
+
+        lucide.createIcons({ attrs: { class: ["shrink-0"] }, container: container });
+
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = `<p class="text-center text-rose-500 font-bold text-xs font-mono py-6 uppercase">SYNC FALLBACK ERROR: ${err.message || err}</p>`;
+      }
+    }
+
+    async function deleteEntireDay(dateStr, storeId) {
+      if (!confirm(`Are you sure you want to permanently delete all database metrics for store entries on ${dateStr}?`)) return;
+
+      try {
+        const { error } = await sb
+          .from('daily_metrics')
+          .delete()
+          .eq('store_id', storeId)
+          .eq('entry_date', dateStr);
+
+        if (error) throw error;
+        loadHistoryData();
+      } catch (err) {
+        console.error(err);
+        alert(`Failed to delete records: ${err.message || err}`);
+      }
+    }
 
     // --- LOAD ON EXECUTION ---
     renderFormFields();
