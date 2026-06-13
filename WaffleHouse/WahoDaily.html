@@ -182,15 +182,15 @@
 </head>
 <body>
 <div class="waho-nav-bar">
-    <button class="nav-item" id="nav-entry" onclick="navigateTo('submitWahoNumbers.html')">
+    <button class="nav-item" id="nav-entry" onclick="navigateTo('WahoNumbers.html')">
         <ion-icon name="create-outline"></ion-icon>
         <span>Daily Entry</span>
     </button>
     <button class="nav-item" id="nav-ledger" onclick="navigateTo('WahoDaily.html')">
         <ion-icon name="list-circle-outline"></ion-icon>
-        <span>Weekly Ledger</span>
+        <span>Weekly View</span>
     </button>
-    <button class="nav-item" id="nav-totals" onclick="navigateTo('WahoNumbers.html')">
+    <button class="nav-item" id="nav-totals" onclick="navigateTo('index.html')">
         <ion-icon name="calculator-outline"></ion-icon>
         <span>Weekly Totals</span>
     </button>
@@ -261,11 +261,11 @@
     document.addEventListener("DOMContentLoaded", () => {
         const currentFile = window.location.pathname.split("/").pop().toLowerCase();
         
-        if (currentFile === "submitwahonumbers.html" || currentFile === "index.html" || currentFile === "") {
+        if (currentFile === "WahoNumbers.html" || currentFile === "") {
             document.getElementById("nav-entry").classList.add("active-page");
         } else if (currentFile === "wahodaily.html") {
             document.getElementById("nav-ledger").classList.add("active-page");
-        } else if (currentFile === "wahonumbers.html" || currentFile === "weekly_totals.html") {
+        } else if (currentFile === "index.html") {
             document.getElementById("nav-totals").classList.add("active-page");
         }
     });
