@@ -195,8 +195,10 @@
         const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Map UI human labels to your backend structural database IDs
+        const storeIdMap = { "Store 1": 1, "Store 2": 2, "Store 3": 3 };
         let currentStore = "Store 1";
-        let cachedLogs = [];
+        let cachedMetrics = [];
 
         // Automatic Calendar Initialization
         function getNearestPastMonday(d) {
@@ -217,12 +219,15 @@
         }
 
         async function refreshData() {
+            // TARGET CORRECT TABLE: daily_metrics
             const { data, error } = await supabaseClient
-                .from('daily_logs')
+                .from('daily_metrics')
                 .select('*');
             if (!error && data) {
-                cachedLogs = data;
+                cachedMetrics = data;
                 calculateCustomWeeklyTotals();
+            } else if (error) {
+                console.error("Supabase Error:", error.message);
             }
         }
 
@@ -235,7 +240,7 @@
             calculateCustomWeeklyTotals();
         }
 
-        // Custom Mathematical Operational Shift Processing Engine
+        // Mathematical Custom Operational Shift Processing Engine
         function calculateCustomWeeklyTotals() {
             const baseMondayStr = document.getElementById('weekly-total-date').value;
             if (!baseMondayStr) return;
@@ -252,35 +257,39 @@
             document.getElementById('week-range-label').innerText = 
                 `Active Window: ${startMon.toLocaleDateString('en-US', fmt)} (2nd Shift) through ${endMon.toLocaleDateString('en-US', fmt)} (1st Shift).`;
 
-            const storeData = cachedLogs.filter(item => item.store_name === currentStore);
+            // Filter metrics by numerical store ID mapped from UI selection
+            const targetStoreId = storeIdMap[currentStore];
+            const storeData = cachedMetrics.filter(item => item.store_id === targetStoreId);
 
             let sumShift1 = 0;
             let sumShift2 = 0;
             let sumShift3 = 0;
 
-            storeData.forEach(log => {
-                const curDateStr = log.log_date;
+            storeData.forEach(row => {
+                const curDateStr = row.entry_date;
+                const value = Number(row.value) || 0;
+                const label = row.label ? row.label.trim() : "";
 
                 if (curDateStr >= startMonISO && curDateStr <= endMonISO) {
                     if (curDateStr === startMonISO) {
-                        // Start Monday: Drop 1st shift, keep 2nd and 3rd
-                        sumShift2 += (Number(log.shift2) || 0);
-                        sumShift3 += (Number(log.shift3) || 0);
+                        // Start Monday: Ignore 1st Shift, sum 2nd and 3rd shifts
+                        if (label === '2nd Shift') sumShift2 += value;
+                        if (label === '3rd Shift') sumShift3 += value;
                     } else if (curDateStr === endMonISO) {
-                        // Following Monday: Take 1st shift only
-                        sumShift1 += (Number(log.shift1) || 0);
+                        // Following Monday: Sum 1st Shift only
+                        if (label === '1st Shift') sumShift1 += value;
                     } else {
-                        // Full capture interior days
-                        sumShift1 += (Number(log.shift1) || 0);
-                        sumShift2 += (Number(log.shift2) || 0);
-                        sumShift3 += (Number(log.shift3) || 0);
+                        // Interior Days (Tuesday through Sunday): Sum all three shifts
+                        if (label === '1st Shift') sumShift1 += value;
+                        if (label === '2nd Shift') sumShift2 += value;
+                        if (label === '3rd Shift') sumShift3 += value;
                     }
                 }
             });
 
             const grandTotal = sumShift1 + sumShift2 + sumShift3;
 
-            // Update UI Interface Targets cleanly
+            // Update UI Interface Targets
             document.getElementById('tot-shift1').innerText = `$${sumShift1.toLocaleString()}`;
             document.getElementById('tot-shift2').innerText = `$${sumShift2.toLocaleString()}`;
             document.getElementById('tot-shift3').innerText = `$${sumShift3.toLocaleString()}`;
