@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mama's Store Hub - Weekly Ledger Review</title>
+    <title>Mama's Store Hub - Detailed Weekly Ledger</title>
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,6 +17,8 @@
             --border-dark: #292524;
             --text-light: #f5f5f4;
             --text-muted: #a8a29e;
+            --pos-green: #10b981;
+            --neg-red: #ef4444;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -77,19 +79,18 @@
         }
         .tab-btn.active { background: var(--wh-yellow); color: #000000; border-color: var(--wh-yellow); }
 
-        /* View Content Framer */
         .app-container {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 16px;
+            padding: 16px;
         }
 
         .wh-card {
             background: var(--card-dark);
             border: 1px solid var(--border-dark);
             border-radius: 16px;
-            padding: 20px;
-            max-width: 500px;
+            padding: 16px;
+            max-width: 600px;
             margin: 0 auto;
             box-shadow: 0 8px 16px -2px rgba(0, 0, 0, 0.4);
         }
@@ -97,52 +98,76 @@
         .form-group { display: flex; flex-direction: column; margin-bottom: 20px; }
         label { font-size: 0.75rem; font-weight: 800; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
         
-        input { 
+        input.week-picker { 
             padding: 14px; border: 1px solid var(--border-dark); border-radius: 10px; 
             font-size: 1rem; background: #000000; color: #ffffff; width: 100%; 
             font-weight: 600; text-align: center;
         }
-        input:focus { outline: 2px solid var(--wh-yellow); }
-        
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(80%) sepia(50%) saturate(1000%) hue-rotate(360deg);
-        }
+        input.week-picker:focus { outline: 2px solid var(--wh-yellow); }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(80%); }
 
-        /* Day Card Block Wrapper */
-        .ledger-container { display: flex; flex-direction: column; gap: 16px; }
+        /* Ledger Container Stack */
+        .ledger-container { display: flex; flex-direction: column; gap: 20px; }
         
         .day-block {
             background: #000000;
             border: 1px solid var(--border-dark);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px;
         }
         
         .day-header {
-            font-size: 0.9rem;
-            font-weight: 800;
-            color: var(--wh-yellow);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border-dark);
-            padding-bottom: 6px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
+            font-size: 0.95rem; font-weight: 800; color: var(--wh-yellow);
+            text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-dark);
+            padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
         }
-        .day-header span.date-sub { color: var(--text-muted); font-family: monospace; font-size: 0.8rem; }
+        .date-sub { color: var(--text-muted); font-family: monospace; font-size: 0.8rem; }
 
-        .shift-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 4px;
-            font-family: monospace;
-            font-size: 0.9rem;
+        /* Metric Matrix Grid View Setup */
+        .grid-header-row {
+            display: grid; grid-template-columns: 2.5fr 1.5fr 1.5fr 1.2fr 1.2fr; gap: 6px;
+            padding: 0 4px 6px 4px; font-size: 0.65rem; font-weight: 800; color: var(--text-muted);
+            text-transform: uppercase; border-bottom: 1px dashed var(--border-dark); margin-bottom: 8px;
+            text-align: center;
         }
-        .shift-label { color: var(--text-light); }
-        .shift-value { font-weight: 700; color: #ffffff; }
-        .shift-missing { color: var(--text-muted); font-style: italic; font-size: 0.8rem; }
+        .grid-header-row div:first-child { text-align: left; }
+
+        .metric-grid-row {
+            display: grid; grid-template-columns: 2.5fr 1.5fr 1.5fr 1.2fr 1.2fr; gap: 6px;
+            align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(41, 37, 36, 0.5);
+        }
+        .metric-grid-row:last-child { border-bottom: none; }
+
+        .metric-label { font-size: 0.75rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; }
+        
+        /* Inline input styling for fast manual corrections */
+        .val-input {
+            width: 100%; background: #1c1917; border: 1px solid var(--border-dark);
+            color: #ffffff; padding: 6px; border-radius: 6px; text-align: center;
+            font-family: monospace; font-size: 0.9rem; font-weight: 700;
+        }
+        .val-input:disabled { background: transparent; border-color: transparent; color: var(--wh-yellow); }
+        .ly-display { color: var(--text-muted); font-family: monospace; font-size: 0.9rem; font-weight: 600; text-align: center; }
+
+        /* Dynamic Colors for Variance Outputs */
+        .variance-box { font-family: monospace; font-size: 0.85rem; font-weight: 800; text-align: center; }
+        .var-pos { color: var(--pos-green); }
+        .var-neg { color: var(--neg-red); }
+        .var-zero { color: var(--text-muted); }
+
+        /* Edit/Action Controls Layout */
+        .action-cell { display: flex; justify-content: center; }
+        .action-btn {
+            background: transparent; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 1.2rem; display: flex; align-items: center; padding: 4px; border-radius: 4px;
+        }
+        .action-btn:hover { color: var(--wh-yellow); }
+        .action-btn.saving { color: var(--pos-green); }
+
+        .no-entry-card {
+            text-align: center; padding: 20px 0; color: var(--text-muted);
+            font-size: 0.85rem; font-style: italic; font-weight: 500;
+        }
 
         .sync-indicator {
             text-align: center; color: var(--text-muted); font-size: 0.7rem; font-weight: bold;
@@ -150,8 +175,7 @@
             align-items: center; justify-content: center; gap: 4px;
         }
         .sync-indicator ion-icon { color: #10b981; }
-        
-        .nav-back { text-decoration: none; display: block; margin: 10px auto; max-width: 500px; padding: 0 16px; }
+        .nav-back { text-decoration: none; display: block; margin: 10px auto; max-width: 600px; padding: 0 16px; }
         .nav-back h1 { font-size: 1.2rem; color: var(--text-muted); margin: 0; font-weight: 600; }
         .nav-back h1:hover { color: var(--wh-yellow); }
     </style>
@@ -163,7 +187,7 @@
         <div class="logo-box">
             <span class="logo-block">W</span>
             <span class="logo-block">H</span>
-            <span class="logo-text">WEEKLY LEDGER</span>
+            <span class="logo-text">LEDGER MANAGER</span>
         </div>
         <div class="store-tabs">
             <button class="tab-btn active" onclick="switchStore('Store 2417')">Store 2417</button>
@@ -177,33 +201,35 @@
             
             <div class="form-group">
                 <label for="ledger-week-date">Select Week Commencing (Monday)</label>
-                <input type="date" id="ledger-week-date" onchange="validateAndRefreshWeek(this.value)">
+                <input type="date" class="week-picker" id="ledger-week-date" onchange="validateAndRefreshWeek(this.value)">
             </div>
 
             <div id="ledgerDisplay" class="ledger-container">
                 </div>
 
             <div class="sync-indicator">
-                <ion-icon name="checkmark-circle"></ion-icon> Live database tracking online
+                <ion-icon name="checkmark-circle"></ion-icon> Live secure ledger synchronization active
             </div>
         </div>
     </main>
 
     <script>
-        // Avoid collision script wrapper check
-        if (typeof ledgerSupabaseClient === 'undefined') {
+        if (typeof masterLedgerClient === 'undefined') {
             const SUPABASE_URL = "https://jkxgemajbqomkhyzhuak.supabase.co"; 
             const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
-            var ledgerSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            var masterLedgerClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
         const storeIdMap = { "Store 2417": 1, "Store 2067": 2, "Store 738": 3 };
         let currentStore = "Store 2417";
-        let cachedData = [];
+        let cachedMetrics = [];
 
-        // Dynamic standard weekdays array mapping
+        // Complete structural definitions layout order matching your layout entry profile
+        const targetLabels = [
+            "1st Shift", "2nd Shift", "3rd Shift", 
+            "D", "WK", "2/2", "FC", "PR", "TRAINING", "EXTRA"
+        ];
         const weekdayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-        const targetShifts = ["1st Shift", "2nd Shift", "3rd Shift"];
 
         function getNearestPastMonday(d) {
             const day = d.getDay();
@@ -212,99 +238,170 @@
         }
         document.getElementById('ledger-week-date').value = getNearestPastMonday(new Date()).toISOString().split('T')[0];
 
-        window.onload = () => { refreshLedgerData(); };
+        window.onload = () => { fetchMasterMetrics(); };
 
         function switchStore(storeName) {
             currentStore = storeName;
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.innerText.trim() === storeName);
             });
-            renderWeeklyLedger();
+            renderMasterLedger();
         }
 
-        async function refreshLedgerData() {
-            const { data, error } = await ledgerSupabaseClient
-                .from('daily_metrics')
-                .select('*');
+        async function fetchMasterMetrics() {
+            const { data, error } = await masterLedgerClient.from('daily_metrics').select('*');
             if (!error && data) {
-                cachedData = data;
-                renderWeeklyLedger();
-            } else if (error) {
-                console.error("Database Query Fail:", error.message);
+                cachedMetrics = data;
+                renderMasterLedger();
             }
         }
 
         function validateAndRefreshWeek(val) {
             const pickedDate = new Date(val + 'T00:00:00');
             if (pickedDate.getDay() !== 1) {
-                alert("Please select a Monday to view the structured weekly breakdown.");
+                alert("Please select an explicit Monday.");
                 document.getElementById('ledger-week-date').value = getNearestPastMonday(pickedDate).toISOString().split('T')[0];
             }
-            renderWeeklyLedger();
+            renderMasterLedger();
         }
 
-        function renderWeeklyLedger() {
+        function renderMasterLedger() {
             const baseMondayStr = document.getElementById('ledger-week-date').value;
             if (!baseMondayStr) return;
 
             const targetStoreId = storeIdMap[currentStore];
             const displayBlock = document.getElementById('ledgerDisplay');
             
-            // Build out array of dates for the 7 days of the selected week
-            let weekDaysDates = [];
-            let currentDayRunner = new Date(baseMondayStr + 'T00:00:00');
-            
+            let weekDates = [];
+            let dayRunner = new Date(baseMondayStr + 'T00:00:00');
             for (let i = 0; i < 7; i++) {
-                weekDaysDates.push(currentDayRunner.toISOString().split('T')[0]);
-                currentDayRunner.setDate(currentDayRunner.getDate() + 1);
+                weekDates.push(dayRunner.toISOString().split('T')[0]);
+                dayRunner.setDate(dayRunner.getDate() + 1);
             }
 
-            // Filter down database records to this specific store
-            const storeData = cachedData.filter(item => item.store_id === targetStoreId);
-
+            const storeData = cachedMetrics.filter(item => item.store_id === targetStoreId);
             let htmlOutput = "";
 
-            // Loop day-by-day through the structural calendar week
-            weekDaysDates.forEach((dateStr, index) => {
-                const dayName = weekdayNames[index];
-                
-                // Extract metrics belonging to this specific day
-                const dayMetrics = storeData.filter(item => item.entry_date === dateStr);
+            weekDates.forEach((dateStr, idx) => {
+                const dayName = weekdayNames[idx];
+                const dayRows = storeData.filter(item => item.entry_date === dateStr);
 
                 htmlOutput += `
-                    <div class="day-block">
+                    <div class="day-block" id="block-${dateStr}">
                         <div class="day-header">
                             <span>${dayName}</span>
                             <span class="date-sub">${dateStr}</span>
                         </div>
                 `;
 
-                // Render status for each individual shift row structurally
-                targetShifts.forEach(shiftName => {
-                    const match = dayMetrics.find(m => m.label && m.label.trim().toLowerCase() === shiftName.toLowerCase());
+                if (dayRows.length === 0) {
+                    htmlOutput += `<div class="no-entry-card">No entry added for this day</div></div>`;
+                    return;
+                }
+
+                // Grid Column Layout Blueprint
+                htmlOutput += `
+                    <div class="grid-header-row">
+                        <div>Metric</div>
+                        <div>Today</div>
+                        <div>Last Yr</div>
+                        <div>+/-</div>
+                        <div>Edit</div>
+                    </div>
+                `;
+
+                targetLabels.forEach(labelName => {
+                    const match = dayRows.find(r => r.label && r.label.trim().toLowerCase() === labelName.toLowerCase());
                     
                     if (match) {
-                        const val = Number(match.value) || 0;
+                        const todayVal = Number(match.value) || 0;
+                        const lastYearVal = Number(match.last_year_value) || 0;
+                        const variance = todayVal - lastYearVal;
+                        
+                        let varianceClass = "var-zero";
+                        let varianceText = "0";
+                        if (variance > 0) { varianceClass = "var-pos"; varianceText = `+${variance}`; }
+                        if (variance < 0) { varianceClass = "var-neg"; varianceText = `${variance}`; }
+
                         htmlOutput += `
-                            <div class="shift-row">
-                                <span class="shift-label">${shiftName}:</span>
-                                <span class="shift-value">$${val.toLocaleString()}</span>
+                            <div class="metric-grid-row" id="row-${match.id}">
+                                <div class="metric-label">${labelName}</div>
+                                <div>
+                                    <input type="number" class="val-input" id="input-${match.id}" value="${todayVal}" disabled oninput="recalculateRowVariance(${match.id}, ${lastYearVal})">
+                                </div>
+                                <div class="ly-display">${lastYearVal || '-'}</div>
+                                <div class="variance-box ${varianceClass}" id="var-${match.id}">${varianceText}</div>
+                                <div class="action-cell">
+                                    <button class="action-btn" id="btn-${match.id}" onclick="toggleEditRow(${match.id}, ${lastYearVal})">
+                                        <ion-icon name="create-outline" id="icon-${match.id}"></ion-icon>
+                                    </button>
+                                </div>
                             </div>
                         `;
                     } else {
+                        // Display clean fallback line if metric label isn't present
                         htmlOutput += `
-                            <div class="shift-row">
-                                <span class="shift-label">${shiftName}:</span>
-                                <span class="shift-missing">No entry added</span>
+                            <div class="metric-grid-row">
+                                <div class="metric-label" style="color: var(--text-muted);">${labelName}</div>
+                                <div colspan="4" class="shift-missing" style="grid-column: span 4; text-align: center; color: var(--text-muted); font-size: 0.8rem; font-style: italic;">No entry added</div>
                             </div>
                         `;
                     }
                 });
 
-                htmlOutput += `</div>`; // Close day-block
+                htmlOutput += `</div>`;
             });
 
             displayBlock.innerHTML = htmlOutput;
+        }
+
+        function recalculateRowVariance(rowId, lastYearVal) {
+            const currentVal = Number(document.getElementById(`input-${rowId}`).value) || 0;
+            const variance = currentVal - lastYearVal;
+            const varBox = document.getElementById(`var-${rowId}`);
+            
+            varBox.className = "variance-box";
+            if (variance > 0) { varBox.classList.add("var-pos"); varBox.innerText = `+${variance}`; }
+            else if (variance < 0) { varBox.classList.add("var-neg"); varBox.innerText = variance; }
+            else { varBox.classList.add("var-zero"); varBox.innerText = "0"; }
+        }
+
+        async function toggleEditRow(rowId, lastYearVal) {
+            const inputField = document.getElementById(`input-${rowId}`);
+            const actionBtn = document.getElementById(`btn-${rowId}`);
+            const actionIcon = document.getElementById(`icon-${rowId}`);
+
+            if (inputField.disabled) {
+                // Change to editable mode
+                inputField.disabled = false;
+                inputField.focus();
+                actionIcon.setAttribute("name", "checkmark-sharp");
+                actionBtn.classList.add("saving");
+            } else {
+                // Change back to read-only and save updates to database
+                inputField.disabled = true;
+                actionIcon.setAttribute("name", "sync-outline");
+                
+                const updatedValue = Number(inputField.value) || 0;
+
+                const { error } = await masterLedgerClient
+                    .from('daily_metrics')
+                    .update({ value: updatedValue })
+                    .eq('id', rowId);
+
+                if (!error) {
+                    // Update cache instantly
+                    const record = cachedMetrics.find(m => m.id === rowId);
+                    if (record) record.value = updatedValue;
+                    
+                    actionIcon.setAttribute("name", "create-outline");
+                    actionBtn.classList.remove("saving");
+                } else {
+                    alert("Could not update record: " + error.message);
+                    actionIcon.setAttribute("name", "create-outline");
+                    actionBtn.classList.remove("saving");
+                }
+            }
         }
     </script>
 </body>
