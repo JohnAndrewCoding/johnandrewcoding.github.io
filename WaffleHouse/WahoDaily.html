@@ -2,57 +2,310 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mama's Daily Logs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mama's Store Hub - Weekly Ledger Review</title>
+    
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
-        :root { --wh-yellow: #facc15; --bg-dark: #0c0a09; --card-dark: #1c1917; --text-light: #f5f5f4; }
-        body { font-family: sans-serif; background: var(--bg-dark); color: var(--text-light); padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .log-row { background: var(--card-dark); padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid var(--wh-yellow); display: flex; justify-content: space-between; }
-        select, input { background: #000; color: #fff; padding: 10px; border: 1px solid #333; border-radius: 5px; }
-        h2 { color: var(--wh-yellow); }
+        :root {
+            --wh-yellow: #facc15;
+            --wh-yellow-hover: #eab308;
+            --bg-dark: #0c0a09;
+            --card-dark: #1c1917;
+            --border-dark: #292524;
+            --text-light: #f5f5f4;
+            --text-muted: #a8a29e;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Waffle House Header Block */
+        .app-header {
+            background: #000000;
+            padding: 16px;
+            border-bottom: 4px solid var(--wh-yellow);
+            text-align: center;
+            flex-shrink: 0;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+        }
+        
+        .logo-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .logo-block {
+            background: var(--wh-yellow);
+            color: #000000;
+            font-family: monospace;
+            font-weight: 900;
+            font-size: 1.4rem;
+            padding: 2px 8px;
+            border-radius: 2px;
+        }
+        .logo-text {
+            color: var(--wh-yellow);
+            font-weight: 900;
+            font-family: monospace;
+            font-size: 1.4rem;
+            letter-spacing: -1px;
+            margin-left: 4px;
+        }
+
+        .store-tabs { display: flex; justify-content: center; gap: 6px; max-width: 450px; margin: 0 auto; }
+        .tab-btn {
+            flex: 1; padding: 10px; border: 1px solid var(--border-dark);
+            background: var(--card-dark); color: var(--text-muted); font-weight: 800; 
+            border-radius: 8px; font-size: 0.8rem; text-transform: uppercase; cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .tab-btn.active { background: var(--wh-yellow); color: #000000; border-color: var(--wh-yellow); }
+
+        /* View Content Framer */
+        .app-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+        }
+
+        .wh-card {
+            background: var(--card-dark);
+            border: 1px solid var(--border-dark);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 8px 16px -2px rgba(0, 0, 0, 0.4);
+        }
+
+        .form-group { display: flex; flex-direction: column; margin-bottom: 20px; }
+        label { font-size: 0.75rem; font-weight: 800; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        input { 
+            padding: 14px; border: 1px solid var(--border-dark); border-radius: 10px; 
+            font-size: 1rem; background: #000000; color: #ffffff; width: 100%; 
+            font-weight: 600; text-align: center;
+        }
+        input:focus { outline: 2px solid var(--wh-yellow); }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(80%) sepia(50%) saturate(1000%) hue-rotate(360deg);
+        }
+
+        /* Day Card Block Wrapper */
+        .ledger-container { display: flex; flex-direction: column; gap: 16px; }
+        
+        .day-block {
+            background: #000000;
+            border: 1px solid var(--border-dark);
+            border-radius: 12px;
+            padding: 14px;
+        }
+        
+        .day-header {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--wh-yellow);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-dark);
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .day-header span.date-sub { color: var(--text-muted); font-family: monospace; font-size: 0.8rem; }
+
+        .shift-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .shift-label { color: var(--text-light); }
+        .shift-value { font-weight: 700; color: #ffffff; }
+        .shift-missing { color: var(--text-muted); font-style: italic; font-size: 0.8rem; }
+
+        .sync-indicator {
+            text-align: center; color: var(--text-muted); font-size: 0.7rem; font-weight: bold;
+            margin-top: 24px; text-transform: uppercase; letter-spacing: 1px; display: flex;
+            align-items: center; justify-content: center; gap: 4px;
+        }
+        .sync-indicator ion-icon { color: #10b981; }
+        
+        .nav-back { text-decoration: none; display: block; margin: 10px auto; max-width: 500px; padding: 0 16px; }
+        .nav-back h1 { font-size: 1.2rem; color: var(--text-muted); margin: 0; font-weight: 600; }
+        .nav-back h1:hover { color: var(--wh-yellow); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>Daily View</h2>
-            <select id="storeSelect" onchange="fetchLogs()">
-                <option value="1">Store 2417</option>
-                <option value="2">Store 2067</option>
-                <option value="3">Store 738</option>
-            </select>
+    <a href="Waho Numbers.html" class="nav-back"><h1>Waho Numbers</h1></a>
+
+    <header class="app-header">
+        <div class="logo-box">
+            <span class="logo-block">W</span>
+            <span class="logo-block">H</span>
+            <span class="logo-text">WEEKLY LEDGER</span>
         </div>
-        <input type="date" id="dateFilter" onchange="fetchLogs()">
-        <div id="logsDisplay" style="margin-top: 20px;"></div>
-    </div>
+        <div class="store-tabs">
+            <button class="tab-btn active" onclick="switchStore('Store 2417')">Store 2417</button>
+            <button class="tab-btn" onclick="switchStore('Store 2067')">Store 2067</button>
+            <button class="tab-btn" onclick="switchStore('Store 738')">Store 738</button>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <div class="wh-card">
+            
+            <div class="form-group">
+                <label for="ledger-week-date">Select Week Commencing (Monday)</label>
+                <input type="date" id="ledger-week-date" onchange="validateAndRefreshWeek(this.value)">
+            </div>
+
+            <div id="ledgerDisplay" class="ledger-container">
+                </div>
+
+            <div class="sync-indicator">
+                <ion-icon name="checkmark-circle"></ion-icon> Live database tracking online
+            </div>
+        </div>
+    </main>
 
     <script>
-        const supabase = window.supabase.createClient("https://jkxgemajbqomkhyzhuak.supabase.co", "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B");
-        
-        async function fetchLogs() {
-            const storeId = document.getElementById('storeSelect').value;
-            const date = document.getElementById('dateFilter').value;
-            
-            let query = supabase.from('daily_metrics').select('*').eq('store_id', storeId);
-            if (date) query = query.eq('entry_date', date);
-            
-            const { data } = await query.order('entry_date', { ascending: false });
-            
-            const display = document.getElementById('logsDisplay');
-            display.innerHTML = data.map(log => `
-                <div class="log-row">
-                    <span>${log.entry_date} - ${log.label}</span>
-                    <strong>$${log.value}</strong>
-                </div>
-            `).join('');
+        // Avoid collision script wrapper check
+        if (typeof ledgerSupabaseClient === 'undefined') {
+            const SUPABASE_URL = "https://jkxgemajbqomkhyzhuak.supabase.co"; 
+            const SUPABASE_ANON_KEY = "sb_publishable_TGwnDgZjCuavc83TadOaEQ_ESOV715B";
+            var ledgerSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
-        
-        // Set default date to today
-        document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
-        fetchLogs();
+
+        const storeIdMap = { "Store 2417": 1, "Store 2067": 2, "Store 738": 3 };
+        let currentStore = "Store 2417";
+        let cachedData = [];
+
+        // Dynamic standard weekdays array mapping
+        const weekdayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        const targetShifts = ["1st Shift", "2nd Shift", "3rd Shift"];
+
+        function getNearestPastMonday(d) {
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+        document.getElementById('ledger-week-date').value = getNearestPastMonday(new Date()).toISOString().split('T')[0];
+
+        window.onload = () => { refreshLedgerData(); };
+
+        function switchStore(storeName) {
+            currentStore = storeName;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.trim() === storeName);
+            });
+            renderWeeklyLedger();
+        }
+
+        async function refreshLedgerData() {
+            const { data, error } = await ledgerSupabaseClient
+                .from('daily_metrics')
+                .select('*');
+            if (!error && data) {
+                cachedData = data;
+                renderWeeklyLedger();
+            } else if (error) {
+                console.error("Database Query Fail:", error.message);
+            }
+        }
+
+        function validateAndRefreshWeek(val) {
+            const pickedDate = new Date(val + 'T00:00:00');
+            if (pickedDate.getDay() !== 1) {
+                alert("Please select a Monday to view the structured weekly breakdown.");
+                document.getElementById('ledger-week-date').value = getNearestPastMonday(pickedDate).toISOString().split('T')[0];
+            }
+            renderWeeklyLedger();
+        }
+
+        function renderWeeklyLedger() {
+            const baseMondayStr = document.getElementById('ledger-week-date').value;
+            if (!baseMondayStr) return;
+
+            const targetStoreId = storeIdMap[currentStore];
+            const displayBlock = document.getElementById('ledgerDisplay');
+            
+            // Build out array of dates for the 7 days of the selected week
+            let weekDaysDates = [];
+            let currentDayRunner = new Date(baseMondayStr + 'T00:00:00');
+            
+            for (let i = 0; i < 7; i++) {
+                weekDaysDates.push(currentDayRunner.toISOString().split('T')[0]);
+                currentDayRunner.setDate(currentDayRunner.getDate() + 1);
+            }
+
+            // Filter down database records to this specific store
+            const storeData = cachedData.filter(item => item.store_id === targetStoreId);
+
+            let htmlOutput = "";
+
+            // Loop day-by-day through the structural calendar week
+            weekDaysDates.forEach((dateStr, index) => {
+                const dayName = weekdayNames[index];
+                
+                // Extract metrics belonging to this specific day
+                const dayMetrics = storeData.filter(item => item.entry_date === dateStr);
+
+                htmlOutput += `
+                    <div class="day-block">
+                        <div class="day-header">
+                            <span>${dayName}</span>
+                            <span class="date-sub">${dateStr}</span>
+                        </div>
+                `;
+
+                // Render status for each individual shift row structurally
+                targetShifts.forEach(shiftName => {
+                    const match = dayMetrics.find(m => m.label && m.label.trim().toLowerCase() === shiftName.toLowerCase());
+                    
+                    if (match) {
+                        const val = Number(match.value) || 0;
+                        htmlOutput += `
+                            <div class="shift-row">
+                                <span class="shift-label">${shiftName}:</span>
+                                <span class="shift-value">$${val.toLocaleString()}</span>
+                            </div>
+                        `;
+                    } else {
+                        htmlOutput += `
+                            <div class="shift-row">
+                                <span class="shift-label">${shiftName}:</span>
+                                <span class="shift-missing">No entry added</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                htmlOutput += `</div>`; // Close day-block
+            });
+
+            displayBlock.innerHTML = htmlOutput;
+        }
     </script>
 </body>
 </html>
