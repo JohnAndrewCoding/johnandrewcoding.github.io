@@ -182,15 +182,15 @@
 </head>
 <body>
 <div class="waho-nav-bar">
-    <button class="nav-item" id="nav-entry" onclick="navigateTo('WahoEntry.html')">
+    <button class="nav-item" id="nav-entry" onclick="navigateTo('submitWahoNumbers.html')">
         <ion-icon name="create-outline"></ion-icon>
         <span>Daily Entry</span>
     </button>
-    <button class="nav-item" id="nav-ledger" onclick="navigateTo('WahoLedger.html')">
-        <ion-icon name="list-box-outline"></ion-icon>
+    <button class="nav-item" id="nav-ledger" onclick="navigateTo('WahoDaily.html')">
+        <ion-icon name="list-circle-outline"></ion-icon>
         <span>Weekly Ledger</span>
     </button>
-    <button class="nav-item" id="nav-totals" onclick="navigateTo('WahoTotals.html')">
+    <button class="nav-item" id="nav-totals" onclick="navigateTo('WahoNumbers.html')">
         <ion-icon name="calculator-outline"></ion-icon>
         <span>Weekly Totals</span>
     </button>
@@ -210,14 +210,14 @@
         justify-content: space-around;
         align-items: center;
         z-index: 9999;
-        padding-bottom: env(safe-area-inset-bottom); /* Fixes iPhone notch overlap */
+        padding-bottom: env(safe-area-inset-bottom);
     }
 
     /* Individual Navigation Button */
     .nav-item {
         background: transparent;
         border: none;
-        color: #a8a29e; /* Muted color for inactive pages */
+        color: #a8a29e;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -245,9 +245,9 @@
         color: #facc15; /* Signature Waho Yellow */
     }
 
-    /* Shift the app padding up so nothing gets covered by the nav bar */
+    /* Push page content up slightly so the bottom items aren't covered */
     body {
-        padding-bottom: 75px !important;
+        padding-bottom: 80px !important;
     }
 </style>
 
@@ -257,22 +257,15 @@
         window.location.href = pageUrl;
     }
 
-    // Automatically highlight the current active button based on the file name
+    // Automatically highlight the active tab using your precise filenames
     document.addEventListener("DOMContentLoaded", () => {
         const currentFile = window.location.pathname.split("/").pop().toLowerCase();
         
-        // Adjust these file names if your actual files are named differently!
-        if (currentFile === "WahoDaily.html" || currentFile === "") {
+        if (currentFile === "submitwahonumbers.html" || currentFile === "index.html" || currentFile === "") {
             document.getElementById("nav-entry").classList.add("active-page");
-        } else if (currentFile === "WahoNumbers.html") {
+        } else if (currentFile === "wahodaily.html") {
             document.getElementById("nav-ledger").classList.add("active-page");
-        } else if (currentFile === "index.html") {
-            document.getElementById("nav-totals").classList.add("active-page");
-        }
-         else if (currentFile === "submitWahoNumbers.html") {
-            document.getElementById("nav-totals").classList.add("active-page");
-        }
-        else if (currentFile === "weekly_totals.html") {
+        } else if (currentFile === "wahonumbers.html" || currentFile === "weekly_totals.html") {
             document.getElementById("nav-totals").classList.add("active-page");
         }
     });
