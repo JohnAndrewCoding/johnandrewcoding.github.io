@@ -44,7 +44,97 @@
   </style>
 </head>
 <body class="bg-stone-950 text-stone-100 font-sans antialiased min-h-screen pb-12">
-<a href="index.html"><h1>Dashboard</h1></a>
+
+<div class="waho-nav-bar">
+    <button class="nav-item" id="nav-entry" onclick="navigateTo('WahoNumbers.html')">
+        <ion-icon name="create-outline"></ion-icon>
+        <span>Daily Entry</span>
+    </button>
+    <button class="nav-item" id="nav-ledger" onclick="navigateTo('WahoDaily.html')">
+        <ion-icon name="list-circle-outline"></ion-icon>
+        <span>Weekly View</span>
+    </button>
+    <button class="nav-item" id="nav-totals" onclick="navigateTo('index.html')">
+        <ion-icon name="calculator-outline"></ion-icon>
+        <span>Weekly Totals</span>
+    </button>
+</div>
+
+<style>
+    /* Fixed Bottom Navigation Container */
+    .waho-nav-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 65px;
+        background: #000000;
+        border-top: 2px solid #292524;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 9999;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Individual Navigation Button */
+    .nav-item {
+        background: transparent;
+        border: none;
+        color: #a8a29e;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        flex: 1;
+        height: 100%;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .nav-item ion-icon {
+        font-size: 1.4rem;
+    }
+
+    .nav-item span {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Active Page Highlight Rule */
+    .nav-item.active-page {
+        color: #facc15; /* Signature Waho Yellow */
+    }
+
+    /* Push page content up slightly so the bottom items aren't covered */
+    body {
+        padding-bottom: 80px !important;
+    }
+</style>
+
+<script>
+    // Navigation Routing Engine
+    function navigateTo(pageUrl) {
+        window.location.href = pageUrl;
+    }
+
+    // Automatically highlight the active tab using your precise filenames
+    document.addEventListener("DOMContentLoaded", () => {
+        const currentFile = window.location.pathname.split("/").pop().toLowerCase();
+        
+        if (currentFile === "WahoNumbers.html" || currentFile === "") {
+            document.getElementById("nav-entry").classList.add("active-page");
+        } else if (currentFile === "wahodaily.html") {
+            document.getElementById("nav-ledger").classList.add("active-page");
+        } else if (currentFile === "index.html") {
+            document.getElementById("nav-totals").classList.add("active-page");
+        }
+    });
+</script>
+  
   <!-- STICKY HEADER WITH TOP-RIGHT VIEW PAST ENTRIES AND WEEKLY TOTALS TOGGLES -->
   <header class="bg-black text-yellow-400 pt-6 pb-5 px-4 sticky top-0 shadow-2xl z-50 border-b-4 border-yellow-400">
     <div class="max-w-md mx-auto flex justify-between items-center">
