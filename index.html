@@ -39,16 +39,17 @@
         }
 
         /* Matrix Canvas Background */
-        #matrix-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            opacity: 0.15;
-            pointer-events: none;
-        }
+       #matrix-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    opacity: 0.45; /* Raised from 0.15 so it's much brighter */
+    pointer-events: none;
+    filter: drop-shadow(0 0 4px rgba(63, 185, 80, 0.6)); /* Adds a green neon glow */
+}
 
         /* CRT Overlay Effect */
         .crt::before {
@@ -357,23 +358,25 @@ LinkedIn: <a href="https://linkedin.com" target="_blank">linkedin.com/in/johnand
         const columns = canvas.width / fontSize;
         const drops = Array(Math.floor(columns)).fill(1);
 
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+     function drawMatrix() {
+    // Lowered alpha from 0.05 to 0.03 to make trails longer and brighter
+    ctx.fillStyle = 'rgba(13, 17, 23, 0.03)'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = '#3fb950';
-            ctx.font = fontSize + 'px monospace';
+    // Using a brighter green tone for higher visibility
+    ctx.fillStyle = '#00ff66'; 
+    ctx.font = fontSize + 'px monospace';
 
-            for (let i = 0; i < drops.length; i++) {
-                const text = chars.charAt(Math.floor(Math.random() * chars.length));
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+    for (let i = 0; i < drops.length; i++) {
+        const text = chars.charAt(Math.floor(Math.random() * chars.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
 
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-                drops[i]++;
-            }
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
         }
+        drops[i]++;
+    }
+}
 
         setInterval(drawMatrix, 40);
 
