@@ -1,19 +1,386 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content ="width=device-width, initial-scale=1">
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-    <title>John Andrew Self</title>
-  </head>
-  <body style="font-family:'Courier New', Courier, monospace" class="bg-dark text-success">
-    <a href="resume.pdf"><Button>Resume</Button></a>
-    <h2>Robins AFB</h2>
-    <h5>Information System Security Officer</h5>
-    <h5>Full Stack Developer</h5>
-    <h2>Life Line</h2>
-    <h5>Tech Innovation Consultant</h5>
-    <script src="index.js"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>John Andrew Self | Computer Scientist</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --term-bg: #161b22;
+            --term-header: #21262d;
+            --text-green: #3fb950;
+            --text-cyan: #58a6ff;
+            --text-main: #c9d1d9;
+            --text-dim: #8b949e;
+            --accent-pink: #f778ba;
+            --accent-yellow: #d29922;
+            --font-mono: 'Fira Code', 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Matrix Canvas Background */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        /* CRT Overlay Effect */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 99;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            z-index: 1;
+        }
+
+        /* Window Styling */
+        .terminal-window {
+            background-color: var(--term-bg);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background-color: var(--term-header);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .window-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .btn-red { background-color: #ff5f56; cursor: pointer; }
+        .btn-yellow { background-color: #ffbd2e; }
+        .btn-green { background-color: #27c93f; }
+
+        .window-title {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .terminal-body {
+            padding: 24px;
+            min-height: 480px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* Output & Commands */
+        .ascii-art {
+            color: var(--text-green);
+            font-size: 0.7rem;
+            white-space: pre;
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        p, .line {
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .highlight { color: var(--text-cyan); font-weight: bold; }
+        .tag { background: #21262d; color: var(--accent-pink); padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; }
+        
+        .prompt-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .prompt-symbol {
+            color: var(--text-green);
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            outline: none;
+            flex-grow: 1;
+            min-width: 200px;
+        }
+
+        /* Quick Action Command Chips */
+        .chip-container {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #30363d;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            background: #21262d;
+            color: var(--text-cyan);
+            border: 1px solid #30363d;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chip:hover {
+            background: var(--text-cyan);
+            color: var(--bg-color);
+            transform: translateY(-2px);
+        }
+
+        .project-card {
+            border-left: 3px solid var(--accent-yellow);
+            background: rgba(255,255,255,0.02);
+            padding: 12px 16px;
+            margin: 10px 0;
+        }
+
+        a {
+            color: var(--text-cyan);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .ascii-art { font-size: 0.45rem; }
+            .terminal-body { padding: 15px; }
+        }
+    </style>
+</head>
+<body class="crt">
+
+    <canvas id="matrix-canvas"></canvas>
+
+    <div class="container">
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="window-buttons">
+                    <span class="btn-circle btn-red" onclick="clearTerminal()" title="Clear terminal"></span>
+                    <span class="btn-circle btn-yellow"></span>
+                    <span class="btn-circle btn-green"></span>
+                </div>
+                <div class="window-title">john-andrew-self@localhost:~</div>
+                <div style="width: 40px;"></div>
+            </div>
+
+            <div class="terminal-body" id="terminal-body">
+                <!-- ASCII Intro Header -->
+                <pre class="ascii-art">
+   ██████  ██████  ██   ██ ███    ██ 
+  ██    ██ ██   ██ ██   ██ ████   ██ 
+  ██    ██ ██████  ███████ ██ ██  ██ 
+  ██    ██ ██   ██ ██   ██ ██  ██ ██ 
+   ██████  ██████  ██   ██ ██   ████ 
+                </pre>
+
+                <p>Hello, world! 👋 I'm <span class="highlight">John Andrew Self</span>.</p>
+                <p>💻 <b>Role:</b> Computer Scientist & Technical Problem Solver</p>
+                <p>🧠 <b>Motto:</b> <i>"If it ain't broken, let's optimize it until it breaks, then fix it better."</i></p>
+                
+                <br>
+                <p>Type <span class="tag">help</span> or click any command below to explore:</p>
+
+                <!-- Command Quick Buttons -->
+                <div class="chip-container">
+                    <button class="chip" onclick="execCmd('about')">about</button>
+                    <button class="chip" onclick="execCmd('skills')">skills</button>
+                    <button class="chip" onclick="execCmd('projects')">projects</button>
+                    <button class="chip" onclick="execCmd('quirks')">quirks</button>
+                    <button class="chip" onclick="execCmd('contact')">contact</button>
+                    <button class="chip" onclick="execCmd('clear')">clear</button>
+                </div>
+
+                <div id="output-history" style="margin-top: 20px;"></div>
+
+                <!-- Live Command Prompt Input -->
+                <div class="prompt-line">
+                    <span class="prompt-symbol">john@self-os:~$</span>
+                    <input type="text" id="cmd-input" autofocus autocomplete="off" placeholder="type a command...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('cmd-input');
+        const history = document.getElementById('output-history');
+        const body = document.getElementById('terminal-body');
+
+        // Command dictionary
+        const commands = {
+            'help': `Available commands: 
+  <span class="highlight">about</span>    - Who is John Andrew Self?
+  <span class="highlight">skills</span>   - Tech stack & problem-solving toolkit
+  <span class="highlight">projects</span> - Cool things I've engineered
+  <span class="highlight">quirks</span>   - The non-standard features of my personality
+  <span class="highlight">contact</span>  - How to reach my inbox
+  <span class="highlight">clear</span>    - Wipe the screen clean`,
+            
+            'about': `John Andrew Self | Computer Scientist
+------------------------------------
+I break down complex real-world puzzles into clean, efficient computational solutions.
+Whether it's algorithms, system design, or low-level logic, I enjoy building things that work seamlessly under the hood.`,
+            
+            'skills': `System Architecture & Algorithmic Design
+Languages:  [ Python, C++, Java, JavaScript, Rust/Go, SQL ]
+Tooling:    [ Git, Linux/Unix, Docker, Cloud Infrastructures ]
+Specialties: Problem Decomposition, Optimization, Systems Analysis`,
+
+            'projects': `
+<div class="project-card">
+  <b>🚀 Project Alpha: High-Throughput Processor</b><br>
+  An optimized algorithm pipeline handling complex computational workloads.<br>
+  <i>Tech: Python, Multithreading, C++</i>
+</div>
+<div class="project-card">
+  <b>🛠️ Project Beta: Custom Logic Engine</b><br>
+  A lightweight execution framework designed for rapid problem solving.<br>
+  <i>Tech: System Architecture, Data Structures</i>
+</div>`,
+
+            'quirks': `
+• Refactors code in my head while trying to fall asleep.
+• Powered by precise coffee-to-code conversion ratios.
+• Considers 'edge case discovery' a personal hobby.
+• Will spend 4 hours automating a 5-minute task, proudly.`,
+
+            'contact': `Email:    <a href="mailto:john.andrew.self@example.com">john.andrew.self@example.com</a>
+GitHub:   <a href="https://github.com" target="_blank">github.com/johnandrewself</a>
+LinkedIn: <a href="https://linkedin.com" target="_blank">linkedin.com/in/johnandrewself</a>`
+        };
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const cmd = input.value.trim().toLowerCase();
+                execCmd(cmd);
+                input.value = '';
+            }
+        });
+
+        function execCmd(cmd) {
+            // Append typed command to screen
+            const line = document.createElement('div');
+            line.className = 'line';
+            line.innerHTML = `<span class="prompt-symbol">john@self-os:~$</span> ${cmd}`;
+            history.appendChild(line);
+
+            // Handle logic
+            if (cmd === 'clear') {
+                history.innerHTML = '';
+            } else if (commands[cmd]) {
+                const response = document.createElement('div');
+                response.className = 'line';
+                response.style.marginBottom = '15px';
+                response.innerHTML = commands[cmd];
+                history.appendChild(response);
+            } else if (cmd !== '') {
+                const err = document.createElement('div');
+                err.className = 'line';
+                err.style.color = '#ff6e6e';
+                err.innerHTML = `Command not recognized: '${cmd}'. Type <span class="tag">help</span> for a list of commands.`;
+                history.appendChild(err);
+            }
+
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function clearTerminal() {
+            history.innerHTML = '';
+        }
+
+        /* Matrix Digital Rain Animation */
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = '01100101010101110101010101010';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#3fb950';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(drawMatrix, 40);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
 </html>
