@@ -159,9 +159,9 @@
             color: var(--retro-green);
         }
 
-        .picks-col {
-            color: #94a3b8;
-            width: 25%;
+        .rep-col {
+            color: var(--retro-yellow);
+            width: 30%;
         }
     </style>
 </head>
@@ -175,7 +175,7 @@
 
     <header>
         <h1 class="title">LEAGUE STANDINGS</h1>
-        <div class="subtitle">LIVE CLOUD LEADERBOARD</div>
+        <div class="subtitle">REPUTATION & ACCURACY</div>
     </header>
 
     <div class="leaderboard-container">
@@ -186,7 +186,7 @@
                 <tr>
                     <th class="rank-col">POS</th>
                     <th>COACH</th>
-                    <th class="center picks-col">PICKS</th>
+                    <th class="center rep-col">REP SCORE</th>
                 </tr>
             </thead>
             <tbody id="leaderboard-body">
@@ -212,51 +212,45 @@
 
                 if (profilesError) throw profilesError;
 
-                // Fetch total picks made by all devices
-                const { data: picksData, error: picksError } = await supabaseClient
-                    .from('picks')
-                    .select('device_uid');
-
-                if (picksError) throw picksError;
-
                 if (!profilesData || profilesData.length === 0) {
                     statusDisplay.innerText = "NO REGISTERED COACHES YET.";
                     return;
                 }
 
-                // Map pick counts per device
-                const pickCounts = {};
-                if (picksData) {
-                    picksData.forEach(pick => {
-                        if (pick.device_uid) {
-                            pickCounts[pick.device_uid] = (pickCounts[pick.device_uid] || 0) + 1;
-                        }
-                    });
-                }
+                // Reputation score structure initialized to 0% for Week 1 prep
+                const standings = profilesData.map(profile => {
+                    const correctPicks = 0;
+                    const totalGames = 0;
+                    const accuracyPct = totalGames > 0 ? ((correctPicks / totalGames) * 100).toFixed(1) : "0.0";
 
-                // Build standings list
-                const standings = profilesData.map(profile => ({
-                    uid: profile.device_uid,
-                    name: profile.coach_name || 'UNKNOWN COACH',
-                    picksCount: pickCounts[profile.device_uid] || 0
-                }));
+                    return {
+                        uid: profile.device_uid,
+                        name: profile.coach_name || 'UNKNOWN COACH',
+                        correct: correctPicks,
+                        total: totalGames,
+                        accuracy: parseFloat(accuracyPct)
+                    };
+                });
 
-                // Sort by total picks locked (descending)
-                standings.sort((a, b) => b.picksCount - a.picksCount);
+                // Sort alphabetically as a default tiebreaker while all scores are 0.0%
+                standings.sort((a, b) => b.accuracy - a.accuracy || a.name.localeCompare(b.name));
 
                 tbody.innerHTML = '';
                 standings.forEach((entry, index) => {
                     const row = document.createElement('tr');
-                    if (entry.uid === currentUID) {
+                    const isCurrentUser = entry.uid === currentUID;
+
+                    if (isCurrentUser) {
                         row.className = 'my-user-row';
                     }
 
                     const rankText = index === 0 ? '👑 1' : `#${index + 1}`;
+                    const displayName = `${entry.name.toUpperCase()} ${isCurrentUser ? '(YOU)' : ''}`;
 
                     row.innerHTML = `
                         <td class="rank-col">${rankText}</td>
-                        <td class="coach-col">${entry.name.toUpperCase()} ${entry.uid === currentUID ? '(YOU)' : ''}</td>
-                        <td class="center picks-col">${entry.picksCount}</td>
+                        <td class="coach-col">${displayName}</td>
+                        <td class="center rep-col">${entry.accuracy.toFixed(1)}%</td>
                     `;
                     tbody.appendChild(row);
                 });
