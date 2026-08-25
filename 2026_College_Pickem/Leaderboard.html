@@ -12,12 +12,12 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Active 2026 project credentials
-        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9'; 
+     // --- SUPABASE CONFIGURATION ---
+const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
 
-        // FIXED: Changed variable name to supabaseClient to prevent global naming syntax crashes
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize the client globally for your swipe handlers
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
     <script type="text/javascript">
