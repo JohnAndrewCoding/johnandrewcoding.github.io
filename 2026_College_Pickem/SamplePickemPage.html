@@ -222,6 +222,7 @@
             font-size: 0.7rem;
             box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
             word-wrap: break-word;
+            transition: all 0.2s ease;
         }
 
         @media (hover: hover) {
@@ -244,7 +245,7 @@
             margin-top: 1.5rem; 
         }
 
-        /* SKIP BUTTON ABOVE SPREAD */
+        /* SKIP BUTTON */
         .skip-btn {
             width: 100%;
             background: #000000;
@@ -256,6 +257,7 @@
             font-size: 0.6rem;
             box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
             margin-top: 0.5rem;
+            transition: all 0.2s ease;
         }
 
         @media (hover: hover) {
@@ -318,7 +320,7 @@
             line-height: 1.4;
         }
 
-        /* BOTTOM CONTROL AREA WITH TOAST ABOVE UNDO BUTTON */
+        /* BOTTOM CONTROLS & TOAST */
         .bottom-controls-wrapper {
             width: 100%;
             max-width: 400px;
@@ -402,7 +404,7 @@
 
     <div class="deck-container" id="deck"></div>
 
-    <!-- BOTTOM CONTROL STACK: TOAST DIRECTLY ABOVE UNDO BUTTON -->
+    <!-- BOTTOM CONTROLS WRAPPER -->
     <div class="bottom-controls-wrapper">
         <div class="retro-toast" id="toast">LOCKED: UGA</div>
         <button class="undo-btn" id="undo-btn" ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO LAST PICK</button>
@@ -443,15 +445,16 @@
             document.getElementById('undo-btn').style.display = 'none';
 
             try {
+                // Fetch existing picks for this week from Supabase
                 const { data: databasePicks } = await supabaseClient
                     .from('picks')
                     .select('card_id, chosen_team')
                     .eq('device_uid', deviceUID)
                     .eq('week_number', currentWeek);
 
+                savedPicks[`week-${currentWeek}`] = {};
                 if (databasePicks) {
                     databasePicks.forEach(p => {
-                        if (!savedPicks[`week-${currentWeek}`]) savedPicks[`week-${currentWeek}`] = {};
                         savedPicks[`week-${currentWeek}`][p.card_id] = p.chosen_team;
                     });
                 }
@@ -471,6 +474,7 @@
 
                 gamesData.forEach((gameEvent, index) => {
                     const matchupNum = index + 1;
+                    const cardId = `card-${matchupNum}`;
                     const competition = gameEvent.competitions[0];
                     
                     const homeTeamData = competition.competitors.find(c => c.homeAway === 'home');
@@ -509,9 +513,24 @@
                         ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
                         : "LOCATION N/A";
 
+                    // Check if pick already exists in DB memory
+                    const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
+
+                    const homePickedStyle = (existingPick === home.name) 
+                        ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
+                        : '';
+
+                    const awayPickedStyle = (existingPick === away.name) 
+                        ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
+                        : '';
+
+                    const skipPickedStyle = (existingPick === 'SKIPPED') 
+                        ? 'border-color: var(--retro-yellow); color: var(--retro-yellow);' 
+                        : '';
+
                     const card = document.createElement('div');
                     card.className = 'matchup-card';
-                    card.id = `card-${matchupNum}`;
+                    card.id = cardId;
                     card.setAttribute('data-home', home.name);
                     card.setAttribute('data-away', away.name);
                     
@@ -526,19 +545,25 @@
                         <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
-                                <button class="team-btn" onclick="handleBtnPick('card-${matchupNum}', 'home')">${home.name}</button>
+                                <button class="team-btn" id="${cardId}-btn-home" style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
+                                    ${home.name} ${existingPick === home.name ? '✓' : ''}
+                                </button>
                                 <span class="team-record">REC: ${home.record}</span>
                             </div>
                             <div class="vs-divider">VS</div>
                             <div class="team-display-block">
                                 ${helmetHTML(away.color)}
-                                <button class="team-btn" onclick="handleBtnPick('card-${matchupNum}', 'away')">${away.name}</button>
+                                <button class="team-btn" id="${cardId}-btn-away" style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
+                                    ${away.name} ${existingPick === away.name ? '✓' : ''}
+                                </button>
                                 <span class="team-record">REC: ${away.record}</span>
                             </div>
                         </div>
 
-                        <!-- SKIP BUTTON PLACED RIGHT ABOVE THE SPREAD -->
-                        <button class="skip-btn" onclick="handleSkip('card-${matchupNum}')">[ SKIP MATCHUP ]</button>
+                        <!-- SKIP BUTTON -->
+                        <button class="skip-btn" id="${cardId}-btn-skip" style="${skipPickedStyle}" onclick="handleSkip('${cardId}')">
+                            ${existingPick === 'SKIPPED' ? '[ MATCHUP SKIPPED ✓ ]' : '[ SKIP MATCHUP ]'}
+                        </button>
 
                         <div class="game-info-bar">${pointSpread}</div>
                     `;
@@ -644,6 +669,7 @@
             executePick(card, 'skip', 'swipe-up');
         }
 
+        // AUTO-SAVE TO SUPABASE & UPDATE VISUAL BUTTON STATES
         async function executePick(cardElement, pickType, animationClass) {
             const cardId = cardElement.id;
             let chosenTeam = "SKIPPED";
@@ -657,6 +683,15 @@
             }
             savedPicks[`week-${currentWeek}`][cardId] = chosenTeam;
 
+            // Update local button highlights visually before card animates out
+            const homeBtn = document.getElementById(`${cardId}-btn-home`);
+            const awayBtn = document.getElementById(`${cardId}-btn-away`);
+            const skipBtn = document.getElementById(`${cardId}-btn-skip`);
+
+            homeBtn.style = pickType === 'home' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
+            awayBtn.style = pickType === 'away' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
+            skipBtn.style = pickType === 'skip' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow);' : '';
+
             triggerToastNotification(chosenTeam === "SKIPPED" ? "SKIPPED" : chosenTeam);
 
             cardElement.removeAttribute('style'); 
@@ -667,6 +702,7 @@
             renderProgressUpdates();
             document.getElementById('undo-btn').style.display = 'block';
 
+            // Save choice to database automatically
             try {
                 await supabaseClient.from('picks').upsert({
                     device_uid: deviceUID,
@@ -679,6 +715,7 @@
             }
         }
 
+        // DELETE FROM SUPABASE ON UNDO & RESTORE CARD STACK
         async function undoLastPick() {
             if (currentCardIndex <= 1) return;
 
@@ -691,6 +728,14 @@
             if (savedPicks[`week-${currentWeek}`]) {
                 delete savedPicks[`week-${currentWeek}`][previousCardId];
             }
+
+            // Reset visual button styles on undone card
+            const homeBtn = document.getElementById(`${previousCardId}-btn-home`);
+            const awayBtn = document.getElementById(`${previousCardId}-btn-away`);
+            const skipBtn = document.getElementById(`${previousCardId}-btn-skip`);
+            if (homeBtn) homeBtn.style = '';
+            if (awayBtn) awayBtn.style = '';
+            if (skipBtn) skipBtn.style = '';
 
             previousCard.className = 'matchup-card';
             previousCard.removeAttribute('style');
@@ -705,6 +750,7 @@
             
             triggerToastNotification("PICK REMOVED");
 
+            // Remove choice from database automatically
             try {
                 await supabaseClient.from('picks').delete().match({
                     device_uid: deviceUID,
