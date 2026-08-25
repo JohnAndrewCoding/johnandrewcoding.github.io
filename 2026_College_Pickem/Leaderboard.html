@@ -19,7 +19,7 @@
         // AUTH GUARD: Redirect to Homepage if device profile is not registered
         const deviceUID = localStorage.getItem('my_device_uid');
         if (!deviceUID) {
-            window.location.href = "index.html";
+            window.location.href = "Homepage.html";
         }
     </script>
 
@@ -169,8 +169,8 @@
 
     <!-- TOP NAVIGATION LINKS -->
     <div class="top-nav">
-        <a href="index.html" class="nav-link-btn">&lt; HOME</a>
-        <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS &gt;</a>
+        <a href="Homepage.html" class="nav-link-btn">&lt; HOME</a>
+        <a href="index.html" class="nav-link-btn">MAKE PICKS &gt;</a>
     </div>
 
     <header>
@@ -205,12 +205,12 @@
             const currentUID = localStorage.getItem('my_device_uid');
 
             try {
-                // Fetch all coaches from database
-                const { data: usersData, error: usersError } = await supabaseClient
-                    .from('users')
+                // Fetch profiles from database schema table
+                const { data: profilesData, error: profilesError } = await supabaseClient
+                    .from('profiles')
                     .select('device_uid, coach_name');
 
-                if (usersError) throw usersError;
+                if (profilesError) throw profilesError;
 
                 // Fetch total picks made by all devices
                 const { data: picksData, error: picksError } = await supabaseClient
@@ -219,7 +219,7 @@
 
                 if (picksError) throw picksError;
 
-                if (!usersData || usersData.length === 0) {
+                if (!profilesData || profilesData.length === 0) {
                     statusDisplay.innerText = "NO REGISTERED COACHES YET.";
                     return;
                 }
@@ -228,15 +228,17 @@
                 const pickCounts = {};
                 if (picksData) {
                     picksData.forEach(pick => {
-                        pickCounts[pick.device_uid] = (pickCounts[pick.device_uid] || 0) + 1;
+                        if (pick.device_uid) {
+                            pickCounts[pick.device_uid] = (pickCounts[pick.device_uid] || 0) + 1;
+                        }
                     });
                 }
 
                 // Build standings list
-                const standings = usersData.map(user => ({
-                    uid: user.device_uid,
-                    name: user.coach_name || 'UNKNOWN COACH',
-                    picksCount: pickCounts[user.device_uid] || 0
+                const standings = profilesData.map(profile => ({
+                    uid: profile.device_uid,
+                    name: profile.coach_name || 'UNKNOWN COACH',
+                    picksCount: pickCounts[profile.device_uid] || 0
                 }));
 
                 // Sort by total picks locked (descending)
