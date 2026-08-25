@@ -10,6 +10,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
+    <!-- SUPABASE CLIENT INTEGRATION -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // AUTH GUARD: Force device registration if no local device_uid exists
+        const deviceUID = localStorage.getItem('my_device_uid');
+        if (!deviceUID) {
+            window.location.href = "Homepage.html";
+        }
+    </script>
+
     <style>
         :root {
             --bg-canvas: #0f172a;       
@@ -80,13 +94,12 @@
             box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
         }
 
-        /* Change this block */
-@media (hover: hover) {
-    .week-btn:hover {
-        border-color: var(--retro-yellow);
-        color: var(--retro-yellow);
-    }
-}
+        @media (hover: hover) {
+            .week-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
+        }
 
         .week-display {
             color: var(--retro-yellow);
@@ -182,13 +195,12 @@
             word-wrap: break-word;
         }
 
-        /* Change this block */
-@media (hover: hover) {
-    .team-btn:hover {
-        border-color: var(--retro-yellow);
-        color: var(--retro-yellow);
-    }
-}
+        @media (hover: hover) {
+            .team-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
+        }
 
         .team-record {
             font-family: var(--pixel-font);
@@ -203,7 +215,6 @@
             margin-top: 2rem; 
         }
 
-        /* --- INFO BAR FOR ODDS/SPREAD --- */
         .game-info-bar {
             width: 100%;
             background: #000000;
@@ -273,7 +284,7 @@
             opacity: 1;
             transform: translateY(0px);
         }
-        /* --- UNDO BUTTON STYLE --- */
+
         .undo-container {
             width: 100%;
             max-width: 400px;
@@ -292,16 +303,15 @@
             font-family: var(--pixel-font);
             font-size: 0.65rem;
             box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
-            display: none; /* Hidden by default, shown when a pick is made */
+            display: none;
         }
 
-       /* Change this block */
-@media (hover: hover) {
-    .undo-btn:hover {
-        border-color: var(--retro-yellow);
-        color: var(--retro-yellow);
-    }
-}
+        @media (hover: hover) {
+            .undo-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
+        }
 
         @media (max-width: 600px) {
             .vs-divider { display: none; }
@@ -324,12 +334,12 @@
 
     <div class="retro-toast" id="toast">PICKED: UGA</div>
 
-    <div class="deck-container" id="deck">
-        </div>
-   <!-- Change this container in your HTML -->
-<div class="undo-container">
-    <button class="undo-btn" id="undo-btn" ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO LAST PICK</button>
-</div>
+    <div class="deck-container" id="deck"></div>
+
+    <div class="undo-container">
+        <button class="undo-btn" id="undo-btn" ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO LAST PICK</button>
+    </div>
+    
     <div class="mobile-hint">
         &lt; SWIPE LEFT FOR HOME | SWIPE RIGHT FOR AWAY &gt;
     </div>
@@ -365,6 +375,20 @@
             document.getElementById('undo-btn').style.display = 'none';
 
             try {
+                // Fetch saved picks for the current week from Supabase
+                const { data: databasePicks } = await supabaseClient
+                    .from('picks')
+                    .select('card_id, chosen_team')
+                    .eq('device_uid', deviceUID)
+                    .eq('week_number', currentWeek);
+
+                if (databasePicks) {
+                    databasePicks.forEach(p => {
+                        if (!savedPicks[`week-${currentWeek}`]) savedPicks[`week-${currentWeek}`] = {};
+                        savedPicks[`week-${currentWeek}`][p.card_id] = p.chosen_team;
+                    });
+                }
+
                 const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const data = await response.json();
                 
@@ -385,13 +409,11 @@
                     const homeTeamData = competition.competitors.find(c => c.homeAway === 'home');
                     const awayTeamData = competition.competitors.find(c => c.homeAway === 'away');
 
-                    // Extract spreads/odds safely
                     let pointSpread = "LINE: N/A";
                     if (competition.odds && competition.odds.length > 0 && competition.odds[0].details) {
                         pointSpread = `SPREAD: ${competition.odds[0].details.toUpperCase()}`;
                     }
 
-                    // Extract team records safely
                     const homeRecord = (homeTeamData.records && homeTeamData.records.length > 0) ? homeTeamData.records[0].summary : "0-0";
                     const awayRecord = (awayTeamData.records && awayTeamData.records.length > 0) ? awayTeamData.records[0].summary : "0-0";
 
@@ -408,18 +430,17 @@
                         color: awayTeamData.team.color || '1e3a8a',
                         record: awayRecord
                     };
-                    // Extract Kickoff Date and Time safely
-        const kickoffDate = new Date(gameEvent.date);
-        const formattedTime = kickoffDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) + 
-                      " @ " + 
-                      kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-// Extract Venue details safely
-        const venue = competition.venue || {};
-        const stadiumName = venue.fullName ? venue.fullName.toUpperCase() : "UNKNOWN STADIUM";
-        const stadiumLoc = (venue.address && venue.address.city && venue.address.state) 
-    ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
-    : "LOCATION N/A";
+                    const kickoffDate = new Date(gameEvent.date);
+                    const formattedTime = kickoffDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) + 
+                                  " @ " + 
+                                  kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                    const venue = competition.venue || {};
+                    const stadiumName = venue.fullName ? venue.fullName.toUpperCase() : "UNKNOWN STADIUM";
+                    const stadiumLoc = (venue.address && venue.address.city && venue.address.state) 
+                        ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
+                        : "LOCATION N/A";
 
                     const card = document.createElement('div');
                     card.className = 'matchup-card';
@@ -428,14 +449,14 @@
                     card.setAttribute('data-away', away.name);
                     
                     card.style.zIndex = totalCards - index;
-                        card.innerHTML = `
-    <span class="matchup-number" style="font-size: 0.55rem; color: var(--retro-yellow);">
-        ${formattedTime}<br>
-        <small style="font-size: 0.5rem; color: #64748b; line-height: 1.5;">
-            ${stadiumName}<br>${stadiumLoc}
-        </small>
-    </span>
-                         <div class="teams-wrapper">
+                    card.innerHTML = `
+                        <span class="matchup-number" style="font-size: 0.55rem; color: var(--retro-yellow);">
+                            ${formattedTime}<br>
+                            <small style="font-size: 0.5rem; color: #64748b; line-height: 1.5;">
+                                ${stadiumName}<br>${stadiumLoc}
+                            </small>
+                        </span>
+                        <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
                                 <button class="team-btn" onclick="handleBtnPick('card-${matchupNum}', 'home')">${home.name}</button>
@@ -544,7 +565,8 @@
             executePick(card, pickType, animationClass);
         }
 
-        function executePick(cardElement, pickType, animationClass) {
+        // SAVE PICK TO SUPABASE DATA STREAM
+        async function executePick(cardElement, pickType, animationClass) {
             const cardId = cardElement.id;
             const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
             
@@ -562,6 +584,55 @@
             updateActiveCardVisibility();
             renderProgressUpdates();
             document.getElementById('undo-btn').style.display = 'block';
+
+            try {
+                await supabaseClient.from('picks').upsert({
+                    device_uid: deviceUID,
+                    week_number: currentWeek,
+                    card_id: cardId,
+                    chosen_team: chosenTeam
+                }, { onConflict: 'device_uid,week_number,card_id' });
+            } catch (err) {
+                console.error("Database save error:", err);
+            }
+        }
+
+        // REMOVE PICK FROM SUPABASE ON UNDO
+        async function undoLastPick() {
+            if (currentCardIndex <= 1) return;
+
+            currentCardIndex--;
+
+            const previousCardId = `card-${currentCardIndex}`;
+            const previousCard = document.getElementById(previousCardId);
+            if (!previousCard) return;
+
+            if (savedPicks[`week-${currentWeek}`]) {
+                delete savedPicks[`week-${currentWeek}`][previousCardId];
+            }
+
+            previousCard.className = 'matchup-card';
+            previousCard.removeAttribute('style');
+            previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
+
+            updateActiveCardVisibility();
+            renderProgressUpdates();
+
+            if (currentCardIndex === 1) {
+                document.getElementById('undo-btn').style.display = 'none';
+            }
+            
+            triggerToastNotification("PICK REMOVED");
+
+            try {
+                await supabaseClient.from('picks').delete().match({
+                    device_uid: deviceUID,
+                    week_number: currentWeek,
+                    card_id: previousCardId
+                });
+            } catch (err) {
+                console.error("Database delete error:", err);
+            }
         }
 
         function triggerToastNotification(teamName) {
@@ -584,41 +655,6 @@
                 display.style.color = "var(--retro-green)";      
                 display.style.borderColor = "var(--retro-green)";
             }
-        }
-        function undoLastPick() {
-            // Check if we are at the first card (nothing to undo)
-            if (currentCardIndex <= 1) return;
-
-            // Step back one card index
-            currentCardIndex--;
-
-            // Find the targeted card element
-            const previousCard = document.getElementById(`card-${currentCardIndex}`);
-            if (!previousCard) return;
-
-            // Remove saved pick entry from storage
-            if (savedPicks[`week-${currentWeek}`]) {
-                delete savedPicks[`week-${currentWeek}`][`card-${currentCardIndex}`];
-            }
-
-            // Reset animation positioning classes completely
-            previousCard.className = 'matchup-card';
-            previousCard.removeAttribute('style');
-
-            // Force z-index realignment to place it perfectly on top of the pile
-            previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
-
-            // Re-sync visual components
-            updateActiveCardVisibility();
-            renderProgressUpdates();
-
-            // Hide the undo button if we rolled back all the way to the first game
-            if (currentCardIndex === 1) {
-                document.getElementById('undo-btn').style.display = 'none';
-            }
-            
-            // Temporary confirmation alert
-            triggerToastNotification("PICK REMOVED");
         }
 
         window.addEventListener('DOMContentLoaded', loadWeekGames);
