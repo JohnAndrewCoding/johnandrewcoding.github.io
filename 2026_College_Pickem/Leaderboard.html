@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Bowl - Leaderboard</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +15,12 @@
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // AUTH GUARD: Redirect to Homepage if device profile is not registered
+        const deviceUID = localStorage.getItem('my_device_uid');
+        if (!deviceUID) {
+            window.location.href = "index.html";
+        }
     </script>
 
     <style>
@@ -24,7 +30,6 @@
             --retro-yellow: #facc15;    
             --retro-blue: #38bdf8;      
             --retro-green: #4ade80;     
-            --retro-red: #f87171;
             --pixel-font: 'Press Start 2P', monospace;
         }
 
@@ -34,130 +39,138 @@
             padding: 0;
         }
 
-        body {
+        html, body {
+            width: 100%;
+            height: 100%;
             background-color: var(--bg-canvas);
             color: #ffffff;
             font-family: var(--pixel-font);
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 1.5rem 1rem;
-            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        /* TOP NAV LINKS */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 450px;
+            margin-bottom: 1rem;
+            gap: 0.5rem;
+        }
+
+        .nav-link-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 0.4rem 0.5rem;
+            text-decoration: none;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            text-align: center;
+            flex: 1;
+        }
+
+        @media (hover: hover) {
+            .nav-link-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
         }
 
         header {
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             width: 100%;
-            max-width: 500px;
-        }
-
-        .nav-bar {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-        }
-
-        .nav-btn {
-            background: #000000;
-            color: #ffffff;
-            border: 3px solid #ffffff;
-            padding: 0.5rem 0.75rem;
-            cursor: pointer;
-            font-family: var(--pixel-font);
-            font-size: 0.65rem;
-            text-decoration: none;
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
-        }
-
-        .nav-btn:hover {
-            border-color: var(--retro-yellow);
-            color: var(--retro-yellow);
+            max-width: 450px;
         }
 
         .title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--retro-yellow);
             text-shadow: 3px 3px 0px #000;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
         }
 
         .subtitle {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             color: var(--retro-blue);
         }
 
-        .standings-container {
+        .leaderboard-container {
             width: 100%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .coach-card {
+            max-width: 450px;
             background-color: var(--bg-card);
-            border: 4px solid #000000;
-            box-shadow: 4px 4px 0px #000000;
+            border: 6px solid #000000;
+            box-shadow: 6px 6px 0px #000000;
             padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
 
-        .rank-badge {
-            font-size: 1rem;
+        .status-msg {
+            text-align: center;
+            font-size: 0.65rem;
             color: var(--retro-yellow);
-            width: 40px;
+            padding: 2rem 0;
+            line-height: 1.6;
         }
 
-        .coach-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .coach-name {
-            font-size: 0.85rem;
-            color: #ffffff;
-        }
-
-        .coach-player {
+        .leaderboard-table th {
             font-size: 0.55rem;
-            color: #94a3b8;
+            color: var(--retro-blue);
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 2px solid #475569;
         }
 
-        .stats-block {
-            text-align: right;
+        .leaderboard-table th.center,
+        .leaderboard-table td.center {
+            text-align: center;
         }
 
-        .picks-count {
-            font-size: 0.9rem;
+        .leaderboard-table td {
+            font-size: 0.6rem;
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px dashed #334155;
+        }
+
+        .rank-col {
+            color: var(--retro-yellow);
+            width: 15%;
+        }
+
+        .coach-col {
+            color: #ffffff;
+            word-break: break-all;
+        }
+
+        .my-user-row {
+            background-color: #000000;
+        }
+
+        .my-user-row td.coach-col {
             color: var(--retro-green);
         }
 
-        .picks-label {
-            font-size: 0.5rem;
-            color: #64748b;
-            margin-top: 0.2rem;
-        }
-
-        .loading-text {
-            text-align: center;
-            font-size: 0.75rem;
-            color: var(--retro-yellow);
-            margin-top: 2rem;
+        .picks-col {
+            color: #94a3b8;
+            width: 25%;
         }
     </style>
 </head>
 <body>
 
-    <div class="nav-bar">
-        <a href="index.html" class="nav-btn">&lt; HOME</a>
-        <a href="SamplePickemPage.html" class="nav-btn">MAKE PICKS &gt;</a>
+    <!-- TOP NAVIGATION LINKS -->
+    <div class="top-nav">
+        <a href="index.html" class="nav-link-btn">&lt; HOME</a>
+        <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS &gt;</a>
     </div>
 
     <header>
@@ -165,64 +178,96 @@
         <div class="subtitle">LIVE CLOUD LEADERBOARD</div>
     </header>
 
-    <div class="standings-container" id="standings-list">
-        <div class="loading-text">FETCHING LEAGUE DATA...</div>
+    <div class="leaderboard-container">
+        <div id="status-display" class="status-msg">FETCHING LEAGUE DATA...</div>
+        
+        <table class="leaderboard-table" id="leaderboard-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th class="rank-col">POS</th>
+                    <th>COACH</th>
+                    <th class="center picks-col">PICKS</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                <!-- Dynamic Rows Inserted Here -->
+            </tbody>
+        </table>
     </div>
 
     <script>
-        async function fetchLiveCloudStandings() {
-            const container = document.getElementById('standings-list');
+        window.addEventListener('DOMContentLoaded', loadLeaderboard);
+
+        async function loadLeaderboard() {
+            const statusDisplay = document.getElementById('status-display');
+            const table = document.getElementById('leaderboard-table');
+            const tbody = document.getElementById('leaderboard-body');
+            const currentUID = localStorage.getItem('my_device_uid');
 
             try {
-                // Fetch all coach profiles alongside their picks count[cite: 2]
-                const { data, error } = await supabaseClient
-                    .from('profiles')
-                    .select(`
-                        coach_name,
-                        player_name,
-                        picks ( id )
-                    `);
+                // Fetch all coaches from database
+                const { data: usersData, error: usersError } = await supabaseClient
+                    .from('users')
+                    .select('device_uid, coach_name');
 
-                if (error) throw error;
+                if (usersError) throw usersError;
 
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="loading-text">NO COACHES REGISTERED YET</div>';
+                // Fetch total picks made by all devices
+                const { data: picksData, error: picksError } = await supabaseClient
+                    .from('picks')
+                    .select('device_uid');
+
+                if (picksError) throw picksError;
+
+                if (!usersData || usersData.length === 0) {
+                    statusDisplay.innerText = "NO REGISTERED COACHES YET.";
                     return;
                 }
 
-                // Map data and sort by total picks submitted descending[cite: 2]
-                const leaderboard = data.map(user => ({
-                    coachName: user.coach_name || "UNNAMED COACH",[cite: 2]
-                    playerName: user.player_name || "ANONYMOUS",
-                    picksCount: user.picks ? user.picks.length : 0[cite: 2]
-                })).sort((a, b) => b.picksCount - a.picksCount);
+                // Map pick counts per device
+                const pickCounts = {};
+                if (picksData) {
+                    picksData.forEach(pick => {
+                        pickCounts[pick.device_uid] = (pickCounts[pick.device_uid] || 0) + 1;
+                    });
+                }
 
-                container.innerHTML = '';
+                // Build standings list
+                const standings = usersData.map(user => ({
+                    uid: user.device_uid,
+                    name: user.coach_name || 'UNKNOWN COACH',
+                    picksCount: pickCounts[user.device_uid] || 0
+                }));
 
-                leaderboard.forEach((user, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'coach-card';
-                    card.innerHTML = `
-                        <div class="rank-badge">#${index + 1}</div>
-                        <div class="coach-info">
-                            <div class="coach-name">${user.coachName}</div>
-                            <div class="coach-player">PLAYER: ${user.playerName}</div>
-                        </div>
-                        <div class="stats-block">
-                            <div class="picks-count">${user.picksCount}</div>
-                            <div class="picks-label">PICKS SAVED</div>
-                        </div>
+                // Sort by total picks locked (descending)
+                standings.sort((a, b) => b.picksCount - a.picksCount);
+
+                tbody.innerHTML = '';
+                standings.forEach((entry, index) => {
+                    const row = document.createElement('tr');
+                    if (entry.uid === currentUID) {
+                        row.className = 'my-user-row';
+                    }
+
+                    const rankText = index === 0 ? '👑 1' : `#${index + 1}`;
+
+                    row.innerHTML = `
+                        <td class="rank-col">${rankText}</td>
+                        <td class="coach-col">${entry.name.toUpperCase()} ${entry.uid === currentUID ? '(YOU)' : ''}</td>
+                        <td class="center picks-col">${entry.picksCount}</td>
                     `;
-                    container.appendChild(card);
+                    tbody.appendChild(row);
                 });
 
-            } catch(err) {
-                console.error("Cloud Retrieval Error:", err.message);[cite: 2]
-                container.innerHTML = '<div class="loading-text" style="color: var(--retro-red);">ERROR LOADING STANDINGS</div>';
+                statusDisplay.style.display = 'none';
+                table.style.display = 'table';
+
+            } catch (err) {
+                console.error("Leaderboard fetch error:", err);
+                statusDisplay.style.color = '#ef4444';
+                statusDisplay.innerText = "ERROR LOADING LEAGUE DATA.";
             }
         }
-
-        window.addEventListener('DOMContentLoaded', fetchLiveCloudStandings);
     </script>
 </body>
 </html>
