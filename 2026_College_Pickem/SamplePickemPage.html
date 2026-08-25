@@ -149,7 +149,7 @@
             position: relative;
             width: 100%;
             max-width: 400px;
-            height: 410px;
+            height: 420px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -245,8 +245,16 @@
             margin-top: 1.5rem; 
         }
 
-        /* SKIP BUTTON */
-        .skip-btn {
+        /* CARD NAVIGATION BUTTONS */
+        .card-nav-group {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-top: 0.5rem;
+        }
+
+        .nav-card-btn {
             width: 100%;
             background: #000000;
             border: 2px solid #64748b;
@@ -254,14 +262,20 @@
             padding: 0.4rem;
             cursor: pointer;
             font-family: var(--pixel-font);
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
-            margin-top: 0.5rem;
             transition: all 0.2s ease;
         }
 
+        .nav-card-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #334155;
+            color: #334155;
+        }
+
         @media (hover: hover) {
-            .skip-btn:hover {
+            .nav-card-btn:not(:disabled):hover {
                 border-color: #ffffff;
                 color: #ffffff;
             }
@@ -333,6 +347,33 @@
             position: relative;
         }
 
+        .action-btn {
+            width: 100%;
+            background: #000000;
+            color: #cbd5e1;
+            border: 3px solid #cbd5e1;
+            padding: 0.5rem 0.25rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #475569;
+            color: #475569;
+        }
+
+        @media (hover: hover) {
+            .action-btn:not(:disabled):hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
+        }
+
         .retro-toast {
             background-color: #000000;
             border: 3px solid var(--retro-yellow);
@@ -350,30 +391,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 100%;
         }
 
         .retro-toast.show {
             opacity: 1;
             transform: translateY(0px);
-        }
-
-        .undo-btn {
-            background: #000000;
-            color: #cbd5e1;
-            border: 3px solid #cbd5e1;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            font-family: var(--pixel-font);
-            font-size: 0.6rem;
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
-            display: none;
-        }
-
-        @media (hover: hover) {
-            .undo-btn:hover {
-                border-color: var(--retro-yellow);
-                color: var(--retro-yellow);
-            }
         }
 
         @media (max-width: 600px) {
@@ -407,7 +430,7 @@
     <!-- BOTTOM CONTROLS WRAPPER -->
     <div class="bottom-controls-wrapper">
         <div class="retro-toast" id="toast">LOCKED: UGA</div>
-        <button class="undo-btn" id="undo-btn" ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO LAST PICK</button>
+        <button class="action-btn" id="undo-btn" disabled ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO PICK</button>
     </div>
     
     <div class="mobile-hint">
@@ -442,7 +465,7 @@
             currentCardIndex = 1;
             progressDisplay.removeAttribute('style');
             progressDisplay.innerText = "LOADING MATCHUPS...";
-            document.getElementById('undo-btn').style.display = 'none';
+            updateBottomButtonStates();
 
             try {
                 // Fetch existing picks for this week from Supabase
@@ -524,10 +547,6 @@
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
                         : '';
 
-                    const skipPickedStyle = (existingPick === 'SKIPPED') 
-                        ? 'border-color: var(--retro-yellow); color: var(--retro-yellow);' 
-                        : '';
-
                     const card = document.createElement('div');
                     card.className = 'matchup-card';
                     card.id = cardId;
@@ -560,10 +579,11 @@
                             </div>
                         </div>
 
-                        <!-- SKIP BUTTON -->
-                        <button class="skip-btn" id="${cardId}-btn-skip" style="${skipPickedStyle}" onclick="handleSkip('${cardId}')">
-                            ${existingPick === 'SKIPPED' ? '[ MATCHUP SKIPPED ✓ ]' : '[ SKIP MATCHUP ]'}
-                        </button>
+                        <!-- CARD NAVIGATION GROUP -->
+                        <div class="card-nav-group">
+                            <button class="nav-card-btn" onclick="goToNextCard()">[ NEXT MATCHUP ]</button>
+                            <button class="nav-card-btn" ${matchupNum === 1 ? 'disabled' : ''} onclick="goToPreviousCard()">[ LAST MATCHUP ]</button>
+                        </div>
 
                         <div class="game-info-bar">${pointSpread}</div>
                     `;
@@ -601,6 +621,11 @@
                     card.classList.remove('active-stack');
                 }
             });
+        }
+
+        function updateBottomButtonStates() {
+            const undoBtn = document.getElementById('undo-btn');
+            undoBtn.disabled = (currentCardIndex <= 1);
         }
 
         function initSwipeEngine() {
@@ -660,39 +685,27 @@
             executePick(card, pickType, animationClass);
         }
 
-        function handleSkip(cardId) {
-            const card = document.getElementById(cardId);
-            const cardIdNum = parseInt(cardId.split('-')[1]);
-            
-            if (cardIdNum !== currentCardIndex) return;
-
-            executePick(card, 'skip', 'swipe-up');
-        }
-
-        // AUTO-SAVE TO SUPABASE & UPDATE VISUAL BUTTON STATES
+        // AUTO-SAVE TO SUPABASE & UPDATE VISUAL BUTTON STATES ON PICK
         async function executePick(cardElement, pickType, animationClass) {
             const cardId = cardElement.id;
-            let chosenTeam = "SKIPPED";
-
-            if (pickType !== 'skip') {
-                chosenTeam = cardElement.getAttribute(`data-${pickType}`);
-            }
+            const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
             
             if(!savedPicks[`week-${currentWeek}`]) {
                 savedPicks[`week-${currentWeek}`] = {};
             }
             savedPicks[`week-${currentWeek}`][cardId] = chosenTeam;
 
-            // Update local button highlights visually before card animates out
+            // Highlight chosen team button
             const homeBtn = document.getElementById(`${cardId}-btn-home`);
             const awayBtn = document.getElementById(`${cardId}-btn-away`);
-            const skipBtn = document.getElementById(`${cardId}-btn-skip`);
 
             homeBtn.style = pickType === 'home' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
-            awayBtn.style = pickType === 'away' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
-            skipBtn.style = pickType === 'skip' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow);' : '';
+            homeBtn.innerHTML = `${cardElement.getAttribute('data-home')} ${pickType === 'home' ? '✓' : ''}`;
 
-            triggerToastNotification(chosenTeam === "SKIPPED" ? "SKIPPED" : chosenTeam);
+            awayBtn.style = pickType === 'away' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
+            awayBtn.innerHTML = `${cardElement.getAttribute('data-away')} ${pickType === 'away' ? '✓' : ''}`;
+
+            triggerToastNotification(chosenTeam);
 
             cardElement.removeAttribute('style'); 
             cardElement.classList.add(animationClass);
@@ -700,7 +713,7 @@
             currentCardIndex++;
             updateActiveCardVisibility();
             renderProgressUpdates();
-            document.getElementById('undo-btn').style.display = 'block';
+            updateBottomButtonStates();
 
             // Save choice to database automatically
             try {
@@ -713,6 +726,40 @@
             } catch (err) {
                 console.error("Database save error:", err);
             }
+        }
+
+        // GO TO NEXT MATCHUP WITHOUT MODIFYING PICKS
+        function goToNextCard() {
+            if (currentCardIndex > totalCards) return;
+
+            const card = document.getElementById(`card-${currentCardIndex}`);
+            if (card) {
+                card.classList.add('swipe-up');
+            }
+
+            currentCardIndex++;
+            updateActiveCardVisibility();
+            renderProgressUpdates();
+            updateBottomButtonStates();
+        }
+
+        // GO TO LAST MATCHUP WITHOUT DELETING PICKS
+        function goToPreviousCard() {
+            if (currentCardIndex <= 1) return;
+
+            currentCardIndex--;
+
+            const previousCardId = `card-${currentCardIndex}`;
+            const previousCard = document.getElementById(previousCardId);
+            if (!previousCard) return;
+
+            previousCard.className = 'matchup-card';
+            previousCard.removeAttribute('style');
+            previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
+
+            updateActiveCardVisibility();
+            renderProgressUpdates();
+            updateBottomButtonStates();
         }
 
         // DELETE FROM SUPABASE ON UNDO & RESTORE CARD STACK
@@ -732,10 +779,15 @@
             // Reset visual button styles on undone card
             const homeBtn = document.getElementById(`${previousCardId}-btn-home`);
             const awayBtn = document.getElementById(`${previousCardId}-btn-away`);
-            const skipBtn = document.getElementById(`${previousCardId}-btn-skip`);
-            if (homeBtn) homeBtn.style = '';
-            if (awayBtn) awayBtn.style = '';
-            if (skipBtn) skipBtn.style = '';
+
+            if (homeBtn) {
+                homeBtn.style = '';
+                homeBtn.innerText = previousCard.getAttribute('data-home');
+            }
+            if (awayBtn) {
+                awayBtn.style = '';
+                awayBtn.innerText = previousCard.getAttribute('data-away');
+            }
 
             previousCard.className = 'matchup-card';
             previousCard.removeAttribute('style');
@@ -743,10 +795,7 @@
 
             updateActiveCardVisibility();
             renderProgressUpdates();
-
-            if (currentCardIndex === 1) {
-                document.getElementById('undo-btn').style.display = 'none';
-            }
+            updateBottomButtonStates();
             
             triggerToastNotification("PICK REMOVED");
 
