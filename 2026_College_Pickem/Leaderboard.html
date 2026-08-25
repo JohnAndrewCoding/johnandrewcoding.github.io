@@ -2,41 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>League Standings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Bowl - Leaderboard</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <link rel="manifest" href="manifest.json">
     
+    <!-- SUPABASE CLIENT INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-     // --- SUPABASE CONFIGURATION ---
-const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
-
-// Initialize the client globally for your swipe handlers
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
 
-    <script type="text/javascript">
-        (function(d, t) {
-            var g = d.createElement(t),
-            s = d.getElementsByTagName(t)[0];
-            g.src = "https://cdn.pushalert.co/unified_1f01dca52f87f02d3c59cdddb88f5c30.js";
-            s.parentNode.insertBefore(g, s);
-        }(document, "script"));
-    </script>
-    
     <style>
         :root {
-            --bg-canvas: #0f172a;       /* Deep slate arcade background */
-            --bg-card: #1e293b;          /* Lighter card block */
-            --retro-yellow: #facc15;    /* Rank 1 / Title neon */
-            --retro-blue: #38bdf8;      /* Secondary highlights */
-            --retro-green: #4ade80;     /* Positive morale */
-            --retro-red: #f87171;       /* Dead last / Danger zone */
+            --bg-canvas: #0f172a;       
+            --bg-card: #1e293b;         
+            --retro-yellow: #facc15;    
+            --retro-blue: #38bdf8;      
+            --retro-green: #4ade80;     
+            --retro-red: #f87171;
             --pixel-font: 'Press Start 2P', monospace;
         }
 
@@ -46,355 +34,195 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             padding: 0;
         }
 
-        html, body {
-            width: 100%;
-            height: 100%;
+        body {
             background-color: var(--bg-canvas);
             color: #ffffff;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
+            font-family: var(--pixel-font);
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 1.5rem 1rem;
-            overflow-y: auto;
+            min-height: 100vh;
         }
 
-        /* --- LEAGUE ALERTS PANEL --- */
-        .alert-section {
-            margin: 10px 0 25px 0;
-            text-align: center;
-            width: 100%;
-            max-width: 500px;
-            background: #000000;
-            border: 3px dashed var(--retro-blue);
-            padding: 1rem;
-        }
-        .alert-section h3 {
-            font-family: var(--pixel-font);
-            font-size: 0.75rem;
-            color: #ffffff;
-            margin-bottom: 0.75rem;
-        }
-        #enable-alerts-btn {
-            font-family: var(--pixel-font);
-            font-size: 0.6rem;
-            padding: 10px 20px;
-            background-color: var(--retro-blue);
-            color: #000000;
-            border: 2px solid #ffffff;
-            cursor: pointer;
-            box-shadow: 3px 3px 0px #ffffff;
-        }
-        #enable-alerts-btn:active {
-            box-shadow: 0px 0px 0px #ffffff;
-            transform: translate(3px, 3px);
-        }
-
-        /* --- NAVIGATION HEADER --- */
         header {
             text-align: center;
             margin-bottom: 1.5rem;
             width: 100%;
             max-width: 500px;
-            user-select: none;
+        }
+
+        .nav-bar {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 3px solid #ffffff;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.65rem;
+            text-decoration: none;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+        }
+
+        .nav-btn:hover {
+            border-color: var(--retro-yellow);
+            color: var(--retro-yellow);
         }
 
         .title {
-            font-family: var(--pixel-font);
             font-size: 1.2rem;
             color: var(--retro-yellow);
             text-shadow: 3px 3px 0px #000;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
-        .hub-nav {
-            display: flex;
-            background: #000000;
-            border: 3px solid #ffffff;
-            padding: 0.25rem;
-            justify-content: space-between;
+        .subtitle {
+            font-size: 0.6rem;
+            color: var(--retro-blue);
         }
 
-        .nav-tab {
-            font-family: var(--pixel-font);
-            font-size: 0.65rem;
-            padding: 0.5rem;
-            color: #64748b;
-            text-decoration: none;
-        }
-
-        .nav-tab.active {
-            color: var(--retro-yellow);
-        }
-
-        /* --- LEADERBOARD LIST CONTAINER --- */
-        .leaderboard-container {
+        .standings-container {
             width: 100%;
             max-width: 500px;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
-            margin-bottom: 2rem;
+            gap: 1rem;
         }
 
-        .rank-row {
+        .coach-card {
             background-color: var(--bg-card);
             border: 4px solid #000000;
             box-shadow: 4px 4px 0px #000000;
+            padding: 1rem;
             display: flex;
             align-items: center;
-            padding: 0.75rem 1rem;
-            position: relative;
+            justify-content: space-between;
         }
 
-        .rank-row.rank-first { border-color: var(--retro-yellow); }
-        .rank-row.rank-last { border-color: var(--retro-red); }
-
-        .position-badge {
-            font-family: var(--pixel-font);
-            font-size: 0.85rem;
-            width: 35px;
-            color: #cbd5e1;
+        .rank-badge {
+            font-size: 1rem;
+            color: var(--retro-yellow);
+            width: 40px;
         }
-        .rank-first .position-badge { color: var(--retro-yellow); }
-        .rank-last .position-badge { color: var(--retro-red); }
 
-        .avatar-box {
-            width: 32px;
-            height: 32px;
-            background-color: #000000;
-            border: 2px solid #ffffff;
-            margin-right: 1rem;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
-            gap: 1px;
-            padding: 2px;
-        }
-        .av-p { background-color: var(--avatar-color, #38bdf8); }
-        .av-f { background-color: #ffedd5; }
-
-        .meta-block {
+        .coach-info {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 0.35rem;
+            gap: 0.4rem;
         }
 
         .coach-name {
-            font-family: var(--pixel-font);
-            font-size: 0.8rem;
-            letter-spacing: -0.5px;
+            font-size: 0.85rem;
+            color: #ffffff;
         }
 
-        .support-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .coach-player {
+            font-size: 0.55rem;
+            color: #94a3b8;
         }
 
-        .meter-label {
-            font-family: var(--pixel-font);
-            font-size: 0.5rem;
-            color: #64748b;
-        }
-
-        .support-meter {
-            width: 80px;
-            height: 8px;
-            background-color: #000000;
-            border: 1px solid #ffffff;
-            position: relative;
-        }
-
-        .meter-fill {
-            height: 100%;
-            background-color: var(--retro-green);
-            width: var(--percentage, 50%);
-        }
-        .rank-last .meter-fill { background-color: var(--retro-red); }
-
-        .score-box {
+        .stats-block {
             text-align: right;
-            margin-left: 0.5rem;
         }
 
-        .total-points {
-            font-family: var(--pixel-font);
+        .picks-count {
             font-size: 0.9rem;
             color: var(--retro-green);
         }
-        .rank-first .total-points { color: var(--retro-yellow); }
 
-        .trend-indicator {
-            font-size: 0.65rem;
-            font-weight: bold;
+        .picks-label {
+            font-size: 0.5rem;
+            color: #64748b;
             margin-top: 0.2rem;
         }
-        .trend-up { color: var(--retro-green); }
-        .trend-down { color: var(--retro-red); }
-        .trend-flat { color: #64748b; }
 
-        .footer-link {
-            text-decoration: none;
-            color: var(--retro-blue);
-            font-family: var(--pixel-font);
+        .loading-text {
+            text-align: center;
             font-size: 0.75rem;
-            margin-top: 1rem;
-        }
-        .footer-link:hover {
             color: var(--retro-yellow);
+            margin-top: 2rem;
         }
     </style>
 </head>
 <body>
 
-    <div class="alert-section">
-        <h3>LEAGUE ALERTS</h3>
-        <button id="enable-alerts-btn">CONNECT TO SYSTEM</button>
+    <div class="nav-bar">
+        <a href="Homepage.html" class="nav-btn">&lt; HOME</a>
+        <a href="SamplePickemPage.html" class="nav-btn">MAKE PICKS &gt;</a>
     </div>
 
     <header>
         <h1 class="title">LEAGUE STANDINGS</h1>
-        <nav class="hub-nav">
-            <a href="index.html" class="nav-tab">PICKS</a>
-            <a href="#" class="nav-tab active">STANDINGS</a>
-            <a href="#" class="nav-tab">STATS</a>
-        </nav>
+        <div class="subtitle">LIVE CLOUD LEADERBOARD</div>
     </header>
 
-    <div class="leaderboard-container" id="standings-list"></div>
-
-    <a href="index.html" class="footer-link"><h3>GO TO PICKS PAGE</h3></a>
+    <div class="standings-container" id="standings-list">
+        <div class="loading-text">FETCHING LEAGUE DATA...</div>
+    </div>
 
     <script>
-        // 1. LIVE SUPABASE STREAMING SYSTEM
         async function fetchLiveCloudStandings() {
+            const container = document.getElementById('standings-list');
+
             try {
-                // FIXED: Using our clean supabaseClient instance here
+                // Fetch all coach profiles alongside their picks count[cite: 2]
                 const { data, error } = await supabaseClient
                     .from('profiles')
-                    .select('coach_name');
+                    .select(`
+                        coach_name,
+                        player_name,
+                        picks ( id )
+                    `);
 
                 if (error) throw error;
 
-                const formattedLeague = data.map((user, i) => {
-                    const pixelColors = ["var(--retro-yellow)", "var(--retro-blue)", "#a855f7", "var(--retro-green)"];
-                    
-                    return {
-                        name: user.coach_name || "UNNAMED COACH",
-                        wins: 0,
-                        losses: 0,
-                        support: 50,
-                        trend: "flat",
-                        trendValue: 0,
-                        color: pixelColors[i % pixelColors.length]
-                    };
-                });
-
-                renderStandings(formattedLeague);
-
-            } catch(err) {
-                console.error("Cloud Retrieval Error:", err.message);
-                document.getElementById('standings-list').innerHTML = `<p style="font-family:var(--pixel-font); font-size:0.5rem; text-align:center; color:var(--retro-red);">DATABASE ERROR: UNABLE TO SYNC PLAYERS</p>`;
-            }
-        }
-
-        // 2. RENDER ENGINE FOR THE STANDINGS BOARD
-        function renderStandings(data) {
-            const container = document.getElementById('standings-list');
-            container.innerHTML = ''; 
-
-            if (data.length === 0) {
-                container.innerHTML = `<p style="font-family:var(--pixel-font); font-size:0.6rem; text-align:center; color:#64748b;">NO ACTIVE COACHES ENROLLED</p>`;
-                return;
-            }
-
-            const sortedData = [...data].sort((a, b) => (b.wins - a.wins) || (a.losses - b.losses));
-
-            sortedData.forEach((coach, index) => {
-                const rank = index + 1;
-                const isFirst = rank === 1;
-                const isLast = rank === sortedData.length && sortedData.length > 1;
-                
-                let rowClass = 'rank-row';
-                if (isFirst) rowClass += ' rank-first';
-                if (isLast) rowClass += ' rank-last';
-
-                const rankString = rank.toString().padStart(2, '0');
-
-                let trendHtml = `<div class="trend-indicator trend-flat">▬ 0</div>`;
-                if (coach.trend === 'up') {
-                    trendHtml = `<div class="trend-indicator trend-up">▲ ${coach.trendValue}</div>`;
-                } else if (coach.trend === 'down') {
-                    trendHtml = `<div class="trend-indicator trend-down">▼ ${coach.trendValue}</div>`;
-                }
-
-                let scoreStyle = isFirst ? '' : (isLast ? 'style="color: var(--retro-red);"' : '');
-
-                const rowHTML = `
-                    <div class="${rowClass}">
-                        <div class="position-badge">${rankString}</div>
-                        <div class="avatar-box" style="--avatar-color: ${coach.color};">
-                            <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-                            <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                            <div class="av-p"></div><div class="av-f"></div><div class="av-f"></div><div class="av-p"></div>
-                            <div class="av-p"></div><div class="av-p"></div><div class="av-p"></div><div class="av-p"></div>
-                        </div>
-                        <div class="meta-block">
-                            <div class="coach-name">${coach.name}</div>
-                            <div class="support-wrapper">
-                                <span class="meter-label">FAN SUPPORT</span>
-                                <div class="support-meter">
-                                    <div class="meter-fill" style="--percentage: ${coach.support}%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="score-box">
-                            <div class="total-points" ${scoreStyle}>${coach.wins}-${coach.losses}</div>
-                            ${trendHtml}
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', rowHTML);
-            });
-        }
-
-        // 3. APP UTILITIES & ALERTS
-        window.addEventListener('load', () => {
-            fetchLiveCloudStandings();
-
-            const btn = document.getElementById("enable-alerts-btn");
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-            if (!isStandalone) {
-                btn.innerText = "INSTALL APP FOR ALERTS 📥";
-                btn.style.backgroundColor = "var(--retro-yellow)";
-                btn.style.color = "#000000";
-            }
-
-            btn.addEventListener("click", function() {
-                if (!isStandalone) {
-                    alert("To enable alerts on iPhone:\n\n1. Tap the Share button at the bottom of Safari (square with up arrow).\n2. Scroll down and tap 'Add to Home Screen'.\n3. Launch the app from your home screen icon to activate!");
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="loading-text">NO COACHES REGISTERED YET</div>';
                     return;
                 }
 
-                try {
-                    if (typeof PushAlert !== 'undefined') {
-                        PushAlert.subscribe();
-                    }
-                } catch (e) {
-                    console.log("PushAlert background execution handled automatically.");
-                }
-                
-                this.innerText = "ALERTS CONNECTED ✅";
-                this.style.backgroundColor = "var(--retro-green)";
-                this.style.color = "#000000";
-            });
-        });
+                // Map data and sort by total picks submitted descending[cite: 2]
+                const leaderboard = data.map(user => ({
+                    coachName: user.coach_name || "UNNAMED COACH",[cite: 2]
+                    playerName: user.player_name || "ANONYMOUS",
+                    picksCount: user.picks ? user.picks.length : 0[cite: 2]
+                })).sort((a, b) => b.picksCount - a.picksCount);
+
+                container.innerHTML = '';
+
+                leaderboard.forEach((user, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'coach-card';
+                    card.innerHTML = `
+                        <div class="rank-badge">#${index + 1}</div>
+                        <div class="coach-info">
+                            <div class="coach-name">${user.coachName}</div>
+                            <div class="coach-player">PLAYER: ${user.playerName}</div>
+                        </div>
+                        <div class="stats-block">
+                            <div class="picks-count">${user.picksCount}</div>
+                            <div class="picks-label">PICKS SAVED</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch(err) {
+                console.error("Cloud Retrieval Error:", err.message);[cite: 2]
+                container.innerHTML = '<div class="loading-text" style="color: var(--retro-red);">ERROR LOADING STANDINGS</div>';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', fetchLiveCloudStandings);
     </script>
 </body>
 </html>
