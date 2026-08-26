@@ -127,10 +127,10 @@
 
             const { error } = await supabaseClient
                 .from('profiles')
-                .insert([{ device_uid: newUID, coach_name: nameInput, equipped_badge: 'ROOKIE' }]);
+                .insert([{ device_uid: newUID, coach_name: nameInput }]);
 
             if (error) {
-                console.error("Error creating profile:", error);
+                console.error("Supabase Error Details:", error);
                 alert("FAILED TO START STORY MODE. TRY AGAIN.");
             } else {
                 localStorage.setItem('my_device_uid', newUID);
