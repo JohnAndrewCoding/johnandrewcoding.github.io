@@ -4,19 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Retro Bowl - Edit Analyst</title>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    
-    <!-- SUPABASE CLIENT INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // AUTH GUARD
         const deviceUID = localStorage.getItem('my_device_uid');
         if (!deviceUID) {
             window.location.href = "index.html";
@@ -34,15 +30,8 @@
             --pixel-font: 'Press Start 2P', monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
             background-color: var(--bg-canvas);
             color: #ffffff;
             font-family: var(--pixel-font);
@@ -52,136 +41,62 @@
             padding: 1rem;
         }
 
-        /* TOP NAV LINKS */
-        .top-nav {
-            display: flex;
-            justify-content: flex-start;
-            width: 100%;
-            max-width: 480px;
-            margin-bottom: 1rem;
-        }
-
+        .top-nav { display: flex; width: 100%; max-width: 480px; margin-bottom: 1rem; }
         .nav-link-btn {
-            background: #000000;
-            color: #ffffff;
-            border: 2px solid #ffffff;
-            padding: 0.4rem 0.8rem;
-            text-decoration: none;
-            font-family: var(--pixel-font);
-            font-size: 0.55rem;
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
-            text-align: center;
-            cursor: pointer;
+            background: #000; color: #fff; border: 2px solid #fff; padding: 0.4rem 0.8rem;
+            text-decoration: none; font-family: var(--pixel-font); font-size: 0.55rem; cursor: pointer;
         }
 
-        @media (hover: hover) {
-            .nav-link-btn:hover {
-                border-color: var(--retro-yellow);
-                color: var(--retro-yellow);
-            }
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 1.25rem;
-            width: 100%;
-            max-width: 480px;
-        }
-
-        .title {
-            font-size: 1.1rem;
-            color: var(--retro-yellow);
-            text-shadow: 3px 3px 0px #000;
-            margin-bottom: 0.4rem;
-        }
-
-        .subtitle {
-            font-size: 0.55rem;
-            color: var(--retro-blue);
-        }
+        header { text-align: center; margin-bottom: 1.25rem; width: 100%; max-width: 480px; }
+        .title { font-size: 1.1rem; color: var(--retro-yellow); text-shadow: 3px 3px 0px #000; }
+        .subtitle { font-size: 0.55rem; color: var(--retro-blue); margin-top: 0.4rem; }
 
         .edit-container {
-            width: 100%;
-            max-width: 480px;
-            background-color: var(--bg-card);
-            border: 6px solid #000000;
-            box-shadow: 6px 6px 0px #000000;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
+            width: 100%; max-width: 480px; background-color: var(--bg-card);
+            border: 6px solid #000; box-shadow: 6px 6px 0px #000; padding: 1.25rem;
+            display: flex; flex-direction: column; gap: 1.25rem;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        label { font-size: 0.55rem; color: var(--retro-blue); }
 
-        label {
-            font-size: 0.55rem;
-            color: var(--retro-blue);
-        }
-
-        input[type="text"] {
-            width: 100%;
-            background-color: #000000;
-            color: #ffffff;
-            border: 3px solid #ffffff;
-            padding: 0.75rem;
-            font-family: var(--pixel-font);
-            font-size: 0.75rem;
-            outline: none;
-            text-transform: uppercase;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--retro-yellow);
+        input[type="text"], select {
+            width: 100%; background-color: #000; color: #fff; border: 3px solid #fff;
+            padding: 0.75rem; font-family: var(--pixel-font); font-size: 0.65rem; outline: none;
         }
 
         .save-btn {
-            background-color: #000000;
-            color: var(--retro-green);
-            border: 3px solid var(--retro-green);
-            padding: 0.75rem;
-            font-family: var(--pixel-font);
-            font-size: 0.65rem;
-            cursor: pointer;
-            box-shadow: 4px 4px 0px #000000;
-            text-align: center;
-            margin-top: 0.5rem;
+            background-color: #000; color: var(--retro-green); border: 3px solid var(--retro-green);
+            padding: 0.75rem; font-family: var(--pixel-font); font-size: 0.65rem; cursor: pointer;
+            box-shadow: 4px 4px 0px #000; text-align: center; margin-top: 0.5rem;
         }
-
-        .save-btn:hover {
-            background-color: var(--retro-green);
-            color: #000000;
-        }
-
-        .status-msg {
-            font-size: 0.55rem;
-            color: var(--retro-yellow);
-            text-align: center;
-        }
+        .save-btn:hover { background-color: var(--retro-green); color: #000; }
     </style>
 </head>
 <body>
 
-    <!-- TOP NAVIGATION -->
     <div class="top-nav">
         <button class="nav-link-btn" onclick="handleBackNavigation()">&lt; BACK</button>
     </div>
 
     <header>
         <h1 class="title">EDIT ANALYST</h1>
-        <div class="subtitle">UPDATE PROFILE & DETAILS</div>
+        <div class="subtitle">UPDATE PROFILE &amp; DETAILS</div>
     </header>
 
     <div class="edit-container">
-        <div id="status-display" class="status-msg">LOADING PROFILE...</div>
+        <div id="status-display" style="font-size: 0.55rem; color: var(--retro-yellow); text-align: center;">LOADING PROFILE...</div>
 
         <div class="form-group" id="form-group" style="display: none;">
             <label for="coach-name-input">ANALYST / COACH NAME</label>
             <input type="text" id="coach-name-input" placeholder="ENTER NAME..." maxlength="20" />
+
+            <label for="badge-select" style="margin-top: 0.5rem;">DISPLAY BADGE</label>
+            <select id="badge-select">
+                <option value="ROOKIE">ROOKIE</option>
+                <option value="HOT HAND">HOT HAND</option>
+                <option value="VETERAN">VETERAN</option>
+            </select>
             
             <button class="save-btn" onclick="saveChanges()">SAVE CHANGES</button>
         </div>
@@ -189,20 +104,16 @@
 
     <script>
         let originalName = '';
+        let originalBadge = 'ROOKIE';
         let isSaved = false;
 
         window.addEventListener('DOMContentLoaded', loadCurrentProfile);
 
-        // 1. Fetch current coach name on load
         async function loadCurrentProfile() {
-            const statusDisplay = document.getElementById('status-display');
-            const formGroup = document.getElementById('form-group');
-            const nameInput = document.getElementById('coach-name-input');
-
             try {
                 const { data, error } = await supabaseClient
                     .from('profiles')
-                    .select('coach_name')
+                    .select('coach_name, equipped_badge')
                     .eq('device_uid', deviceUID)
                     .single();
 
@@ -210,27 +121,28 @@
 
                 if (data) {
                     originalName = data.coach_name || '';
-                    nameInput.value = originalName;
+                    originalBadge = data.equipped_badge || 'ROOKIE';
+
+                    document.getElementById('coach-name-input').value = originalName;
+                    document.getElementById('badge-select').value = originalBadge;
                 }
 
-                statusDisplay.style.display = 'none';
-                formGroup.style.display = 'flex';
+                document.getElementById('status-display').style.display = 'none';
+                document.getElementById('form-group').style.display = 'flex';
 
             } catch (err) {
                 console.error("Error loading profile:", err);
-                statusDisplay.style.color = 'var(--retro-red)';
-                statusDisplay.innerText = "ERROR LOADING PROFILE.";
+                document.getElementById('status-display').innerText = "ERROR LOADING PROFILE.";
             }
         }
 
-        // 2. Handle BACK button confirmation
         function handleBackNavigation() {
-            const currentInputValue = document.getElementById('coach-name-input').value.trim().toUpperCase();
-            const hasUnsavedChanges = (currentInputValue !== originalName) && !isSaved;
+            const currentName = document.getElementById('coach-name-input').value.trim().toUpperCase();
+            const currentBadge = document.getElementById('badge-select').value;
+            const hasUnsavedChanges = (currentName !== originalName || currentBadge !== originalBadge) && !isSaved;
 
             if (hasUnsavedChanges) {
-                const confirmLeave = confirm("Are you sure you want to leave? If you leave without saving all data will be lost.");
-                if (confirmLeave) {
+                if (confirm("Are you sure you want to leave? If you leave without saving all data will be lost.")) {
                     window.location.href = "Leaderboard.html";
                 }
             } else {
@@ -238,19 +150,16 @@
             }
         }
 
-        // 3. Save updated name to Supabase and navigate back to Leaderboard
         async function saveChanges() {
             const newName = document.getElementById('coach-name-input').value.trim().toUpperCase();
+            const newBadge = document.getElementById('badge-select').value;
 
-            if (!newName) {
-                alert("PLEASE ENTER A VALID NAME.");
-                return;
-            }
+            if (!newName) return alert("PLEASE ENTER A VALID NAME.");
 
             try {
                 const { error } = await supabaseClient
                     .from('profiles')
-                    .update({ coach_name: newName })
+                    .update({ coach_name: newName, equipped_badge: newBadge })
                     .eq('device_uid', deviceUID);
 
                 if (error) throw error;
