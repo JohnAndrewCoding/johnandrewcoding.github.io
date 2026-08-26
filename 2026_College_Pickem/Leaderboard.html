@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Bowl - Leaderboard</title>
+    <title>Retro Bowl - Analyst Leaderboard</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,6 +30,7 @@
             --retro-yellow: #facc15;    
             --retro-blue: #38bdf8;      
             --retro-green: #4ade80;     
+            --retro-red: #ef4444;
             --pixel-font: 'Press Start 2P', monospace;
         }
 
@@ -56,7 +57,7 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
             margin-bottom: 1rem;
             gap: 0.5rem;
         }
@@ -85,7 +86,7 @@
             text-align: center;
             margin-bottom: 1.25rem;
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
         }
 
         .title {
@@ -102,11 +103,11 @@
 
         .leaderboard-container {
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
             background-color: var(--bg-card);
             border: 6px solid #000000;
             box-shadow: 6px 6px 0px #000000;
-            padding: 1rem;
+            padding: 0.75rem;
         }
 
         .status-msg {
@@ -117,51 +118,134 @@
             line-height: 1.6;
         }
 
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
+        /* RETRO BOWL CARD LIST STYLES */
+        .analyst-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
         }
 
-        .leaderboard-table th {
-            font-size: 0.55rem;
-            color: var(--retro-blue);
-            text-align: left;
-            padding: 0.5rem;
-            border-bottom: 2px solid #475569;
+        .analyst-card {
+            background-color: #000000;
+            border: 3px solid #475569;
+            padding: 0.65rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
         }
 
-        .leaderboard-table th.center,
-        .leaderboard-table td.center {
-            text-align: center;
+        .analyst-card.my-user-card {
+            border-color: var(--retro-green);
+            background-color: #022c22;
         }
 
-        .leaderboard-table td {
-            font-size: 0.6rem;
-            padding: 0.6rem 0.5rem;
-            border-bottom: 1px dashed #334155;
+        .card-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .rank-col {
+        .rank-badge {
+            font-size: 0.75rem;
             color: var(--retro-yellow);
-            width: 15%;
+            min-width: 40px;
         }
 
-        .coach-col {
+        .analyst-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .analyst-title {
+            font-size: 0.45rem;
+            color: var(--retro-blue);
+            text-transform: uppercase;
+        }
+
+        .analyst-name {
+            font-size: 0.7rem;
             color: #ffffff;
             word-break: break-all;
         }
 
-        .my-user-row {
-            background-color: #000000;
-        }
-
-        .my-user-row td.coach-col {
+        .my-user-card .analyst-name {
             color: var(--retro-green);
         }
 
-        .rep-col {
+        /* BADGES ROW PLACEHOLDER */
+        .badges-row {
+            display: flex;
+            gap: 0.3rem;
+            margin-top: 0.1rem;
+        }
+
+        .badge-slot {
+            font-size: 0.45rem;
+            background: #1e293b;
+            border: 1px solid #475569;
+            padding: 2px 4px;
+            color: #94a3b8;
+        }
+
+        /* REPUTATION SCORE & METER */
+        .rep-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            min-width: 110px;
+        }
+
+        .rep-label {
+            font-size: 0.45rem;
             color: var(--retro-yellow);
-            width: 30%;
+            margin-bottom: 0.2rem;
+        }
+
+        .rep-value {
+            font-size: 0.65rem;
+            color: #ffffff;
+            margin-bottom: 0.3rem;
+        }
+
+        .rep-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #0f172a;
+            border: 1px solid #ffffff;
+            padding: 1px;
+        }
+
+        .rep-bar-fill {
+            height: 100%;
+            background-color: var(--retro-green);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* ACTION FOOTER / CUSTOMIZE PLACEHOLDER */
+        .custom-footer-btn {
+            display: block;
+            width: 100%;
+            max-width: 480px;
+            margin-top: 1rem;
+            background: #000000;
+            color: var(--retro-yellow);
+            border: 3px solid var(--retro-yellow);
+            padding: 0.6rem;
+            text-align: center;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            text-decoration: none;
+            box-shadow: 4px 4px 0px #000000;
+            cursor: pointer;
+        }
+
+        .custom-footer-btn:hover {
+            background: var(--retro-yellow);
+            color: #000000;
         }
     </style>
 </head>
@@ -174,34 +258,29 @@
     </div>
 
     <header>
-        <h1 class="title">LEAGUE STANDINGS</h1>
-        <div class="subtitle">REPUTATION & ACCURACY</div>
+        <h1 class="title">ANALYST DESK</h1>
+        <div class="subtitle">LEAGUE REPUTATION STANDINGS</div>
     </header>
 
     <div class="leaderboard-container">
         <div id="status-display" class="status-msg">FETCHING LEAGUE DATA...</div>
         
-        <table class="leaderboard-table" id="leaderboard-table" style="display: none;">
-            <thead>
-                <tr>
-                    <th class="rank-col">POS</th>
-                    <th>COACH</th>
-                    <th class="center rep-col">REP SCORE</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-                <!-- Dynamic Rows Inserted Here -->
-            </tbody>
-        </table>
+        <div class="analyst-list" id="analyst-list" style="display: none;">
+            <!-- Dynamic Analyst Cards Inserted Here -->
+        </div>
     </div>
+
+    <!-- UPCOMING CUSTOMIZATION ACCESS POINT -->
+    <button class="custom-footer-btn" onclick="alert('Analyst Customization & Badges coming soon!')">
+        ⚙ EDIT ANALYST SUIT & BADGES
+    </button>
 
     <script>
         window.addEventListener('DOMContentLoaded', loadLeaderboard);
 
         async function loadLeaderboard() {
             const statusDisplay = document.getElementById('status-display');
-            const table = document.getElementById('leaderboard-table');
-            const tbody = document.getElementById('leaderboard-body');
+            const analystList = document.getElementById('analyst-list');
             const currentUID = localStorage.getItem('my_device_uid');
 
             try {
@@ -213,11 +292,11 @@
                 if (profilesError) throw profilesError;
 
                 if (!profilesData || profilesData.length === 0) {
-                    statusDisplay.innerText = "NO REGISTERED COACHES YET.";
+                    statusDisplay.innerText = "NO REGISTERED ANALYSTS YET.";
                     return;
                 }
 
-                // Reputation score structure initialized to 0% for Week 1 prep
+                // Reputation score structure initialized to 0.0% for Week 1 prep
                 const standings = profilesData.map(profile => {
                     const correctPicks = 0;
                     const totalGames = 0;
@@ -225,42 +304,60 @@
 
                     return {
                         uid: profile.device_uid,
-                        name: profile.coach_name || 'UNKNOWN COACH',
-                        correct: correctPicks,
-                        total: totalGames,
-                        accuracy: parseFloat(accuracyPct)
+                        name: profile.coach_name || 'UNKNOWN ANALYST',
+                        title: 'LEAGUE ANALYST',
+                        accuracy: parseFloat(accuracyPct),
+                        badges: ['ROOKIE'] // Placeholder badges array
                     };
                 });
 
-                // Sort alphabetically as a default tiebreaker while all scores are 0.0%
+                // Sort by Reputation Score (Accuracy) descending, then alphabetically
                 standings.sort((a, b) => b.accuracy - a.accuracy || a.name.localeCompare(b.name));
 
-                tbody.innerHTML = '';
+                analystList.innerHTML = '';
                 standings.forEach((entry, index) => {
-                    const row = document.createElement('tr');
+                    const card = document.createElement('div');
                     const isCurrentUser = entry.uid === currentUID;
 
-                    if (isCurrentUser) {
-                        row.className = 'my-user-row';
-                    }
+                    card.className = `analyst-card ${isCurrentUser ? 'my-user-card' : ''}`;
 
                     const rankText = index === 0 ? '👑 1' : `#${index + 1}`;
                     const displayName = `${entry.name.toUpperCase()} ${isCurrentUser ? '(YOU)' : ''}`;
+                    const barColor = entry.accuracy >= 60 ? 'var(--retro-green)' : (entry.accuracy >= 40 ? 'var(--retro-yellow)' : 'var(--retro-red)');
 
-                    row.innerHTML = `
-                        <td class="rank-col">${rankText}</td>
-                        <td class="coach-col">${displayName}</td>
-                        <td class="center rep-col">${entry.accuracy.toFixed(1)}%</td>
+                    // Build badge chips
+                    const badgeHTML = entry.badges.map(b => `<span class="badge-slot">${b}</span>`).join('');
+
+                    card.innerHTML = `
+                        <div class="card-top-row">
+                            <div class="rank-badge">${rankText}</div>
+                            
+                            <div class="analyst-info">
+                                <span class="analyst-title">${entry.title}</span>
+                                <span class="analyst-name">${displayName}</span>
+                                <div class="badges-row">
+                                    ${badgeHTML}
+                                </div>
+                            </div>
+
+                            <div class="rep-section">
+                                <span class="rep-label">REP SCORE</span>
+                                <span class="rep-value">${entry.accuracy.toFixed(1)}%</span>
+                                <div class="rep-bar-container">
+                                    <div class="rep-bar-fill" style="width: ${Math.max(entry.accuracy, 5)}%; background-color: ${barColor};"></div>
+                                </div>
+                            </div>
+                        </div>
                     `;
-                    tbody.appendChild(row);
+                    analystList.appendChild(card);
                 });
 
                 statusDisplay.style.display = 'none';
-                table.style.display = 'table';
+                analystList.style.display = 'flex';
 
             } catch (err) {
                 console.error("Leaderboard fetch error:", err);
-                statusDisplay.style.color = '#ef4444';
+                statusDisplay.style.color = 'var(--retro-red)';
                 statusDisplay.innerText = "ERROR LOADING LEAGUE DATA.";
             }
         }
