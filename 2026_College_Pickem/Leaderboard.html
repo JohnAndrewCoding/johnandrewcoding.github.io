@@ -3,46 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Bowl - Analyst Leaderboard</title>
-    
+    <title>Retro Analyst Desk - Standings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    
-    <!-- SUPABASE CLIENT INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // AUTH GUARD: Redirect to Homepage if device profile is not registered
-        const deviceUID = localStorage.getItem('my_device_uid');
-        if (!deviceUID) {
-            window.location.href = "index.html";
-        }
-    </script>
 
     <style>
         :root {
-            --bg-canvas: #0f172a;       
-            --bg-card: #1e293b;         
-            --retro-yellow: #facc15;    
-            --retro-blue: #38bdf8;      
-            --retro-green: #4ade80;     
-            --retro-red: #ef4444;
+            --bg-canvas: #0f172a;
+            --bg-card: #1e293b;
+            --retro-yellow: #facc15;
+            --retro-blue: #38bdf8;
+            --retro-green: #4ade80;
             --pixel-font: 'Press Start 2P', monospace;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
             background-color: var(--bg-canvas);
             color: #ffffff;
             font-family: var(--pixel-font);
@@ -52,209 +30,57 @@
             padding: 1rem;
         }
 
-        /* TOP NAV LINKS */
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 480px;
-            margin-bottom: 1rem;
-            gap: 0.5rem;
-        }
-
+        .top-nav { display: flex; gap: 0.5rem; width: 100%; max-width: 520px; margin-bottom: 1rem; }
         .nav-link-btn {
-            background: #000000;
-            color: #ffffff;
-            border: 2px solid #ffffff;
-            padding: 0.4rem 0.5rem;
-            text-decoration: none;
-            font-family: var(--pixel-font);
-            font-size: 0.55rem;
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
-            text-align: center;
-            flex: 1;
+            background: #000; color: #fff; border: 2px solid #fff; padding: 0.5rem;
+            text-decoration: none; font-family: var(--pixel-font); font-size: 0.55rem; flex: 1; text-align: center;
         }
 
-        @media (hover: hover) {
-            .nav-link-btn:hover {
-                border-color: var(--retro-yellow);
-                color: var(--retro-yellow);
-            }
-        }
+        header { text-align: center; margin-bottom: 1.25rem; }
+        .title { font-size: 1.2rem; color: var(--retro-yellow); text-shadow: 3px 3px 0px #000; }
+        .subtitle { font-size: 0.55rem; color: var(--retro-blue); margin-top: 0.4rem; }
 
-        header {
-            text-align: center;
-            margin-bottom: 1.25rem;
-            width: 100%;
-            max-width: 480px;
-        }
-
-        .title {
-            font-size: 1.1rem;
-            color: var(--retro-yellow);
-            text-shadow: 3px 3px 0px #000;
-            margin-bottom: 0.4rem;
-        }
-
-        .subtitle {
-            font-size: 0.55rem;
-            color: var(--retro-blue);
-        }
-
-        .leaderboard-container {
-            width: 100%;
-            max-width: 480px;
-            background-color: var(--bg-card);
-            border: 6px solid #000000;
-            box-shadow: 6px 6px 0px #000000;
-            padding: 0.75rem;
-        }
-
-        .status-msg {
-            text-align: center;
-            font-size: 0.65rem;
-            color: var(--retro-yellow);
-            padding: 2rem 0;
-            line-height: 1.6;
-        }
-
-        /* RETRO BOWL CARD LIST STYLES */
-        .analyst-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .analyst-card {
-            background-color: #000000;
-            border: 3px solid #475569;
-            padding: 0.65rem;
+        .leaderboard-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 0.75rem; }
+        
+        .card {
+            background: var(--bg-card);
+            border: 4px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            padding: 0.85rem;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            position: relative;
         }
+        .card.active-user { border-color: var(--retro-green); }
 
-        .analyst-card.my-user-card {
-            border-color: var(--retro-green);
-            background-color: #022c22;
-        }
+        .card-row { display: flex; justify-content: space-between; align-items: center; }
+        .analyst-identity { display: flex; align-items: center; gap: 0.5rem; }
+        .rank { font-size: 0.75rem; color: var(--retro-yellow); }
+        .analyst-name { font-size: 0.7rem; color: #fff; }
+        .badge-tag { font-size: 0.45rem; background: #000; color: var(--retro-blue); padding: 2px 4px; border: 1px solid var(--retro-blue); }
 
-        .card-top-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+        /* Conference Chips */
+        .conf-chip { font-size: 0.45rem; padding: 2px 4px; border: 1px solid #fff; font-weight: bold; }
+        .sec-chip { background: #003366; color: #ffd700; }
+        .acc-chip { background: #002147; color: #f58220; }
+        .big10-chip { background: #00417d; color: #ffffff; }
+        .big12-chip { background: #ef4444; color: #ffffff; }
 
-        .rank-badge {
-            font-size: 0.75rem;
-            color: var(--retro-yellow);
-            min-width: 40px;
-        }
+        .rep-score { font-size: 0.6rem; color: var(--retro-green); }
 
-        .analyst-info {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
-        }
-
-        .analyst-title {
-            font-size: 0.45rem;
-            color: var(--retro-blue);
-            text-transform: uppercase;
-        }
-
-        .analyst-name {
-            font-size: 0.7rem;
-            color: #ffffff;
-            word-break: break-all;
-        }
-
-        .my-user-card .analyst-name {
-            color: var(--retro-green);
-        }
-
-        /* BADGES ROW PLACEHOLDER */
-        .badges-row {
-            display: flex;
-            gap: 0.3rem;
-            margin-top: 0.1rem;
-        }
-
-        .badge-slot {
-            font-size: 0.45rem;
-            background: #1e293b;
-            border: 1px solid #475569;
-            padding: 2px 4px;
-            color: #94a3b8;
-        }
-
-        /* REPUTATION SCORE & METER */
-        .rep-section {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            min-width: 110px;
-        }
-
-        .rep-label {
-            font-size: 0.45rem;
-            color: var(--retro-yellow);
-            margin-bottom: 0.2rem;
-        }
-
-        .rep-value {
-            font-size: 0.65rem;
-            color: #ffffff;
-            margin-bottom: 0.3rem;
-        }
-
-        .rep-bar-container {
-            width: 100%;
-            height: 10px;
-            background-color: #0f172a;
-            border: 1px solid #ffffff;
-            padding: 1px;
-        }
-
-        .rep-bar-fill {
-            height: 100%;
-            background-color: var(--retro-green);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        /* ACTION FOOTER / CUSTOMIZE PLACEHOLDER */
-        .custom-footer-btn {
-            display: block;
-            width: 100%;
-            max-width: 480px;
-            margin-top: 1rem;
-            background: #000000;
-            color: var(--retro-yellow);
-            border: 3px solid var(--retro-yellow);
-            padding: 0.6rem;
-            text-align: center;
-            font-family: var(--pixel-font);
-            font-size: 0.6rem;
-            text-decoration: none;
-            box-shadow: 4px 4px 0px #000000;
-            cursor: pointer;
-        }
-
-        .custom-footer-btn:hover {
-            background: var(--retro-yellow);
-            color: #000000;
+        .footer-action { margin-top: 1rem; width: 100%; max-width: 520px; }
+        .edit-btn {
+            display: block; width: 100%; background: #000; color: var(--retro-yellow);
+            border: 3px solid var(--retro-yellow); text-align: center; text-decoration: none;
+            padding: 0.75rem; font-family: var(--pixel-font); font-size: 0.6rem; box-shadow: 4px 4px 0px #000;
         }
     </style>
 </head>
 <body>
 
-    <!-- TOP NAVIGATION LINKS -->
     <div class="top-nav">
         <a href="index.html" class="nav-link-btn">&lt; HOME</a>
-        <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS &gt;</a>
+        <a href="#" class="nav-link-btn">MAKE PICKS &gt;</a>
     </div>
 
     <header>
@@ -262,104 +88,80 @@
         <div class="subtitle">LEAGUE REPUTATION STANDINGS</div>
     </header>
 
-    <div class="leaderboard-container">
-        <div id="status-display" class="status-msg">FETCHING LEAGUE DATA...</div>
-        
-        <div class="analyst-list" id="analyst-list" style="display: none;">
-            <!-- Dynamic Analyst Cards Inserted Here -->
-        </div>
+    <div class="leaderboard-container" id="leaderboard">
+        <div style="font-size: 0.6rem; text-align: center;">LOADING LEAGUE DATA...</div>
     </div>
 
-    <!-- UPCOMING CUSTOMIZATION ACCESS POINT -->
-    <button class="custom-footer-btn" onclick=window.location.href='EditCoach.html'>
-        ⚙ EDIT ANALYST SUIT & BADGES
-    </button>
+    <div class="footer-action">
+        <a href="EditCoach.html" class="edit-btn">⚙ EDIT ANALYST SUIT &amp; BADGES</a>
+    </div>
 
     <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const currentUID = localStorage.getItem('my_device_uid');
+
         window.addEventListener('DOMContentLoaded', loadLeaderboard);
 
         async function loadLeaderboard() {
-            const statusDisplay = document.getElementById('status-display');
-            const analystList = document.getElementById('analyst-list');
-            const currentUID = localStorage.getItem('my_device_uid');
+            const container = document.getElementById('leaderboard');
 
-            try {
-                // Fetch profiles from database schema table
-                const { data: profilesData, error: profilesError } = await supabaseClient
-                    .from('profiles')
-                    .select('device_uid, coach_name');
+            const { data: profiles, error } = await supabaseClient
+                .from('profiles')
+                .select('*');
 
-                if (profilesError) throw profilesError;
-
-                if (!profilesData || profilesData.length === 0) {
-                    statusDisplay.innerText = "NO REGISTERED ANALYSTS YET.";
-                    return;
-                }
-
-                // Reputation score structure initialized to 0.0% for Week 1 prep
-                const standings = profilesData.map(profile => {
-                    const correctPicks = 0;
-                    const totalGames = 0;
-                    const accuracyPct = totalGames > 0 ? ((correctPicks / totalGames) * 100).toFixed(1) : "0.0";
-
-                    return {
-                        uid: profile.device_uid,
-                        name: profile.coach_name || 'UNKNOWN ANALYST',
-                        title: 'LEAGUE ANALYST',
-                        accuracy: parseFloat(accuracyPct),
-                        badges: ['ROOKIE'] // Placeholder badges array
-                    };
-                });
-
-                // Sort by Reputation Score (Accuracy) descending, then alphabetically
-                standings.sort((a, b) => b.accuracy - a.accuracy || a.name.localeCompare(b.name));
-
-                analystList.innerHTML = '';
-                standings.forEach((entry, index) => {
-                    const card = document.createElement('div');
-                    const isCurrentUser = entry.uid === currentUID;
-
-                    card.className = `analyst-card ${isCurrentUser ? 'my-user-card' : ''}`;
-
-                    const rankText = index === 0 ? '👑 1' : `#${index + 1}`;
-                    const displayName = `${entry.name.toUpperCase()} ${isCurrentUser ? '(YOU)' : ''}`;
-                    const barColor = entry.accuracy >= 60 ? 'var(--retro-green)' : (entry.accuracy >= 40 ? 'var(--retro-yellow)' : 'var(--retro-red)');
-
-                    // Build badge chips
-                    const badgeHTML = entry.badges.map(b => `<span class="badge-slot">${b}</span>`).join('');
-
-                    card.innerHTML = `
-                        <div class="card-top-row">
-                            <div class="rank-badge">${rankText}</div>
-                            
-                            <div class="analyst-info">
-                                <span class="analyst-title">${entry.title}</span>
-                                <span class="analyst-name">${displayName}</span>
-                                <div class="badges-row">
-                                    ${badgeHTML}
-                                </div>
-                            </div>
-
-                            <div class="rep-section">
-                                <span class="rep-label">REP SCORE</span>
-                                <span class="rep-value">${entry.accuracy.toFixed(1)}%</span>
-                                <div class="rep-bar-container">
-                                    <div class="rep-bar-fill" style="width: ${Math.max(entry.accuracy, 5)}%; background-color: ${barColor};"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    analystList.appendChild(card);
-                });
-
-                statusDisplay.style.display = 'none';
-                analystList.style.display = 'flex';
-
-            } catch (err) {
-                console.error("Leaderboard fetch error:", err);
-                statusDisplay.style.color = 'var(--retro-red)';
-                statusDisplay.innerText = "ERROR LOADING LEAGUE DATA.";
+            if (error || !profiles) {
+                container.innerHTML = `<div style="font-size:0.6rem; color:red;">ERROR LOADING DATA.</div>`;
+                return;
             }
+
+            // Calculate conference leaders
+            let maxSEC = -1, maxACC = -1, maxB10 = -1, maxB12 = -1;
+            profiles.forEach(p => {
+                if (p.sec_wins > maxSEC && p.sec_wins > 0) maxSEC = p.sec_wins;
+                if (p.acc_wins > maxACC && p.acc_wins > 0) maxACC = p.acc_wins;
+                if (p.big10_wins > maxB10 && p.big10_wins > 0) maxB10 = p.big10_wins;
+                if (p.big12_wins > maxB12 && p.big12_wins > 0) maxB12 = p.big12_wins;
+            });
+
+            // Sort profiles by total correct picks
+            profiles.sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0));
+
+            container.innerHTML = '';
+            profiles.forEach((profile, idx) => {
+                const isUser = profile.device_uid === currentUID;
+                const accuracy = profile.total_picks > 0 
+                    ? ((profile.total_correct / profile.total_picks) * 100).toFixed(1) 
+                    : '0.0';
+
+                // Conf King Badges
+                let confBadgesHTML = '';
+                if (profile.sec_wins === maxSEC && maxSEC > 0) confBadgesHTML += `<span class="conf-chip sec-chip">SEC</span> `;
+                if (profile.acc_wins === maxACC && maxACC > 0) confBadgesHTML += `<span class="conf-chip acc-chip">ACC</span> `;
+                if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span> `;
+                if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span> `;
+
+                const card = document.createElement('div');
+                card.className = `card ${isUser ? 'active-user' : ''}`;
+                card.innerHTML = `
+                    <div class="card-row">
+                        <div class="analyst-identity">
+                            <span class="rank">#${idx + 1}</span>
+                            <span class="analyst-name">${profile.coach_name} ${isUser ? '(YOU)' : ''}</span>
+                        </div>
+                        <div class="rep-score">REP: ${accuracy}%</div>
+                    </div>
+                    <div class="card-row">
+                        <div>
+                            <span class="badge-tag">${profile.equipped_badge || 'ROOKIE'}</span>
+                            ${confBadgesHTML}
+                        </div>
+                        <div style="font-size: 0.5rem; color: #94a3b8;">${profile.total_correct || 0} WINS</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
     </script>
 </body>
