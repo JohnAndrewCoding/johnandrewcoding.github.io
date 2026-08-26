@@ -3,195 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Pick'em - Registration</title>
-    
+    <title>Retro College Pick'em - Story Mode</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    </script>
-
     <style>
         :root {
-            --pixel-font: 'Courier New', Courier, monospace;
-            --retro-yellow: #fde047;
-            --slate-gray: #cbd5e1;
-            --dark-gray: #64748b;
+            --bg-canvas: #0f172a;
+            --bg-card: #1e293b;
+            --retro-yellow: #facc15;
+            --retro-blue: #38bdf8;
+            --retro-green: #4ade80;
+            --pixel-font: 'Press Start 2P', monospace;
         }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            margin: 0;
-            padding: 0;
-            background-color: #000000;
+            background-color: var(--bg-canvas);
             color: #ffffff;
             font-family: var(--pixel-font);
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            overflow: hidden;
+            padding: 1rem;
         }
 
-        .register-container {
+        .story-box {
+            background: var(--bg-card);
+            border: 6px solid #000;
+            box-shadow: 8px 8px 0px #000;
+            max-width: 480px;
             width: 100%;
-            max-width: 320px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .register-box {
-            background: #000000;
-            border: 3px solid var(--slate-gray);
-            padding: 2rem 1.5rem;
+            padding: 1.5rem;
             text-align: center;
-            box-shadow: 4px 4px 0px rgba(255, 255, 255, 0.1);
         }
 
-        .pixel-title {
-            color: var(--retro-yellow);
-            font-size: 0.95rem;
-            margin-top: 0;
-            margin-bottom: 1.5rem;
-            letter-spacing: 1px;
-        }
-
-        .pixel-field {
-            text-align: left;
-            margin-bottom: 1.25rem;
-        }
-
-        .pixel-field label {
-            display: block;
+        h1 { color: var(--retro-yellow); font-size: 1.1rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 0px #000; }
+        .tagline { color: var(--retro-blue); font-size: 0.55rem; margin-bottom: 1.25rem; line-height: 1.4; }
+        
+        .story-text {
             font-size: 0.6rem;
-            color: var(--dark-gray);
-            margin-bottom: 0.4rem;
-            font-weight: bold;
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+            text-align: left;
+            background: #000;
+            padding: 1rem;
+            border: 2px solid #fff;
+            color: #e2e8f0;
         }
 
-        .pixel-field input {
-            width: 100%;
-            background: #111111;
-            border: 2px solid var(--slate-gray);
-            color: #ffffff;
-            padding: 0.6rem;
+        .form-group { display: flex; flex-direction: column; gap: 0.5rem; text-align: left; }
+        label { font-size: 0.5rem; color: var(--retro-yellow); }
+        
+        input[type="text"] {
+            background: #000;
+            color: #fff;
+            border: 3px solid #fff;
+            padding: 0.75rem;
             font-family: var(--pixel-font);
             font-size: 0.75rem;
-            box-sizing: border-box;
-            outline: none;
             text-transform: uppercase;
+            outline: none;
         }
 
-        .pixel-field input:focus {
-            border-color: var(--retro-yellow);
-        }
-
-        .submit-btn {
-            background: #000000;
-            color: var(--slate-gray);
-            border: 3px solid var(--slate-gray);
-            width: 100%;
-            padding: 0.75rem;
-            cursor: pointer;
+        .btn-start {
+            margin-top: 1rem;
+            background: #000;
+            color: var(--retro-green);
+            border: 3px solid var(--retro-green);
+            padding: 0.85rem;
             font-family: var(--pixel-font);
-            font-size: 0.7rem;
-            font-weight: bold;
-            box-shadow: 3px 3px 0px rgba(255,255,255,0.1);
-            margin-top: 0.75rem;
-            touch-action: manipulation;
-            user-select: none;
+            font-size: 0.65rem;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            width: 100%;
         }
 
-        @media (hover: hover) {
-            .submit-btn:hover {
-                border-color: var(--retro-yellow);
-                color: var(--retro-yellow);
-                box-shadow: 3px 3px 0px var(--retro-yellow);
-            }
-        }
+        .btn-start:hover { background: var(--retro-green); color: #000; }
     </style>
 </head>
 <body>
 
-    <div class="register-container">
-        <div class="register-box">
-            <h2 class="pixel-title">[ CREATE PLAYER PROFILE ]</h2>
-            
-            <div class="pixel-field">
-                <label>YOUR NAME</label>
-                <input type="text" id="reg-player-name" placeholder="E.G., BIG AL" maxlength="12" autocomplete="off">
-            </div>
+    <div class="story-box">
+        <h1>ANALYST DESK</h1>
+        <div class="tagline">SEASON PROVING GROUNDS</div>
 
-            <div class="pixel-field">
-                <label>COACH NAME</label>
-                <input type="text" id="reg-coach-name" placeholder="E.G., SABAN" maxlength="12" autocomplete="off">
-            </div>
+        <div class="story-text">
+            YOU CLAIM YOU KNOW BALL.<br><br>
+            THIS IS YOUR CHANCE TO PROVE IT. PICK GAMES WEEK-BY-WEEK, EARN REPUTATION, AND DOMINATE CONFERENCE STANDINGS TO EARN EXCLUSIVE BADGES.
+        </div>
 
-            <button class="submit-btn" id="submit-btn" ontouchend="saveProfileAndRedirect(); event.preventDefault();" onclick="saveProfileAndRedirect()">
-                START SEASON
-            </button>
+        <div class="form-group">
+            <label for="coach-name">ENTER ANALYST / COACH NAME:</label>
+            <input type="text" id="coach-name" placeholder="ANALYST NAME..." maxlength="15" />
+            <button class="btn-start" onclick="signContract()">SIGN CONTRACT &amp; BEGIN &gt;</button>
         </div>
     </div>
 
     <script>
-        async function checkExistingMemory() {
-            const savedCoach = localStorage.getItem('my_coach_name');
-            const savedPlayer = localStorage.getItem('my_player_name');
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            if (savedCoach && savedPlayer) {
-                let deviceUID = localStorage.getItem('my_device_uid');
-                
-                if (!deviceUID) {
-                    deviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
-                    localStorage.setItem('my_device_uid', deviceUID);
+        window.addEventListener('DOMContentLoaded', checkExistingUser);
+
+        async function checkExistingUser() {
+            const existingUID = localStorage.getItem('my_device_uid');
+            if (existingUID) {
+                const { data } = await supabaseClient.from('profiles').select('device_uid').eq('device_uid', existingUID).single();
+                if (data) {
+                    window.location.href = "Leaderboard.html";
                 }
-
-                try {
-                    await supabaseClient.from('profiles').upsert({
-                        device_uid: deviceUID,
-                        player_name: savedPlayer.toUpperCase(),
-                        coach_name: savedCoach.toUpperCase()
-                    }, { onConflict: 'device_uid' });
-                } catch(err) {
-                    console.error("Background auto-sync error:", err);
-                }
-
-                window.location.replace("Leaderboard.html");
             }
         }
 
-        checkExistingMemory();
+        async function signContract() {
+            const nameInput = document.getElementById('coach-name').value.trim().toUpperCase();
+            if (!nameInput) return alert("ENTER A VALID NAME TO CONTINUE.");
 
-        async function saveProfileAndRedirect() {
-            try {
-                const nameVal = document.getElementById('reg-player-name').value.trim().toUpperCase();
-                const coachVal = document.getElementById('reg-coach-name').value.trim().toUpperCase();
+            const newUID = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
 
-                if (!nameVal || !coachVal) {
-                    alert("BOTH FIELDS REQUIRED FOR LEADERBOARD REGISTRATION!");
-                    return;
-                }
+            const { error } = await supabaseClient
+                .from('profiles')
+                .insert([{ device_uid: newUID, coach_name: nameInput, equipped_badge: 'ROOKIE' }]);
 
-                const newDeviceUID = 'dev_' + Math.random().toString(36).substring(2, 18);
-
-                const { error } = await supabaseClient.from('profiles').insert([{
-                    device_uid: newDeviceUID,
-                    player_name: nameVal,
-                    coach_name: coachVal
-                }]);
-
-                if (error) {
-                    alert("DATABASE SYNC ERROR: " + error.message);
-                    return;
-                }
-
-                localStorage.setItem('my_player_name', nameVal);
-                localStorage.setItem('my_coach_name', coachVal);
-                localStorage.setItem('my_device_uid', newDeviceUID);
-
+            if (error) {
+                console.error("Error creating profile:", error);
+                alert("FAILED TO START STORY MODE. TRY AGAIN.");
+            } else {
+                localStorage.setItem('my_device_uid', newUID);
                 window.location.href = "Leaderboard.html";
-            } catch (formError) {
-                alert("APPLICATION ERROR: " + formError.message);
             }
         }
     </script>
