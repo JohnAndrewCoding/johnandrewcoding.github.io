@@ -553,7 +553,6 @@
                         ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
                         : "LOCATION N/A";
 
-                    // Check if pick already exists in DB memory
                     const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
 
                     const homePickedStyle = (existingPick === home.name) 
@@ -596,10 +595,9 @@
                             </div>
                         </div>
 
-                        <!-- CARD NAVIGATION GROUP -->
                         <div class="card-nav-group">
                             <button class="nav-card-btn" onclick="goToNextCard()">[ NEXT MATCHUP ]</button>
-                            <button class="nav-card-btn" ${matchupNum === 1 ? 'disabled' : ''} onclick="goToPreviousCard()">[ LAST MATCHUP ]</button>
+                            <button class="nav-card-btn" onclick="goToPreviousCard()">[ LAST MATCHUP ]</button>
                         </div>
 
                         <div class="game-info-bar">${pointSpread}</div>
@@ -629,6 +627,15 @@
             loadWeekGames();
         }
 
+        // RESET ALL CARDS TO DECK STACK
+        function resetDeckStack() {
+            document.querySelectorAll('.matchup-card').forEach((card, index) => {
+                card.className = 'matchup-card';
+                card.removeAttribute('style');
+                card.style.zIndex = totalCards - index;
+            });
+        }
+
         function updateActiveCardVisibility() {
             document.querySelectorAll('.matchup-card').forEach(card => {
                 const cardIdNum = parseInt(card.id.split('-')[1]);
@@ -642,7 +649,12 @@
 
         function updateBottomButtonStates() {
             const undoBtn = document.getElementById('undo-btn');
-            undoBtn.disabled = (currentCardIndex <= 1);
+            undoBtn.disabled = (currentCardIndex <= 1 && getPickCount() === 0);
+        }
+
+        function getPickCount() {
+            if (!savedPicks[`week-${currentWeek}`]) return 0;
+            return Object.keys(savedPicks[`week-${currentWeek}`]).length;
         }
 
         function initSwipeEngine() {
@@ -702,7 +714,6 @@
             executePick(card, pickType, animationClass);
         }
 
-        // AUTO-SAVE TO SUPABASE & UPDATE VISUAL BUTTON STATES ON PICK
         async function executePick(cardElement, pickType, animationClass) {
             const cardId = cardElement.id;
             const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
@@ -712,7 +723,6 @@
             }
             savedPicks[`week-${currentWeek}`][cardId] = chosenTeam;
 
-            // Highlight chosen team button
             const homeBtn = document.getElementById(`${cardId}-btn-home`);
             const awayBtn = document.getElementById(`${cardId}-btn-away`);
 
@@ -728,11 +738,17 @@
             cardElement.classList.add(animationClass);
 
             currentCardIndex++;
+
+            // LOOP BACK TO GAME 1 IF PAST LAST CARD
+            if (currentCardIndex > totalCards) {
+                currentCardIndex = 1;
+                resetDeckStack();
+            }
+
             updateActiveCardVisibility();
             renderProgressUpdates();
             updateBottomButtonStates();
 
-            // Save choice to database automatically
             try {
                 await supabaseClient.from('picks').upsert({
                     device_uid: deviceUID,
@@ -745,70 +761,76 @@
             }
         }
 
-        // GO TO NEXT MATCHUP WITHOUT MODIFYING PICKS
+        // GO TO NEXT MATCHUP (WITH LOOP BACK)
         function goToNextCard() {
-            if (currentCardIndex > totalCards) return;
-
             const card = document.getElementById(`card-${currentCardIndex}`);
             if (card) {
                 card.classList.add('swipe-up');
             }
 
             currentCardIndex++;
-            updateActiveCardVisibility();
-            renderProgressUpdates();
-            updateBottomButtonStates();
-        }
 
-        // GO TO LAST MATCHUP WITHOUT DELETING PICKS
-        function goToPreviousCard() {
-            if (currentCardIndex <= 1) return;
-
-            currentCardIndex--;
-
-            const previousCardId = `card-${currentCardIndex}`;
-            const previousCard = document.getElementById(previousCardId);
-            if (!previousCard) return;
-
-            previousCard.className = 'matchup-card';
-            previousCard.removeAttribute('style');
-            previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
-
-            updateActiveCardVisibility();
-            renderProgressUpdates();
-            updateBottomButtonStates();
-        }
-
-        // DELETE FROM SUPABASE ON UNDO & RESTORE CARD STACK
-        async function undoLastPick() {
-            if (currentCardIndex <= 1) return;
-
-            currentCardIndex--;
-
-            const previousCardId = `card-${currentCardIndex}`;
-            const previousCard = document.getElementById(previousCardId);
-            if (!previousCard) return;
-
-            if (savedPicks[`week-${currentWeek}`]) {
-                delete savedPicks[`week-${currentWeek}`][previousCardId];
+            if (currentCardIndex > totalCards) {
+                currentCardIndex = 1;
+                resetDeckStack();
             }
 
-            // Reset visual button styles on undone card
-            const homeBtn = document.getElementById(`${previousCardId}-btn-home`);
-            const awayBtn = document.getElementById(`${previousCardId}-btn-away`);
+            updateActiveCardVisibility();
+            renderProgressUpdates();
+            updateBottomButtonStates();
+        }
+
+        // GO TO LAST MATCHUP (WITH LOOP BACK)
+        function goToPreviousCard() {
+            currentCardIndex--;
+
+            if (currentCardIndex < 1) {
+                currentCardIndex = totalCards;
+                resetDeckStack();
+            } else {
+                const previousCardId = `card-${currentCardIndex}`;
+                const previousCard = document.getElementById(previousCardId);
+                if (previousCard) {
+                    previousCard.className = 'matchup-card';
+                    previousCard.removeAttribute('style');
+                    previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
+                }
+            }
+
+            updateActiveCardVisibility();
+            renderProgressUpdates();
+            updateBottomButtonStates();
+        }
+
+        async function undoLastPick() {
+            if (currentCardIndex <= 1 && getPickCount() === 0) return;
+
+            const targetCardIndex = currentCardIndex === 1 ? totalCards : currentCardIndex - 1;
+            const targetCardId = `card-${targetCardIndex}`;
+            const targetCard = document.getElementById(targetCardId);
+            if (!targetCard) return;
+
+            currentCardIndex = targetCardIndex;
+
+            if (savedPicks[`week-${currentWeek}`]) {
+                delete savedPicks[`week-${currentWeek}`][targetCardId];
+            }
+
+            const homeBtn = document.getElementById(`${targetCardId}-btn-home`);
+            const awayBtn = document.getElementById(`${targetCardId}-btn-away`);
 
             if (homeBtn) {
                 homeBtn.style = '';
-                homeBtn.innerText = previousCard.getAttribute('data-home');
+                homeBtn.innerText = targetCard.getAttribute('data-home');
             }
             if (awayBtn) {
                 awayBtn.style = '';
-                awayBtn.innerText = previousCard.getAttribute('data-away');
+                awayBtn.innerText = targetCard.getAttribute('data-away');
             }
 
-            previousCard.className = 'matchup-card';
-            previousCard.removeAttribute('style');
-            previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
+            targetCard.className = 'matchup-card';
+            targetCard.removeAttribute('style');
+            targetCard.style.zIndex = totalCards - (currentCardIndex - 1);
 
             updateActiveCardVisibility();
             renderProgressUpdates();
@@ -816,12 +838,11 @@
             
             triggerToastNotification("PICK REMOVED");
 
-            // Remove choice from database automatically
             try {
                 await supabaseClient.from('picks').delete().match({
                     device_uid: deviceUID,
                     week_number: currentWeek,
-                    card_id: previousCardId
+                    card_id: targetCardId
                 });
             } catch (err) {
                 console.error("Database delete error:", err);
@@ -841,12 +862,15 @@
 
         function renderProgressUpdates() {
             const display = document.getElementById('progress');
-            if (currentCardIndex <= totalCards) {
-                display.innerText = `GAME ${currentCardIndex} OF ${totalCards}`;
-            } else {
+            const pickCount = getPickCount();
+
+            if (pickCount === totalCards && totalCards > 0) {
                 display.innerText = "ALL PICKS LOCKED!";
                 display.style.color = "var(--retro-green)";      
                 display.style.borderColor = "var(--retro-green)";
+            } else {
+                display.removeAttribute('style');
+                display.innerText = `GAME ${currentCardIndex} OF ${totalCards} (${pickCount}/${totalCards} LOCKED)`;
             }
         }
 
