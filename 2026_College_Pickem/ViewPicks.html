@@ -51,7 +51,6 @@
             padding: 1rem;
         }
 
-        /* TOP NAVIGATION */
         .top-nav {
             display: flex;
             justify-content: space-between;
@@ -96,7 +95,6 @@
             margin-bottom: 0.5rem;
         }
 
-        /* STATS OVERVIEW HEADER */
         .summary-bar {
             width: 100%;
             max-width: 480px;
@@ -148,7 +146,6 @@
             text-shadow: 2px 2px 0px #000;
         }
 
-        /* SCROLLABLE PICKS LIST CONTAINER */
         .picks-scroll-list {
             width: 100%;
             max-width: 480px;
@@ -160,7 +157,6 @@
             padding-right: 0.25rem;
         }
 
-        /* Custom Retro Scrollbar */
         .picks-scroll-list::-webkit-scrollbar {
             width: 6px;
         }
@@ -171,7 +167,6 @@
             background: var(--retro-yellow);
         }
 
-        /* INDIVIDUAL PICK ROW CARD */
         .pick-card {
             background-color: var(--bg-card);
             border: 3px solid #000000;
@@ -298,7 +293,6 @@
             const container = document.getElementById('picks-container');
             
             try {
-                // 1. Get week slate game IDs from Supabase
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
                     .select('espn_game_id')
@@ -312,20 +306,17 @@
                     return;
                 }
 
-                // 2. Fetch logged-in user's picks for this specific week
                 const { data: userPicks } = await supabaseClient
                     .from('picks')
                     .select('card_id, chosen_team')
                     .eq('device_uid', deviceUID)
                     .eq('week_number', currentWeek);
 
-                // Map chosen teams by card_id
                 const picksMap = {};
                 (userPicks || []).forEach(p => {
                     picksMap[p.card_id] = p.chosen_team;
                 });
 
-                // 3. Query ESPN for schedule info
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
 
