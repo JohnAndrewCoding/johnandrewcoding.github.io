@@ -122,7 +122,6 @@
                 if (data) {
                     window.location.href = "Leaderboard.html";
                 } else {
-                    // Stale or invalid key in storage; clean it up
                     localStorage.removeItem('my_device_uid');
                 }
             }
@@ -142,9 +141,14 @@
 
             const newUID = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
 
+            // Insert both player_name and coach_name to handle non-null schema constraints
             const { data, error } = await supabaseClient
                 .from('profiles')
-                .insert([{ device_uid: newUID, coach_name: nameInput }]);
+                .insert([{ 
+                    device_uid: newUID, 
+                    player_name: nameInput,
+                    coach_name: nameInput 
+                }]);
 
             if (error) {
                 console.error("Supabase Error Details:", error);
