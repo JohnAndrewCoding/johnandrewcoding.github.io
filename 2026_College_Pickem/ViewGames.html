@@ -1,3 +1,6 @@
+Here is the complete, updated HTML file with the fixed JavaScript logic included:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,9 +333,11 @@
 
         async function loadUsers() {
             try {
-                const { data } = await supabaseClient
+                const { data, error } = await supabaseClient
                     .from('users')
                     .select('device_uid, user_name');
+
+                if (error) throw error;
                 allUsers = data || [];
             } catch (err) {
                 console.error("Failed to load user roster:", err);
@@ -370,12 +375,14 @@
                     .select('device_uid, card_id, chosen_team')
                     .eq('week_number', currentWeek);
 
-                // Map picks by card_id -> array of { user_name, chosen_team, device_uid }
+                // Map picks by flexible card key matching (supports 'card-1', '1', or integer 1)
                 const picksByCard = {};
                 (picksData || []).forEach(p => {
-                    if (!picksByCard[p.card_id]) picksByCard[p.card_id] = [];
+                    const key = String(p.card_id);
+                    if (!picksByCard[key]) picksByCard[key] = [];
+                    
                     const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
-                    picksByCard[p.card_id].push({
+                    picksByCard[key].push({
                         device_uid: p.device_uid,
                         user_name: foundUser ? foundUser.user_name : 'ANONYMOUS',
                         chosen_team: p.chosen_team
@@ -403,7 +410,16 @@
                 const now = new Date();
 
                 filteredEvents.forEach((gameEvent, index) => {
-                    const cardId = `card-${index + 1}`;
+                    const stringCardId = `card-${index + 1}`;
+                    const numericCardId = String(index + 1);
+                    const espnCardId = String(gameEvent.id);
+
+                    // Support multiple card ID format possibilities in Supabase
+                    const cardPicks = picksByCard[stringCardId] 
+                                   || picksByCard[numericCardId] 
+                                   || picksByCard[espnCardId] 
+                                   || [];
+
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
                     
@@ -426,7 +442,6 @@
                     if (statusState === 'post') statusClass += ' final';
 
                     // Construct picks list HTML depending on lock status
-                    const cardPicks = picksByCard[cardId] || [];
                     let picksListHTML = '';
 
                     allUsers.forEach(u => {
@@ -508,3 +523,5 @@
     </script>
 </body>
 </html>
+
+```
