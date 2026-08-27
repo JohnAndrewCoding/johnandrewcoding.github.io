@@ -3,165 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Analyst Desk - Standings</title>
+    <title>Retro Pick'em - Leaderboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         :root {
-            --bg-canvas: #0f172a;
-            --bg-card: #1e293b;
-            --retro-yellow: #facc15;
-            --retro-blue: #38bdf8;
-            --retro-green: #4ade80;
-            --pixel-font: 'Press Start 2P', monospace;
+            --bg-canvas: #0f172a; --bg-card: #1e293b; --retro-yellow: #facc15;
+            --retro-blue: #38bdf8; --retro-green: #4ade80; --pixel-font: 'Press Start 2P', monospace;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background-color: var(--bg-canvas);
-            color: #ffffff;
-            font-family: var(--pixel-font);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 1rem;
-        }
-
-        .top-nav { display: flex; gap: 0.5rem; width: 100%; max-width: 520px; margin-bottom: 1rem; }
-        .nav-link-btn {
-            background: #000; color: #fff; border: 2px solid #fff; padding: 0.5rem;
-            text-decoration: none; font-family: var(--pixel-font); font-size: 0.55rem; flex: 1; text-align: center;
-        }
-
-        header { text-align: center; margin-bottom: 1.25rem; }
-        .title { font-size: 1.2rem; color: var(--retro-yellow); text-shadow: 3px 3px 0px #000; }
-        .subtitle { font-size: 0.55rem; color: var(--retro-blue); margin-top: 0.4rem; }
-
-        .leaderboard-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 0.75rem; }
+        body { background-color: var(--bg-canvas); color: #fff; font-family: var(--pixel-font); padding: 1.5rem; max-width: 600px; margin: 0 auto; }
         
-        .card {
-            background: var(--bg-card);
-            border: 4px solid #000;
-            box-shadow: 4px 4px 0px #000;
-            padding: 0.85rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        .card.active-user { border-color: var(--retro-green); }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #fff; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        h1 { font-size: 0.9rem; color: var(--retro-yellow); }
 
-        .card-row { display: flex; justify-content: space-between; align-items: center; }
-        .analyst-identity { display: flex; align-items: center; gap: 0.5rem; }
-        .rank { font-size: 0.75rem; color: var(--retro-yellow); }
-        .analyst-name { font-size: 0.7rem; color: #fff; }
-        .badge-tag { font-size: 0.45rem; background: #000; color: var(--retro-blue); padding: 2px 4px; border: 1px solid var(--retro-blue); }
+        .nav-links { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .nav-btn { flex: 1; text-align: center; background: #000; color: #fff; text-decoration: none; padding: 0.6rem; font-size: 0.5rem; border: 2px solid #fff; box-shadow: 3px 3px 0px #000; }
+        .nav-btn.active { background: var(--retro-yellow); color: #000; font-weight: bold; }
 
-        /* Conference Chips */
-        .conf-chip { font-size: 0.45rem; padding: 2px 4px; border: 1px solid #fff; font-weight: bold; }
-        .sec-chip { background: #003366; color: #ffd700; }
-        .acc-chip { background: #002147; color: #f58220; }
-        .big10-chip { background: #00417d; color: #ffffff; }
-        .big12-chip { background: #ef4444; color: #ffffff; }
-
-        .rep-score { font-size: 0.6rem; color: var(--retro-green); }
-
-        .footer-action { margin-top: 1rem; width: 100%; max-width: 520px; }
-        .edit-btn {
-            display: block; width: 100%; background: #000; color: var(--retro-yellow);
-            border: 3px solid var(--retro-yellow); text-align: center; text-decoration: none;
-            padding: 0.75rem; font-family: var(--pixel-font); font-size: 0.6rem; box-shadow: 4px 4px 0px #000;
-        }
+        .leaderboard-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 4px solid #000; box-shadow: 6px 6px 0px #000; }
+        .leaderboard-table th, .leaderboard-table td { padding: 0.75rem 0.5rem; font-size: 0.55rem; text-align: left; border-bottom: 2px solid #000; }
+        .leaderboard-table th { background: #000; color: var(--retro-yellow); }
+        .leaderboard-table tr.current-user { background: #334155; color: var(--retro-green); }
+        .badge-pill { color: var(--retro-blue); font-size: 0.45rem; display: block; margin-top: 0.2rem; }
     </style>
 </head>
 <body>
 
-    <div class="top-nav">
-        <a href="index.html" class="nav-link-btn">&lt; HOME</a>
-        <a href="ViewGames.html" class="nav-link-btn">View Games</a>
-        <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS &gt;</a>
-    </div>
-
     <header>
-        <h1 class="title">ANALYST DESK</h1>
-        <div class="subtitle">LEAGUE REPUTATION STANDINGS</div>
+        <h1>GLOBAL STANDINGS</h1>
     </header>
 
-    <div class="leaderboard-container" id="leaderboard">
-        <div style="font-size: 0.6rem; text-align: center;">LOADING LEAGUE DATA...</div>
+    <div class="nav-links">
+        <a href="SamplePickemPage.html" class="nav-btn">MAKE PICKS</a>
+        <a href="Leaderboard.html" class="nav-btn active">LEADERBOARD</a>
     </div>
 
-    <div class="footer-action">
-        <a href="EditCoach.html" class="edit-btn">⚙ EDIT ANALYST SUIT &amp; BADGES</a>
-    </div>
+    <table class="leaderboard-table">
+        <thead>
+            <tr>
+                <th style="width: 15%;">RANK</th>
+                <th>COACH</th>
+                <th style="width: 25%; text-align: right;">CORRECT</th>
+            </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+            <tr>
+                <td colspan="3" style="text-align: center;">LOADING LEADERBOARD...</td>
+            </tr>
+        </tbody>
+    </table>
 
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const currentUID = localStorage.getItem('my_device_uid');
+
+        const deviceUID = localStorage.getItem('my_device_uid');
+        if (!deviceUID) {
+            window.location.href = "index.html";
+        }
 
         window.addEventListener('DOMContentLoaded', loadLeaderboard);
 
         async function loadLeaderboard() {
-            const container = document.getElementById('leaderboard');
-
-            const { data: profiles, error } = await supabaseClient
+            const { data: leaders, error } = await supabaseClient
                 .from('profiles')
-                .select('*');
+                .select('device_uid, coach_name, total_correct, total_picks, equipped_badge')
+                .order('total_correct', { ascending: false })
+                .order('total_picks', { ascending: true })
+                .limit(25);
 
-            if (error || !profiles) {
-                container.innerHTML = `<div style="font-size:0.6rem; color:red;">ERROR LOADING DATA.</div>`;
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
+
+            if (error || !leaders || leaders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">NO STANDINGS AVAILABLE.</td></tr>';
                 return;
             }
 
-            // Calculate conference leaders
-            let maxSEC = -1, maxACC = -1, maxB10 = -1, maxB12 = -1;
-            profiles.forEach(p => {
-                if (p.sec_wins > maxSEC && p.sec_wins > 0) maxSEC = p.sec_wins;
-                if (p.acc_wins > maxACC && p.acc_wins > 0) maxACC = p.acc_wins;
-                if (p.big10_wins > maxB10 && p.big10_wins > 0) maxB10 = p.big10_wins;
-                if (p.big12_wins > maxB12 && p.big12_wins > 0) maxB12 = p.big12_wins;
-            });
+            leaders.forEach((entry, idx) => {
+                const tr = document.createElement('tr');
+                if (entry.device_uid === deviceUID) {
+                    tr.className = 'current-user';
+                }
 
-            // Sort profiles by total correct picks
-            profiles.sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0));
-
-            container.innerHTML = '';
-            profiles.forEach((profile, idx) => {
-                const isUser = profile.device_uid === currentUID;
-                const accuracy = profile.total_picks > 0 
-                    ? ((profile.total_correct / profile.total_picks) * 100).toFixed(1) 
-                    : '0.0';
-
-                // Conf King Badges
-                let confBadgesHTML = '';
-                if (profile.sec_wins === maxSEC && maxSEC > 0) confBadgesHTML += `<span class="conf-chip sec-chip">SEC</span> `;
-                if (profile.acc_wins === maxACC && maxACC > 0) confBadgesHTML += `<span class="conf-chip acc-chip">ACC</span> `;
-                if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span> `;
-                if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span> `;
-
-                const card = document.createElement('div');
-                card.className = `card ${isUser ? 'active-user' : ''}`;
-                card.innerHTML = `
-                    <div class="card-row">
-                        <div class="analyst-identity">
-                            <span class="rank">#${idx + 1}</span>
-                            <span class="analyst-name">${profile.coach_name} ${isUser ? '(YOU)' : ''}</span>
-                        </div>
-                        <div class="rep-score">REP: ${accuracy}%</div>
-                    </div>
-                    <div class="card-row">
-                        <div>
-                            <span class="badge-tag">${profile.equipped_badge || 'ROOKIE'}</span>
-                            ${confBadgesHTML}
-                        </div>
-                        <div style="font-size: 0.5rem; color: #94a3b8;">${profile.total_correct || 0} WINS</div>
-                    </div>
+                tr.innerHTML = `
+                    <td>#${idx + 1}</td>
+                    <td>
+                        ${entry.coach_name || 'ANONYMOUS'}
+                        <span class="badge-pill">[${entry.equipped_badge || 'ROOKIE'}]</span>
+                    </td>
+                    <td style="text-align: right;">${entry.total_correct || 0} / ${entry.total_picks || 0}</td>
                 `;
-                container.appendChild(card);
+                tbody.appendChild(tr);
             });
         }
     </script>
