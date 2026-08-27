@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -373,7 +372,7 @@
                     .select('device_uid, card_id, chosen_team')
                     .eq('week_number', currentWeek);
 
-                // Map picks by flexible card key matching (supports 'card-1', '1', or integer 1)
+                // Map picks by card ID variants
                 const picksByCard = {};
                 (picksData || []).forEach(p => {
                     const key = String(p.card_id);
@@ -382,7 +381,7 @@
                     const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
                     picksByCard[key].push({
                         device_uid: p.device_uid,
-                        user_name: foundUser ? foundUser.user_name : 'ANONYMOUS',
+                        user_name: foundUser ? foundUser.user_name : 'PLAYER (' + p.device_uid.slice(0, 4) + ')',
                         chosen_team: p.chosen_team
                     });
                 });
@@ -412,7 +411,7 @@
                     const numericCardId = String(index + 1);
                     const espnCardId = String(gameEvent.id);
 
-                    // Support multiple card ID format possibilities in Supabase
+                    // Support card-1, 1, or ESPN game ID formats
                     const cardPicks = picksByCard[stringCardId] 
                                    || picksByCard[numericCardId] 
                                    || picksByCard[espnCardId] 
@@ -439,11 +438,19 @@
                     if (statusState === 'in') statusClass += ' live';
                     if (statusState === 'post') statusClass += ' final';
 
-                    // Construct picks list HTML depending on lock status
+                    // Combine roster users + any users who submitted picks but aren't in allUsers array yet
+                    const displayUsersMap = new Map();
+                    allUsers.forEach(u => displayUsersMap.set(u.device_uid, u.user_name));
+                    cardPicks.forEach(p => {
+                        if (!displayUsersMap.has(p.device_uid)) {
+                            displayUsersMap.set(p.device_uid, p.user_name);
+                        }
+                    });
+
                     let picksListHTML = '';
 
-                    allUsers.forEach(u => {
-                        const userPick = cardPicks.find(p => p.device_uid === u.device_uid);
+                    displayUsersMap.forEach((userName, uid) => {
+                        const userPick = cardPicks.find(p => p.device_uid === uid);
                         
                         if (isLocked) {
                             // SHOW FULL CHOICE WHEN LOCKED
@@ -453,7 +460,7 @@
 
                             picksListHTML += `
                                 <div class="pick-row">
-                                    <span class="user-name">${u.user_name}</span>
+                                    <span class="user-name">${userName}</span>
                                     ${teamTag}
                                 </div>`;
                         } else {
@@ -464,11 +471,13 @@
 
                             picksListHTML += `
                                 <div class="pick-row">
-                                    <span class="user-name">${u.user_name}</span>
+                                    <span class="user-name">${userName}</span>
                                     ${statusTag}
                                 </div>`;
                         }
                     });
+
+                    const totalDisplayUsers = displayUsersMap.size;
 
                     const card = document.createElement('div');
                     card.className = 'game-card';
@@ -500,7 +509,7 @@
                         <div class="picks-panel">
                             <div class="picks-panel-title">
                                 <span>LEAGUE PICKS</span>
-                                <span>${cardPicks.length}/${allUsers.length}</span>
+                                <span>${cardPicks.length}/${totalDisplayUsers}</span>
                             </div>
                             <div class="picks-grid">
                                 ${picksListHTML || '<div style="color:#64748b; text-align:center;">NO LEAGUE USERS</div>'}
@@ -521,5 +530,3 @@
     </script>
 </body>
 </html>
-
-```
