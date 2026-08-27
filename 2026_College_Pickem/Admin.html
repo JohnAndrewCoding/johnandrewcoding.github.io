@@ -53,6 +53,13 @@
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // PERSISTENT DEVICE GUARD
+        const deviceUID = localStorage.getItem('my_device_uid');
+        if (!deviceUID) {
+            window.location.href = "index.html";
+        }
+
         let fetchedGames = [];
 
         async function loadWeekGames() {
