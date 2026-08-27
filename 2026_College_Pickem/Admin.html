@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commish Admin Desk</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-canvas: #0f172a; --bg-card: #1e293b; --retro-yellow: #facc15;
+            --retro-blue: #38bdf8; --retro-green: #4ade80; --pixel-font: 'Press Start 2P', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-canvas); color: #fff; font-family: var(--pixel-font); padding: 1rem; display: flex; flex-direction: column; align-items: center; }
+        header { text-align: center; margin-bottom: 1rem; }
+        .title { color: var(--retro-yellow); font-size: 1.1rem; text-shadow: 2px 2px #000; }
+        .controls { background: var(--bg-card); border: 4px solid #000; padding: 0.75rem; max-width: 500px; width: 100%; display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        select, button { font-family: var(--pixel-font); font-size: 0.6rem; padding: 0.5rem; background: #000; color: #fff; border: 2px solid #fff; }
+        .btn-fetch { color: var(--retro-blue); border-color: var(--retro-blue); cursor: pointer; flex: 1; }
+        .slate-container { max-width: 500px; width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+        .game-row { background: #000; border: 2px solid #fff; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+        .game-row.selected { border-color: var(--retro-green); background: #064e3b; }
+        .game-info { font-size: 0.55rem; line-height: 1.4; }
+        .spread-tag { color: var(--retro-yellow); font-size: 0.45rem; }
+        input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--retro-green); cursor: pointer; }
+        .save-bar { position: sticky; bottom: 1rem; width: 100%; max-width: 500px; margin-top: 1rem; }
+        .btn-save { width: 100%; background: #000; color: var(--retro-green); border: 3px solid var(--retro-green); padding: 0.85rem; font-family: var(--pixel-font); font-size: 0.7rem; cursor: pointer; box-shadow: 4px 4px 0px #000; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 class="title">COMMISH SLATE MANAGER</h1>
+    </header>
+
+    <div class="controls">
+        <select id="week-select">
+            <option value="1">WEEK 1</option><option value="2">WEEK 2</option>
+            <option value="3">WEEK 3</option><option value="4">WEEK 4</option>
+        </select>
+        <button class="btn-fetch" onclick="loadWeekGames()">FETCH ESPN SLATE</button>
+    </div>
+
+    <div class="slate-container" id="games-container">
+        <div style="font-size: 0.5rem; text-align: center;">SELECT A WEEK AND FETCH SLATE.</div>
+    </div>
+
+    <div class="save-bar">
+        <button class="btn-save" onclick="saveSlate()">SAVE WEEK SLATE</button>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let fetchedGames = [];
+
+        async function loadWeekGames() {
+            const weekNum = parseInt(document.getElementById('week-select').value);
+            const container = document.getElementById('games-container');
+            container.innerHTML = `<div style="font-size: 0.5rem; text-align: center;">LOADING...</div>`;
+
+            // 1. Fetch existing saved game IDs from Supabase
+            const { data: savedData } = await supabaseClient
+                .from('weekly_slates')
+                .select('espn_game_id')
+                .eq('week_number', weekNum);
+            
+            const savedSet = new Set((savedData || []).map(item => String(item.espn_game_id)));
+
+            // 2. Fetch from ESPN API
+            const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${weekNum}`);
+            const data = await res.json();
+
+            fetchedGames = (data.events || []).map(evt => {
+                const comp = evt.competitions[0];
+                const home = comp.competitors.find(c => c.homeAway === 'home').team;
+                const away = comp.competitors.find(c => c.homeAway === 'away').team;
+                const spread = (comp.odds && comp.odds[0]) ? comp.odds[0].details : "N/A";
+
+                return {
+                    espn_id: String(evt.id),
+                    homeName: home.abbreviation || home.shortDisplayName,
+                    awayName: away.abbreviation || away.shortDisplayName,
+                    spread: spread,
+                    is_selected: savedSet.has(String(evt.id))
+                };
+            });
+
+            render();
+        }
+
+        function render() {
+            const container = document.getElementById('games-container');
+            container.innerHTML = '';
+            fetchedGames.forEach((g, i) => {
+                const row = document.createElement('div');
+                row.className = `game-row ${g.is_selected ? 'selected' : ''}`;
+                row.id = `row-${i}`;
+                row.innerHTML = `
+                    <div class="game-info">
+                        <div>${g.awayName} @ ${g.homeName}</div>
+                        <div class="spread-tag">SPREAD: ${g.spread}</div>
+                    </div>
+                    <input type="checkbox" ${g.is_selected ? 'checked' : ''} onchange="toggle(${i}, this.checked)">
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function toggle(idx, checked) {
+            fetchedGames[idx].is_selected = checked;
+            document.getElementById(`row-${idx}`).classList.toggle('selected', checked);
+        }
+
+        async function saveSlate() {
+            const weekNum = parseInt(document.getElementById('week-select').value);
+            const selectedIds = fetchedGames.filter(g => g.is_selected).map(g => g.espn_id);
+
+            // Wipe existing week slate and insert new selection
+            await supabaseClient.from('weekly_slates').delete().eq('week_number', weekNum);
+
+            if (selectedIds.length > 0) {
+                const payload = selectedIds.map(id => ({ week_number: weekNum, espn_game_id: id }));
+                await supabaseClient.from('weekly_slates').insert(payload);
+            }
+
+            alert(`PUBLISHED ${selectedIds.length} GAMES FOR WEEK ${weekNum}!`);
+        }
+    </script>
+</body>
+</html>
