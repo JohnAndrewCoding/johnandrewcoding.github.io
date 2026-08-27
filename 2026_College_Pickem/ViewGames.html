@@ -54,7 +54,6 @@
             padding: 1rem;
         }
 
-        /* TOP NAV LINKS */
         .top-nav {
             display: flex;
             justify-content: space-between;
@@ -141,7 +140,6 @@
             gap: 1rem;
         }
 
-        /* RETRO SCOREBOARD CARD */
         .game-card {
             background-color: var(--bg-card);
             border: 4px solid #000000;
@@ -185,7 +183,6 @@
             color: var(--retro-yellow);
         }
 
-        /* MINI SCOREBOARD LED DISPLAY */
         .scoreboard-led {
             background-color: #000000;
             border: 3px solid #475569;
@@ -230,7 +227,6 @@
             color: var(--retro-green);
         }
 
-        /* PICKS BREAKDOWN SECTION */
         .picks-panel {
             background: #000000;
             border: 2px dashed #475569;
@@ -331,11 +327,15 @@
         async function loadUsers() {
             try {
                 const { data, error } = await supabaseClient
-                    .from('users')
-                    .select('device_uid, user_name');
+                    .from('profiles')
+                    .select('device_uid, coach_name, player_name');
 
                 if (error) throw error;
-                allUsers = data || [];
+                
+                allUsers = (data || []).map(p => ({
+                    device_uid: p.device_uid,
+                    user_name: p.coach_name || p.player_name || 'ANALYST (' + p.device_uid.slice(0, 4) + ')'
+                }));
             } catch (err) {
                 console.error("Failed to load user roster:", err);
             }
@@ -353,7 +353,6 @@
             const container = document.getElementById('games-container');
             
             try {
-                // 1. Get week slate IDs from Supabase
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
                     .select('espn_game_id')
@@ -366,13 +365,11 @@
                     return;
                 }
 
-                // 2. Fetch all user picks for the active week from Supabase
                 const { data: picksData } = await supabaseClient
                     .from('picks')
                     .select('device_uid, card_id, chosen_team')
                     .eq('week_number', currentWeek);
 
-                // Map picks by card ID variants
                 const picksByCard = {};
                 (picksData || []).forEach(p => {
                     const key = String(p.card_id);
@@ -386,7 +383,6 @@
                     });
                 });
 
-                // 3. Fetch scoreboard feed from ESPN
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
 
@@ -411,7 +407,6 @@
                     const numericCardId = String(index + 1);
                     const espnCardId = String(gameEvent.id);
 
-                    // Support card-1, 1, or ESPN game ID formats
                     const cardPicks = picksByCard[stringCardId] 
                                    || picksByCard[numericCardId] 
                                    || picksByCard[espnCardId] 
@@ -438,7 +433,6 @@
                     if (statusState === 'in') statusClass += ' live';
                     if (statusState === 'post') statusClass += ' final';
 
-                    // Combine roster users + any users who submitted picks but aren't in allUsers array yet
                     const displayUsersMap = new Map();
                     allUsers.forEach(u => displayUsersMap.set(u.device_uid, u.user_name));
                     cardPicks.forEach(p => {
@@ -453,7 +447,6 @@
                         const userPick = cardPicks.find(p => p.device_uid === uid);
                         
                         if (isLocked) {
-                            // SHOW FULL CHOICE WHEN LOCKED
                             const teamTag = userPick 
                                 ? `<span class="user-pick-tag" style="border-color: var(--retro-yellow); color: var(--retro-yellow);">${userPick.chosen_team}</span>`
                                 : `<span class="user-pick-tag" style="border-color: #64748b; color: #64748b;">NO PICK</span>`;
@@ -464,7 +457,6 @@
                                     ${teamTag}
                                 </div>`;
                         } else {
-                            // HIDE SPECIFIC CHOICE BEFORE LOCK (SHOW SUBMISSION STATUS ONLY)
                             const statusTag = userPick 
                                 ? `<span class="pick-status-done">LOCKED ✓</span>`
                                 : `<span class="pick-status-pending">WAITING...</span>`;
@@ -487,7 +479,6 @@
                             <span class="lock-indicator">${isLocked ? '🔒 LOCKED' : '🔓 OPEN'}</span>
                         </div>
 
-                        <!-- LED SCOREBOARD -->
                         <div class="scoreboard-led">
                             <div class="team-score-row">
                                 <div class="team-meta">
@@ -505,7 +496,6 @@
                             </div>
                         </div>
 
-                        <!-- USER PICKS SECTION -->
                         <div class="picks-panel">
                             <div class="picks-panel-title">
                                 <span>LEAGUE PICKS</span>
