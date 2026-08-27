@@ -141,7 +141,6 @@
 
             const newUID = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
 
-            // Insert both player_name and coach_name to handle non-null schema constraints
             const { data, error } = await supabaseClient
                 .from('profiles')
                 .insert([{ 
