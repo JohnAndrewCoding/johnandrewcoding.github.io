@@ -468,7 +468,7 @@
             updateBottomButtonStates();
 
             try {
-                // Fetch existing picks for this week from Supabase
+                // 1. Fetch user's existing picks for this week from Supabase
                 const { data: databasePicks } = await supabaseClient
                     .from('picks')
                     .select('card_id, chosen_team')
@@ -482,6 +482,15 @@
                     });
                 }
 
+                // 2. Fetch admin-selected game IDs for this week from Supabase
+                const { data: slateData } = await supabaseClient
+                    .from('weekly_slates')
+                    .select('espn_game_id')
+                    .eq('week_number', currentWeek);
+
+                const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
+
+                // 3. Fetch full week schedule from ESPN
                 const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const data = await response.json();
                 
@@ -491,7 +500,15 @@
                     return;
                 }
 
-                gamesData = data.events;
+                // 4. Filter ESPN games using the Admin Game ID list
+                gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
+
+                if (gamesData.length === 0) {
+                    progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
+                    deck.innerHTML = '';
+                    return;
+                }
+
                 totalCards = gamesData.length;
                 deck.innerHTML = ''; 
 
@@ -527,8 +544,8 @@
 
                     const kickoffDate = new Date(gameEvent.date);
                     const formattedTime = kickoffDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) + 
-                                  " @ " + 
-                                  kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                                          " @ " + 
+                                          kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
                     const venue = competition.venue || {};
                     const stadiumName = venue.fullName ? venue.fullName.toUpperCase() : "UNKNOWN STADIUM";
