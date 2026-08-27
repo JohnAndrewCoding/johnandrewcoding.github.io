@@ -8,17 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // AUTH GUARD: Redirect to registration if no local device_uid exists
-        const currentUID = localStorage.getItem('my_device_uid');
-        if (!currentUID) {
-            window.location.href = "index.html";
-        }
-    </script>
 
     <style>
         :root {
@@ -91,8 +80,8 @@
 
     <div class="top-nav">
         <a href="index.html" class="nav-link-btn">&lt; HOME</a>
-        <a href="ViewGames.html" class="nav-link-btn">View Games</a>
         <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS &gt;</a>
+        <a href="Admin.html" class="nav-link-btn">Admin</a>
     </div>
 
     <header>
@@ -109,6 +98,11 @@
     </div>
 
     <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const currentUID = localStorage.getItem('my_device_uid');
+
         window.addEventListener('DOMContentLoaded', loadLeaderboard);
 
         async function loadLeaderboard() {
@@ -123,6 +117,7 @@
                 return;
             }
 
+            // Calculate conference leaders
             let maxSEC = -1, maxACC = -1, maxB10 = -1, maxB12 = -1;
             profiles.forEach(p => {
                 if (p.sec_wins > maxSEC && p.sec_wins > 0) maxSEC = p.sec_wins;
@@ -131,6 +126,7 @@
                 if (p.big12_wins > maxB12 && p.big12_wins > 0) maxB12 = p.big12_wins;
             });
 
+            // Sort profiles by total correct picks
             profiles.sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0));
 
             container.innerHTML = '';
@@ -140,13 +136,12 @@
                     ? ((profile.total_correct / profile.total_picks) * 100).toFixed(1) 
                     : '0.0';
 
+                // Conf King Badges
                 let confBadgesHTML = '';
                 if (profile.sec_wins === maxSEC && maxSEC > 0) confBadgesHTML += `<span class="conf-chip sec-chip">SEC</span> `;
                 if (profile.acc_wins === maxACC && maxACC > 0) confBadgesHTML += `<span class="conf-chip acc-chip">ACC</span> `;
                 if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span> `;
                 if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span> `;
-
-                const displayName = profile.coach_name || profile.player_name || 'ANALYST (' + profile.device_uid.slice(0, 4) + ')';
 
                 const card = document.createElement('div');
                 card.className = `card ${isUser ? 'active-user' : ''}`;
@@ -154,7 +149,7 @@
                     <div class="card-row">
                         <div class="analyst-identity">
                             <span class="rank">#${idx + 1}</span>
-                            <span class="analyst-name">${displayName} ${isUser ? '(YOU)' : ''}</span>
+                            <span class="analyst-name">${profile.coach_name} ${isUser ? '(YOU)' : ''}</span>
                         </div>
                         <div class="rep-score">REP: ${accuracy}%</div>
                     </div>
