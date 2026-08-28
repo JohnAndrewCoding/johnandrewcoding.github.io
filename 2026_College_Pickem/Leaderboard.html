@@ -49,7 +49,7 @@
             padding: 0.85rem;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.6rem;
         }
         .card.active-user { border-color: var(--retro-green); }
 
@@ -57,16 +57,29 @@
         .analyst-identity { display: flex; align-items: center; gap: 0.5rem; }
         .rank { font-size: 0.75rem; color: var(--retro-yellow); }
         .analyst-name { font-size: 0.7rem; color: #fff; }
-        .badge-tag { font-size: 0.45rem; background: #000; color: var(--retro-blue); padding: 2px 4px; border: 1px solid var(--retro-blue); margin-right: 2px; display: inline-block; margin-bottom: 2px; }
 
         /* Conference Chips */
-        .conf-chip { font-size: 0.45rem; padding: 2px 4px; border: 1px solid #fff; font-weight: bold; margin-left: 2px; display: inline-block; }
+        .conf-chip { font-size: 0.45rem; padding: 2px 4px; border: 1px solid #fff; font-weight: bold; margin-right: 2px; display: inline-block; }
         .sec-chip { background: #003366; color: #ffd700; }
         .acc-chip { background: #002147; color: #f58220; }
         .big10-chip { background: #00417d; color: #ffffff; }
         .big12-chip { background: #ef4444; color: #ffffff; }
 
-        .rep-score { font-size: 0.6rem; color: var(--retro-green); }
+        .rep-score { font-size: 0.55rem; color: #fff; }
+
+        /* Custom Retro Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #000;
+            border: 1px solid #475569;
+            padding: 1px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
 
         .footer-action { margin-top: 1rem; width: 100%; max-width: 520px; }
         .edit-btn {
@@ -94,7 +107,7 @@
     </div>
 
     <div class="footer-action">
-        <a href="EditCoach.html" class="edit-btn">⚙ EDIT ANALYST SUIT &amp; BADGES</a>
+        <a href="EditCoach.html" class="edit-btn">⚙ EDIT ANALYST SUITE</a>
     </div>
 
     <script>
@@ -126,66 +139,88 @@
                 if (p.big12_wins > maxB12 && p.big12_wins > 0) maxB12 = p.big12_wins;
             });
 
-            // Sort profiles by total correct picks
-            profiles.sort((a, b) => (b.total_correct || 0) - (a.total_correct || 0));
+            // Process profiles: Calculate stats & sort by wins desc, then accuracy desc
+            profiles.forEach(p => {
+                p.wins = p.total_correct || 0;
+                p.total = p.total_picks || 0;
+                p.losses = p.total >= p.wins ? p.total - p.wins : 0;
+                p.accuracyNum = p.total > 0 ? (p.wins / p.total) * 100 : 0;
+            });
+
+            profiles.sort((a, b) => {
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                return b.accuracyNum - a.accuracyNum;
+            });
+
+            // Compute Rank & Ties
+            const rankedProfiles = profiles.map((p, idx, list) => {
+                let isTied = false;
+                let actualRank = idx + 1;
+
+                if (idx > 0 && list[idx - 1].wins === p.wins && list[idx - 1].accuracyNum === p.accuracyNum) {
+                    isTied = true;
+                } else if (idx < list.length - 1 && list[idx + 1].wins === p.wins && list[idx + 1].accuracyNum === p.accuracyNum) {
+                    isTied = true;
+                }
+
+                if (isTied) {
+                    let firstTiedIdx = idx;
+                    while (firstTiedIdx > 0 && list[firstTiedIdx - 1].wins === p.wins && list[firstTiedIdx - 1].accuracyNum === p.accuracyNum) {
+                        firstTiedIdx--;
+                    }
+                    actualRank = firstTiedIdx + 1;
+                }
+
+                return {
+                    ...p,
+                    rankDisplay: isTied ? `T-${actualRank}` : `#${actualRank}`,
+                    isTopRank: actualRank === 1
+                };
+            });
+
+            // Dynamic Red (0%) -> Green (100%) color lookup function
+            function getRepColor(pct) {
+                const red = Math.round(255 - (pct * 2.55));
+                const green = Math.round(pct * 2.55);
+                return `rgb(${red}, ${green}, 50)`;
+            }
 
             container.innerHTML = '';
-            profiles.forEach((profile, idx) => {
+            rankedProfiles.forEach((profile) => {
                 const isUser = profile.device_uid === currentUID;
-                const accuracy = profile.total_picks > 0 
-                    ? ((profile.total_correct / profile.total_picks) * 100).toFixed(1) 
-                    : '0.0';
+                const accuracy = profile.accuracyNum.toFixed(1);
+                const barColor = getRepColor(profile.accuracyNum);
 
-                // Conf King Badges
+                // Conf King Chips
                 let confBadgesHTML = '';
                 if (profile.sec_wins === maxSEC && maxSEC > 0) confBadgesHTML += `<span class="conf-chip sec-chip">SEC</span>`;
                 if (profile.acc_wins === maxACC && maxACC > 0) confBadgesHTML += `<span class="conf-chip acc-chip">ACC</span>`;
                 if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span>`;
                 if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span>`;
 
-                // Badge Parsing Logic (Handles Array, Stringified JSON, single string, or Null)
-                let activeBadges = [];
-                let rawBadges = profile.equipped_badges;
-
-                if (typeof rawBadges === 'string') {
-                    try { rawBadges = JSON.parse(rawBadges); } 
-                    catch (e) { rawBadges = [rawBadges]; }
-                }
-
-                if (Array.isArray(rawBadges) && rawBadges.length > 0) {
-                    activeBadges = rawBadges.filter(b => b && String(b).trim() !== '');
-                } else if (profile.equipped_badge && String(profile.equipped_badge).trim() !== '') {
-                    activeBadges = [String(profile.equipped_badge).trim()];
-                }
-
-                if (activeBadges.length === 0) {
-                    activeBadges = ['ROOKIE'];
-                }
-
-                let badgesHTML = '';
-                activeBadges.forEach(badge => {
-                    badgesHTML += `<span class="badge-tag">${badge}</span>`;
-                });
-
-                // Read coach_name or fall back to player_name
                 const displayName = profile.coach_name || profile.player_name || 'ANALYST';
+                const crownPrefix = profile.isTopRank ? '👑 ' : '';
 
                 const card = document.createElement('div');
                 card.className = `card ${isUser ? 'active-user' : ''}`;
                 card.innerHTML = `
                     <div class="card-row">
                         <div class="analyst-identity">
-                            <span class="rank">#${idx + 1}</span>
-                            <span class="analyst-name">${displayName} ${isUser ? '(YOU)' : ''}</span>
+                            <span class="rank">${profile.rankDisplay}</span>
+                            <span class="analyst-name">${crownPrefix}${displayName} ${isUser ? '(YOU)' : ''}</span>
                         </div>
                         <div class="rep-score">REP: ${accuracy}%</div>
                     </div>
+                    
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${accuracy}%; background-color: ${barColor};"></div>
+                    </div>
+
                     <div class="card-row">
                         <div>
-                            ${badgesHTML}
                             ${confBadgesHTML}
                         </div>
-                        <div style="font-size: 0.5rem; color: #94a3b8;">${profile.total_correct || 0} WINS</div>
+                        <div style="font-size: 0.55rem; color: #94a3b8;">${profile.wins}-${profile.losses}</div>
                     </div>
                 `;
                 container.appendChild(card);
