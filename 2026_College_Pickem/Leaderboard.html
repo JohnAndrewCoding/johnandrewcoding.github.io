@@ -57,10 +57,10 @@
         .analyst-identity { display: flex; align-items: center; gap: 0.5rem; }
         .rank { font-size: 0.75rem; color: var(--retro-yellow); }
         .analyst-name { font-size: 0.7rem; color: #fff; }
-        .badge-tag { font-size: 0.45rem; background: #000; color: var(--retro-blue); padding: 2px 4px; border: 1px solid var(--retro-blue); margin-right: 2px; }
+        .badge-tag { font-size: 0.45rem; background: #000; color: var(--retro-blue); padding: 2px 4px; border: 1px solid var(--retro-blue); margin-right: 2px; display: inline-block; margin-bottom: 2px; }
 
         /* Conference Chips */
-        .conf-chip { font-size: 0.45rem; padding: 2px 4px; border: 1px solid #fff; font-weight: bold; margin-left: 2px; }
+        .conf-chip { font-size: 0.45rem; padding: 2px 4px; border: 1px solid #fff; font-weight: bold; margin-left: 2px; display: inline-block; }
         .sec-chip { background: #003366; color: #ffd700; }
         .acc-chip { background: #002147; color: #f58220; }
         .big10-chip { background: #00417d; color: #ffffff; }
@@ -68,7 +68,7 @@
 
         .rep-score { font-size: 0.6rem; color: var(--retro-green); }
 
-        .footer-action { margin-top: 1rem; width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 0.5rem; }
+        .footer-action { margin-top: 1rem; width: 100%; max-width: 520px; }
         .edit-btn {
             display: block; width: 100%; background: #000; color: var(--retro-yellow);
             border: 3px solid var(--retro-yellow); text-align: center; text-decoration: none;
@@ -95,7 +95,6 @@
 
     <div class="footer-action">
         <a href="EditCoach.html" class="edit-btn">⚙ EDIT ANALYST SUIT &amp; BADGES</a>
-        <a href="AdminBadges.html" class="edit-btn" style="color: var(--retro-blue); border-color: var(--retro-blue);">👑 ADMIN BADGE MANAGER</a>
     </div>
 
     <script>
@@ -144,16 +143,21 @@
                 if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span>`;
                 if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span>`;
 
-                // Render equipped badges (Up to 3)
-                const equippedArray = profile.equipped_badges && profile.equipped_badges.length > 0
-                    ? profile.equipped_badges
-                    : [profile.equipped_badge || 'ROOKIE'];
+                // Badge Parsing Logic (Handles Array vs String vs Null)
+                let activeBadges = [];
+                if (Array.isArray(profile.equipped_badges) && profile.equipped_badges.length > 0) {
+                    activeBadges = profile.equipped_badges.filter(b => b && b.trim() !== '');
+                } else if (profile.equipped_badge && profile.equipped_badge.trim() !== '') {
+                    activeBadges = [profile.equipped_badge];
+                }
+
+                if (activeBadges.length === 0) {
+                    activeBadges = ['ROOKIE'];
+                }
 
                 let badgesHTML = '';
-                equippedArray.forEach(badge => {
-                    if (badge) {
-                        badgesHTML += `<span class="badge-tag">${badge}</span>`;
-                    }
+                activeBadges.forEach(badge => {
+                    badgesHTML += `<span class="badge-tag">${badge}</span>`;
                 });
 
                 const card = document.createElement('div');
