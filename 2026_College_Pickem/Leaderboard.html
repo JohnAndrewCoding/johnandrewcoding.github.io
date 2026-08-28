@@ -143,7 +143,7 @@
                 if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span>`;
                 if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span>`;
 
-                // Badge Parsing Logic (Handles JSON Array, Raw Array, String, or Null)
+                // Badge Parsing Logic (Handles Array, Stringified JSON, single string, or Null)
                 let activeBadges = [];
                 let rawBadges = profile.equipped_badges;
 
