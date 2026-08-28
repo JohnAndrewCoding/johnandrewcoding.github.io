@@ -167,13 +167,16 @@
                     badgesHTML += `<span class="badge-tag">${badge}</span>`;
                 });
 
+                // Read coach_name or fall back to player_name
+                const displayName = profile.coach_name || profile.player_name || 'ANALYST';
+
                 const card = document.createElement('div');
                 card.className = `card ${isUser ? 'active-user' : ''}`;
                 card.innerHTML = `
                     <div class="card-row">
                         <div class="analyst-identity">
                             <span class="rank">#${idx + 1}</span>
-                            <span class="analyst-name">${profile.coach_name || 'ANALYST'} ${isUser ? '(YOU)' : ''}</span>
+                            <span class="analyst-name">${displayName} ${isUser ? '(YOU)' : ''}</span>
                         </div>
                         <div class="rep-score">REP: ${accuracy}%</div>
                     </div>
