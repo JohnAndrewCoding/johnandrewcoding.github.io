@@ -74,8 +74,9 @@
         }
         .remove-chip-btn {
             background: var(--retro-red); color: #fff; border: none; font-size: 0.5rem;
-            cursor: pointer; padding: 0 4px; border-radius: 2px;
+            cursor: pointer; padding: 0 4px; border-radius: 2px; line-height: 1;
         }
+        .remove-chip-btn:hover { background: #b91c1c; }
     </style>
 </head>
 <body>
@@ -89,23 +90,23 @@
         <div class="subtitle">ADMIN CONTROL DESK</div>
     </header>
 
-    <!-- SECTION 1: CREATE MASTER BADGE -->
+    <!-- SECTION 1: CREATE & DELETE MASTER BADGES -->
     <div class="admin-card">
-        <div class="section-title">1. CREATE NEW BADGE</div>
+        <div class="section-title">1. MASTER BADGES</div>
         <div class="form-group">
-            <label for="new-badge-input">NEW BADGE NAME</label>
+            <label for="new-badge-input">CREATE NEW BADGE</label>
             <input type="text" id="new-badge-input" placeholder="E.G. CHAMPION" maxlength="20" />
             <button class="action-btn" onclick="createBadge()">+ SAVE NEW BADGE</button>
         </div>
         <div>
-            <label>ALL MASTER BADGES:</label>
+            <label>ALL MASTER BADGES (CLICK 'X' TO DELETE GLOBALLY):</label>
             <div id="master-badges-list" class="badge-chip-container">
                 <span style="font-size: 0.5rem; color: #94a3b8;">LOADING...</span>
             </div>
         </div>
     </div>
 
-    <!-- SECTION 2: ASSIGN BADGE TO USER -->
+    <!-- SECTION 2: ASSIGN & REVOKE BADGE FROM ANALYST -->
     <div class="admin-card">
         <div class="section-title">2. ASSIGN BADGE TO ANALYST</div>
         <div class="form-group">
@@ -146,12 +147,19 @@
             container.innerHTML = '';
             selectEl.innerHTML = '';
 
+            if (allBadges.length === 0) {
+                container.innerHTML = '<span style="font-size: 0.5rem; color: #94a3b8;">NO MASTER BADGES CREATED.</span>';
+                return;
+            }
+
             allBadges.forEach(b => {
+                // Render Chip with Delete Button for Section 1
                 const chip = document.createElement('span');
                 chip.className = 'badge-chip';
-                chip.innerText = b.name;
+                chip.innerHTML = `${b.name} <button class="remove-chip-btn" onclick="deleteMasterBadge('${b.name}')">X</button>`;
                 container.appendChild(chip);
 
+                // Render option for dropdown in Section 2
                 const opt = document.createElement('option');
                 opt.value = b.name;
                 opt.innerText = b.name;
@@ -160,7 +168,7 @@
         }
 
         async function refreshUsers() {
-            const { data, error } = await supabaseClient.from('profiles').select('device_uid, coach_name').order('coach_name');
+            const { data, error } = await supabaseClient.from('profiles').select('device_uid, coach_name, player_name').order('coach_name');
             if (error) return alert("Error loading profiles: " + error.message);
 
             allProfiles = data || [];
@@ -170,7 +178,7 @@
             allProfiles.forEach(p => {
                 const opt = document.createElement('option');
                 opt.value = p.device_uid;
-                opt.innerText = p.coach_name || p.device_uid;
+                opt.innerText = p.coach_name || p.player_name || p.device_uid;
                 selectEl.appendChild(opt);
             });
 
@@ -189,6 +197,23 @@
                 document.getElementById('new-badge-input').value = '';
                 await refreshMasterBadges();
             }
+        }
+
+        async function deleteMasterBadge(badgeName) {
+            if (!confirm(`Are you sure you want to permanently delete the "${badgeName}" badge from the Master List?`)) return;
+
+            // 1. Delete from badges master table
+            const { error: masterErr } = await supabaseClient.from('badges').delete().eq('name', badgeName);
+            if (masterErr) {
+                return alert("Error deleting badge: " + masterErr.message);
+            }
+
+            // 2. Clean up any user assignments for this badge
+            await supabaseClient.from('user_badges').delete().eq('badge_name', badgeName);
+
+            alert(`BADGE "${badgeName}" DELETED GLOBALLY!`);
+            await refreshMasterBadges();
+            await loadUserAssignedBadges();
         }
 
         async function loadUserAssignedBadges() {
