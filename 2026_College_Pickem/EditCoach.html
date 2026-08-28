@@ -1,221 +1,130 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Bowl - Edit Analyst</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script>
+    let originalName = '';
+    let originalBadges = [];
+    let isSaved = false;
 
-        const deviceUID = localStorage.getItem('my_device_uid');
-        if (!deviceUID) {
-            window.location.href = "index.html";
-        }
-    </script>
+    window.addEventListener('DOMContentLoaded', loadCurrentProfile);
 
-    <style>
-        :root {
-            --bg-canvas: #0f172a;       
-            --bg-card: #1e293b;         
-            --retro-yellow: #facc15;    
-            --retro-blue: #38bdf8;      
-            --retro-green: #4ade80;     
-            --retro-red: #ef4444;
-            --pixel-font: 'Press Start 2P', monospace;
-        }
+    async function loadCurrentProfile() {
+        try {
+            // 1. Fetch user profile data
+            const { data: profile, error: pErr } = await supabaseClient
+                .from('profiles')
+                .select('coach_name, equipped_badges, equipped_badge')
+                .eq('device_uid', deviceUID)
+                .single();
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background-color: var(--bg-canvas);
-            color: #ffffff;
-            font-family: var(--pixel-font);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 1rem;
-        }
+            if (pErr) throw pErr;
 
-        .top-nav { display: flex; width: 100%; max-width: 480px; margin-bottom: 1rem; }
-        .nav-link-btn {
-            background: #000; color: #fff; border: 2px solid #fff; padding: 0.4rem 0.8rem;
-            text-decoration: none; font-family: var(--pixel-font); font-size: 0.55rem; cursor: pointer;
-        }
+            // 2. Fetch badges assigned specifically to this user
+            const { data: assigned, error: bErr } = await supabaseClient
+                .from('user_badges')
+                .select('badge_name')
+                .eq('device_uid', deviceUID);
 
-        header { text-align: center; margin-bottom: 1.25rem; width: 100%; max-width: 480px; }
-        .title { font-size: 1.1rem; color: var(--retro-yellow); text-shadow: 3px 3px 0px #000; }
-        .subtitle { font-size: 0.55rem; color: var(--retro-blue); margin-top: 0.4rem; }
-
-        .edit-container {
-            width: 100%; max-width: 480px; background-color: var(--bg-card);
-            border: 6px solid #000; box-shadow: 6px 6px 0px #000; padding: 1.25rem;
-            display: flex; flex-direction: column; gap: 1.25rem;
-        }
-
-        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        label { font-size: 0.55rem; color: var(--retro-blue); }
-
-        input[type="text"], select {
-            width: 100%; background-color: #000; color: #fff; border: 3px solid #fff;
-            padding: 0.75rem; font-family: var(--pixel-font); font-size: 0.65rem; outline: none;
-        }
-
-        .save-btn {
-            background-color: #000; color: var(--retro-green); border: 3px solid var(--retro-green);
-            padding: 0.75rem; font-family: var(--pixel-font); font-size: 0.65rem; cursor: pointer;
-            box-shadow: 4px 4px 0px #000; text-align: center; margin-top: 0.5rem;
-        }
-        .save-btn:hover { background-color: var(--retro-green); color: #000; }
-    </style>
-</head>
-<body>
-
-    <div class="top-nav">
-        <button class="nav-link-btn" onclick="handleBackNavigation()">&lt; BACK</button>
-    </div>
-
-    <header>
-        <h1 class="title">EDIT ANALYST</h1>
-        <div class="subtitle">UPDATE PROFILE &amp; DETAILS</div>
-    </header>
-
-    <div class="edit-container">
-        <div id="status-display" style="font-size: 0.55rem; color: var(--retro-yellow); text-align: center;">LOADING PROFILE...</div>
-
-        <div class="form-group" id="form-group" style="display: none;">
-            <label for="coach-name-input">ANALYST NAME</label>
-            <input type="text" id="coach-name-input" placeholder="ENTER NAME..." maxlength="20" />
-
-            <label style="margin-top: 0.5rem;">EQUIPPED BADGES (UP TO 3)</label>
-            <select id="badge-select-1">
-                <option value="">-- NONE --</option>
-            </select>
-            <select id="badge-select-2">
-                <option value="">-- NONE --</option>
-            </select>
-            <select id="badge-select-3">
-                <option value="">-- NONE --</option>
-            </select>
-            
-            <button class="save-btn" onclick="saveChanges()">SAVE CHANGES</button>
-        </div>
-    </div>
-
-    <script>
-        let originalName = '';
-        let originalBadges = [];
-        let isSaved = false;
-
-        window.addEventListener('DOMContentLoaded', loadCurrentProfile);
-
-        async function loadCurrentProfile() {
-            try {
-                // 1. Fetch user profile data
-                const { data: profile, error: pErr } = await supabaseClient
-                    .from('profiles')
-                    .select('coach_name, equipped_badges, equipped_badge')
-                    .eq('device_uid', deviceUID)
-                    .single();
-
-                if (pErr) throw pErr;
-
-                // 2. Fetch badges assigned specifically to this user
-                const { data: assigned, error: bErr } = await supabaseClient
-                    .from('user_badges')
-                    .select('badge_name')
-                    .eq('device_uid', deviceUID);
-
-                const unlockedBadges = new Set(['ROOKIE', 'HOT HAND', 'VETERAN']);
-                if (assigned) {
-                    assigned.forEach(r => unlockedBadges.add(r.badge_name));
-                }
-
-                // Populate selects
-                const select1 = document.getElementById('badge-select-1');
-                const select2 = document.getElementById('badge-select-2');
-                const select3 = document.getElementById('badge-select-3');
-
-                unlockedBadges.forEach(b => {
-                    select1.appendChild(new Option(b, b));
-                    select2.appendChild(new Option(b, b));
-                    select3.appendChild(new Option(b, b));
+            const unlockedBadges = new Set(['ROOKIE', 'HOT HAND', 'VETERAN']);
+            if (assigned && assigned.length > 0) {
+                assigned.forEach(r => {
+                    if (r.badge_name) unlockedBadges.add(r.badge_name.trim());
                 });
+            }
 
-                if (profile) {
-                    originalName = profile.coach_name || '';
-                    // Fallback to legacy single badge if equipped_badges is empty
-                    originalBadges = profile.equipped_badges && profile.equipped_badges.length > 0 
-                        ? profile.equipped_badges 
-                        : (profile.equipped_badge ? [profile.equipped_badge] : ['ROOKIE']);
+            // Populate selects cleanly
+            const select1 = document.getElementById('badge-select-1');
+            const select2 = document.getElementById('badge-select-2');
+            const select3 = document.getElementById('badge-select-3');
 
-                    document.getElementById('coach-name-input').value = originalName;
-                    select1.value = originalBadges[0] || '';
-                    select2.value = originalBadges[1] || '';
-                    select3.value = originalBadges[2] || '';
+            // Reset options
+            select1.innerHTML = '<option value="">-- NONE --</option>';
+            select2.innerHTML = '<option value="">-- NONE --</option>';
+            select3.innerHTML = '<option value="">-- NONE --</option>';
+
+            unlockedBadges.forEach(b => {
+                select1.appendChild(new Option(b, b));
+                select2.appendChild(new Option(b, b));
+                select3.appendChild(new Option(b, b));
+            });
+
+            if (profile) {
+                originalName = profile.coach_name || '';
+                document.getElementById('coach-name-input').value = originalName;
+
+                // Safely parse raw badges from DB (handles Array, JSON string, or legacy string)
+                let raw = profile.equipped_badges;
+                if (typeof raw === 'string') {
+                    try { raw = JSON.parse(raw); } 
+                    catch (e) { raw = [raw]; }
                 }
 
-                document.getElementById('status-display').style.display = 'none';
-                document.getElementById('form-group').style.display = 'flex';
-
-            } catch (err) {
-                console.error("Error loading profile:", err);
-                document.getElementById('status-display').innerText = "ERROR LOADING PROFILE.";
-            }
-        }
-
-        function getSelectedBadges() {
-            const b1 = document.getElementById('badge-select-1').value;
-            const b2 = document.getElementById('badge-select-2').value;
-            const b3 = document.getElementById('badge-select-3').value;
-            return [b1, b2, b3].filter(b => b !== '');
-        }
-
-        function handleBackNavigation() {
-            const currentName = document.getElementById('coach-name-input').value.trim().toUpperCase();
-            const currentBadges = getSelectedBadges();
-            const hasUnsavedChanges = (currentName !== originalName || JSON.stringify(currentBadges) !== JSON.stringify(originalBadges)) && !isSaved;
-
-            if (hasUnsavedChanges) {
-                if (confirm("Are you sure you want to leave? If you leave without saving all data will be lost.")) {
-                    window.location.href = "Leaderboard.html";
+                if (Array.isArray(raw) && raw.length > 0) {
+                    originalBadges = raw.map(b => String(b).trim()).filter(b => b !== '');
+                } else if (profile.equipped_badge) {
+                    originalBadges = [String(profile.equipped_badge).trim()];
+                } else {
+                    originalBadges = ['ROOKIE'];
                 }
-            } else {
+
+                // Match dropdown values explicitly
+                select1.value = originalBadges[0] || '';
+                select2.value = originalBadges[1] || '';
+                select3.value = originalBadges[2] || '';
+            }
+
+            document.getElementById('status-display').style.display = 'none';
+            document.getElementById('form-group').style.display = 'flex';
+
+        } catch (err) {
+            console.error("Error loading profile:", err);
+            document.getElementById('status-display').innerText = "ERROR LOADING PROFILE.";
+        }
+    }
+
+    function getSelectedBadges() {
+        const b1 = document.getElementById('badge-select-1').value;
+        const b2 = document.getElementById('badge-select-2').value;
+        const b3 = document.getElementById('badge-select-3').value;
+        return [b1, b2, b3].filter(b => b !== '');
+    }
+
+    function handleBackNavigation() {
+        const currentName = document.getElementById('coach-name-input').value.trim().toUpperCase();
+        const currentBadges = getSelectedBadges();
+        const hasUnsavedChanges = (currentName !== originalName || JSON.stringify(currentBadges) !== JSON.stringify(originalBadges)) && !isSaved;
+
+        if (hasUnsavedChanges) {
+            if (confirm("Are you sure you want to leave? If you leave without saving all data will be lost.")) {
                 window.location.href = "Leaderboard.html";
             }
+        } else {
+            window.location.href = "Leaderboard.html";
         }
+    }
 
-        async function saveChanges() {
-            const newName = document.getElementById('coach-name-input').value.trim().toUpperCase();
-            const newBadges = getSelectedBadges();
+    async function saveChanges() {
+        const newName = document.getElementById('coach-name-input').value.trim().toUpperCase();
+        const newBadges = getSelectedBadges();
 
-            if (!newName) return alert("PLEASE ENTER A VALID NAME.");
+        if (!newName) return alert("PLEASE ENTER A VALID NAME.");
 
-            try {
-                const { error } = await supabaseClient
-                    .from('profiles')
-                    .update({ 
-                        coach_name: newName, 
-                        equipped_badges: newBadges,
-                        equipped_badge: newBadges[0] || 'ROOKIE' // Backward compatibility
-                    })
-                    .eq('device_uid', deviceUID);
+        try {
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ 
+                    coach_name: newName, 
+                    equipped_badges: newBadges,
+                    equipped_badge: newBadges[0] || 'ROOKIE'
+                })
+                .eq('device_uid', deviceUID);
 
-                if (error) throw error;
+            if (error) throw error;
 
-                isSaved = true;
-                alert("Analyst changes saved");
-                window.location.href = "Leaderboard.html";
+            isSaved = true;
+            alert("Analyst changes saved!");
+            window.location.href = "Leaderboard.html";
 
-            } catch (err) {
-                console.error("Error updating analyst profile:", err);
-                alert("FAILED TO SAVE CHANGES. PLEASE TRY AGAIN.");
-            }
+        } catch (err) {
+            console.error("Error updating analyst profile:", err);
+            alert("FAILED TO SAVE CHANGES: " + err.message);
         }
-    </script>
-</body>
-</html>
+    }
+</script>
