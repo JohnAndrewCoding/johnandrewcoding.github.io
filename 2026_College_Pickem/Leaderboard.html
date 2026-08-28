@@ -143,12 +143,19 @@
                 if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span>`;
                 if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span>`;
 
-                // Badge Parsing Logic (Handles Array vs String vs Null)
+                // Badge Parsing Logic (Handles JSON Array, Raw Array, String, or Null)
                 let activeBadges = [];
-                if (Array.isArray(profile.equipped_badges) && profile.equipped_badges.length > 0) {
-                    activeBadges = profile.equipped_badges.filter(b => b && b.trim() !== '');
-                } else if (profile.equipped_badge && profile.equipped_badge.trim() !== '') {
-                    activeBadges = [profile.equipped_badge];
+                let rawBadges = profile.equipped_badges;
+
+                if (typeof rawBadges === 'string') {
+                    try { rawBadges = JSON.parse(rawBadges); } 
+                    catch (e) { rawBadges = [rawBadges]; }
+                }
+
+                if (Array.isArray(rawBadges) && rawBadges.length > 0) {
+                    activeBadges = rawBadges.filter(b => b && String(b).trim() !== '');
+                } else if (profile.equipped_badge && String(profile.equipped_badge).trim() !== '') {
+                    activeBadges = [String(profile.equipped_badge).trim()];
                 }
 
                 if (activeBadges.length === 0) {
@@ -166,7 +173,7 @@
                     <div class="card-row">
                         <div class="analyst-identity">
                             <span class="rank">#${idx + 1}</span>
-                            <span class="analyst-name">${profile.coach_name} ${isUser ? '(YOU)' : ''}</span>
+                            <span class="analyst-name">${profile.coach_name || 'ANALYST'} ${isUser ? '(YOU)' : ''}</span>
                         </div>
                         <div class="rep-score">REP: ${accuracy}%</div>
                     </div>
