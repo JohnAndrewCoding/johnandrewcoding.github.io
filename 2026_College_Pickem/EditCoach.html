@@ -119,7 +119,7 @@
 
         async function loadCurrentProfile() {
             try {
-                // 1. Fetch user profile data safely (selecting both coach_name and player_name)
+                // Fetch user profile data
                 const { data: profile, error: pErr } = await supabaseClient
                     .from('profiles')
                     .select('coach_name, player_name, equipped_badges, equipped_badge')
@@ -128,7 +128,7 @@
 
                 if (pErr) throw pErr;
 
-                // 2. Fetch badges assigned specifically to this user
+                // Fetch badges assigned specifically to this user
                 const { data: assigned } = await supabaseClient
                     .from('user_badges')
                     .select('badge_name')
@@ -141,7 +141,7 @@
                     });
                 }
 
-                // Populate selects cleanly
+                // Populate selects
                 const select1 = document.getElementById('badge-select-1');
                 const select2 = document.getElementById('badge-select-2');
                 const select3 = document.getElementById('badge-select-3');
@@ -224,18 +224,18 @@
             if (!newName) return alert("PLEASE ENTER A VALID NAME.");
 
             try {
-                // Populate both player_name and coach_name to satisfy Supabase NOT NULL constraints
                 const payload = {
-                    device_uid: deviceUID,
                     player_name: newName,
                     coach_name: newName,
                     equipped_badges: newBadges,
                     equipped_badge: newBadges[0] || 'ROOKIE'
                 };
 
+                // Use update() matching device_uid instead of upsert() to bypass RLS INSERT policies
                 const { error } = await supabaseClient
                     .from('profiles')
-                    .upsert(payload, { onConflict: 'device_uid' });
+                    .update(payload)
+                    .eq('device_uid', deviceUID);
 
                 if (error) throw error;
 
