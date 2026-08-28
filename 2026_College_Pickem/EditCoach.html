@@ -83,6 +83,7 @@
             <label for="coach-name-input">ANALYST NAME</label>
             <input type="text" id="coach-name-input" placeholder="ENTER NAME..." maxlength="20" />
 
+            <!-- BADGES SECTION COMMENTED OUT FOR NOW
             <label style="margin-top: 0.5rem;">EQUIPPED BADGES (UP TO 3)</label>
             <select id="badge-select-1">
                 <option value="">-- NONE --</option>
@@ -93,6 +94,7 @@
             <select id="badge-select-3">
                 <option value="">-- NONE --</option>
             </select>
+            -->
             
             <button class="save-btn" onclick="saveChanges()">SAVE CHANGES</button>
         </div>
@@ -106,7 +108,9 @@
         const deviceUID = localStorage.getItem('my_device_uid');
 
         let originalName = '';
+        /* COMMENTED OUT FOR NOW
         let originalBadges = [];
+        */
         let isSaved = false;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -128,6 +132,7 @@
 
                 if (pErr) throw pErr;
 
+                /* COMMENTED OUT BADGE FETCHING LOGIC
                 // Fetch badges assigned specifically to this user
                 const { data: assigned } = await supabaseClient
                     .from('user_badges')
@@ -157,12 +162,14 @@
                         select3.appendChild(new Option(b, b));
                     });
                 }
+                */
 
                 if (profile) {
                     originalName = profile.coach_name || profile.player_name || '';
                     const nameInput = document.getElementById('coach-name-input');
                     if (nameInput) nameInput.value = originalName;
 
+                    /* COMMENTED OUT BADGE POPULATION LOGIC
                     let raw = profile.equipped_badges;
                     if (typeof raw === 'string') {
                         try { raw = JSON.parse(raw); } 
@@ -180,6 +187,7 @@
                     if (select1) select1.value = originalBadges[0] || '';
                     if (select2) select2.value = originalBadges[1] || '';
                     if (select3) select3.value = originalBadges[2] || '';
+                    */
                 }
 
                 const statusEl = document.getElementById('status-display');
@@ -196,17 +204,22 @@
             }
         }
 
+        /* COMMENTED OUT BADGE GETTER
         function getSelectedBadges() {
             const b1 = document.getElementById('badge-select-1')?.value || '';
             const b2 = document.getElementById('badge-select-2')?.value || '';
             const b3 = document.getElementById('badge-select-3')?.value || '';
             return [b1, b2, b3].filter(b => b !== '');
         }
+        */
 
         function handleBackNavigation() {
             const currentName = (document.getElementById('coach-name-input')?.value || '').trim().toUpperCase();
+            /* COMMENTED OUT BADGE CHECK
             const currentBadges = getSelectedBadges();
             const hasUnsavedChanges = (currentName !== originalName || JSON.stringify(currentBadges) !== JSON.stringify(originalBadges)) && !isSaved;
+            */
+            const hasUnsavedChanges = (currentName !== originalName) && !isSaved;
 
             if (hasUnsavedChanges) {
                 if (confirm("Are you sure you want to leave? If you leave without saving all data will be lost.")) {
@@ -219,16 +232,20 @@
 
         async function saveChanges() {
             const newName = (document.getElementById('coach-name-input')?.value || '').trim().toUpperCase();
+            /* COMMENTED OUT BADGE COLLECTION
             const newBadges = getSelectedBadges();
+            */
 
             if (!newName) return alert("PLEASE ENTER A VALID NAME.");
 
             try {
                 const payload = {
                     player_name: newName,
-                    coach_name: newName,
+                    coach_name: newName
+                    /* COMMENTED OUT BADGE PAYLOAD
                     equipped_badges: newBadges,
                     equipped_badge: newBadges[0] || 'ROOKIE'
+                    */
                 };
 
                 // Use update() matching device_uid instead of upsert() to bypass RLS INSERT policies
