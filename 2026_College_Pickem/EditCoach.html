@@ -119,14 +119,14 @@
 
         async function loadCurrentProfile() {
             try {
-                // 1. Fetch user profile data
+                // 1. Fetch user profile data safely
                 const { data: profile, error: pErr } = await supabaseClient
                     .from('profiles')
                     .select('coach_name, equipped_badges, equipped_badge')
                     .eq('device_uid', deviceUID)
-                    .single();
+                    .maybeSingle();
 
-                if (pErr && pErr.code !== 'PGRST116') throw pErr;
+                if (pErr) throw pErr;
 
                 // 2. Fetch badges assigned specifically to this user
                 const { data: assigned } = await supabaseClient
@@ -224,14 +224,17 @@
             if (!newName) return alert("PLEASE ENTER A VALID NAME.");
 
             try {
+                // Save formatted as JSON string for text columns and direct fallback
+                const payload = {
+                    device_uid: deviceUID,
+                    coach_name: newName,
+                    equipped_badges: JSON.stringify(newBadges),
+                    equipped_badge: newBadges[0] || 'ROOKIE'
+                };
+
                 const { error } = await supabaseClient
                     .from('profiles')
-                    .update({ 
-                        coach_name: newName, 
-                        equipped_badges: newBadges,
-                        equipped_badge: newBadges[0] || 'ROOKIE'
-                    })
-                    .eq('device_uid', deviceUID);
+                    .upsert(payload, { onConflict: 'device_uid' });
 
                 if (error) throw error;
 
