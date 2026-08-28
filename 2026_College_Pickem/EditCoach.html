@@ -119,10 +119,10 @@
 
         async function loadCurrentProfile() {
             try {
-                // 1. Fetch user profile data safely
+                // 1. Fetch user profile data safely (selecting both coach_name and player_name)
                 const { data: profile, error: pErr } = await supabaseClient
                     .from('profiles')
-                    .select('coach_name, equipped_badges, equipped_badge')
+                    .select('coach_name, player_name, equipped_badges, equipped_badge')
                     .eq('device_uid', deviceUID)
                     .maybeSingle();
 
@@ -159,7 +159,7 @@
                 }
 
                 if (profile) {
-                    originalName = profile.coach_name || '';
+                    originalName = profile.coach_name || profile.player_name || '';
                     const nameInput = document.getElementById('coach-name-input');
                     if (nameInput) nameInput.value = originalName;
 
@@ -224,9 +224,10 @@
             if (!newName) return alert("PLEASE ENTER A VALID NAME.");
 
             try {
-                // Pass native Array for PostgreSQL array column (text[])
+                // Populate both player_name and coach_name to satisfy Supabase NOT NULL constraints
                 const payload = {
                     device_uid: deviceUID,
+                    player_name: newName,
                     coach_name: newName,
                     equipped_badges: newBadges,
                     equipped_badge: newBadges[0] || 'ROOKIE'
