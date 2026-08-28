@@ -224,11 +224,11 @@
             if (!newName) return alert("PLEASE ENTER A VALID NAME.");
 
             try {
-                // Save formatted as JSON string for text columns and direct fallback
+                // Pass native Array for PostgreSQL array column (text[])
                 const payload = {
                     device_uid: deviceUID,
                     coach_name: newName,
-                    equipped_badges: JSON.stringify(newBadges),
+                    equipped_badges: newBadges,
                     equipped_badge: newBadges[0] || 'ROOKIE'
                 };
 
