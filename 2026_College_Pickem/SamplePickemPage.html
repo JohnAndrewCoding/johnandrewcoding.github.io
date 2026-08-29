@@ -25,10 +25,11 @@
     <style>
         :root {
             --bg-canvas: #0f172a;       
-            --bg-card: #1e293b;         
+            --bg-card: #1e293b;          
             --retro-yellow: #facc15;    
             --retro-blue: #38bdf8;      
             --retro-green: #4ade80;     
+            --retro-red: #ef4444;
             --pixel-font: 'Press Start 2P', monospace;
         }
 
@@ -174,13 +175,18 @@
             visibility: hidden; 
         }
 
+        .matchup-card.is-locked {
+            border-color: var(--retro-red);
+        }
+
         .matchup-card.active-stack {
             visibility: visible;
         }
 
         .matchup-card.dragging .teams-wrapper,
         .matchup-card.dragging .team-btn,
-        .matchup-card.dragging .team-display-block {
+        .matchup-card.dragging .team-display-block,
+        .matchup-card.dragging .venue-link {
             pointer-events: none;
         }
 
@@ -190,6 +196,28 @@
             color: #64748b;
             font-size: 0.6rem;
             line-height: 1.4;
+        }
+
+        .venue-link {
+            color: #64748b;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            cursor: pointer;
+            display: inline-block;
+            transition: color 0.2s ease;
+        }
+
+        @media (hover: hover) {
+            .venue-link:hover {
+                color: var(--retro-blue);
+            }
+        }
+
+        .lock-indicator {
+            display: block;
+            color: var(--retro-red);
+            font-size: 0.55rem;
+            margin-top: 0.2rem;
         }
 
         .teams-wrapper {
@@ -207,6 +235,7 @@
             flex-direction: column;
             align-items: center;
             gap: 0.75rem;
+            width: 45%;
         }
 
         .team-btn {
@@ -217,14 +246,26 @@
             padding: 0.75rem 0.25rem;
             cursor: pointer;
             font-family: var(--pixel-font);
-            font-size: 0.7rem;
+            font-size: 0.6rem;
+            line-height: 1.2;
             box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
             word-wrap: break-word;
             transition: all 0.2s ease;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .team-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #475569 !important;
         }
 
         @media (hover: hover) {
-            .team-btn:hover {
+            .team-btn:not(:disabled):hover {
                 border-color: var(--retro-yellow);
                 color: var(--retro-yellow);
             }
@@ -423,7 +464,7 @@
     <div class="deck-container" id="deck"></div>
 
     <div class="bottom-controls-wrapper">
-        <div class="retro-toast" id="toast">LOCKED: UGA</div>
+        <div class="retro-toast" id="toast">LOCKED</div>
         <button class="action-btn" id="undo-btn" disabled ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO PICK</button>
     </div>
     
@@ -451,6 +492,12 @@
                 <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
                 <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
             </div>`;
+
+        function isGameLocked(cardElement) {
+            const kickoffStr = cardElement.getAttribute('data-kickoff');
+            if (!kickoffStr) return false;
+            return Date.now() >= new Date(kickoffStr).getTime();
+        }
 
         async function loadWeekGames() {
             const deck = document.getElementById('deck');
@@ -520,19 +567,21 @@
 
                     const home = {
                         id: homeTeamData.team.id,
-                        name: homeTeamData.team.abbreviation || homeTeamData.team.shortDisplayName,
+                        name: homeTeamData.team.location || homeTeamData.team.nickname || homeTeamData.team.name,
                         color: homeTeamData.team.color || 'dc2626',
                         record: homeRecord
                     };
 
                     const away = {
                         id: awayTeamData.team.id,
-                        name: awayTeamData.team.abbreviation || awayTeamData.team.shortDisplayName,
+                        name: awayTeamData.team.location || awayTeamData.team.nickname || awayTeamData.team.name,
                         color: awayTeamData.team.color || '1e3a8a',
                         record: awayRecord
                     };
 
                     const kickoffDate = new Date(gameEvent.date);
+                    const isLocked = Date.now() >= kickoffDate.getTime();
+
                     const formattedTime = kickoffDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) + 
                                           " @ " + 
                                           kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -542,6 +591,8 @@
                     const stadiumLoc = (venue.address && venue.address.city && venue.address.state) 
                         ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
                         : "LOCATION N/A";
+
+                    const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
 
                     const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
 
@@ -553,24 +604,30 @@
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
                         : '';
 
+                    const disabledAttr = isLocked ? 'disabled' : '';
+
                     const card = document.createElement('div');
-                    card.className = 'matchup-card';
+                    card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
                     card.id = cardId;
                     card.setAttribute('data-home', home.name);
                     card.setAttribute('data-away', away.name);
+                    card.setAttribute('data-kickoff', gameEvent.date);
                     
                     card.style.zIndex = totalCards - index;
                     card.innerHTML = `
                         <span class="matchup-number">
                             ${formattedTime}<br>
-                            <small style="font-size: 0.45rem; color: #64748b; line-height: 1.4;">
-                                ${stadiumName}<br>${stadiumLoc}
-                            </small>
+                            <a href="${gamecastUrl}" target="_blank" rel="noopener noreferrer" class="venue-link" onclick="event.stopPropagation();">
+                                <small style="font-size: 0.45rem; line-height: 1.4;">
+                                    ${stadiumName}<br>${stadiumLoc}
+                                </small>
+                            </a>
+                            ${isLocked ? '<span class="lock-indicator">🔒 KICKOFF PASSED</span>' : ''}
                         </span>
                         <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
-                                <button class="team-btn" id="${cardId}-btn-home" style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
+                                <button class="team-btn" id="${cardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
                                     ${home.name} ${existingPick === home.name ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${home.record}</span>
@@ -578,7 +635,7 @@
                             <div class="vs-divider">VS</div>
                             <div class="team-display-block">
                                 ${helmetHTML(away.color)}
-                                <button class="team-btn" id="${cardId}-btn-away" style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
+                                <button class="team-btn" id="${cardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
                                     ${away.name} ${existingPick === away.name ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${away.record}</span>
@@ -619,7 +676,9 @@
 
         function resetDeckStack() {
             document.querySelectorAll('.matchup-card').forEach((card, index) => {
-                card.className = 'matchup-card';
+                const cardIdNum = parseInt(card.id.split('-')[1]);
+                const isLocked = isGameLocked(card);
+                card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
                 card.removeAttribute('style');
                 card.style.zIndex = totalCards - index;
             });
@@ -653,6 +712,11 @@
                 card.addEventListener('touchstart', e => {
                     const cardIdNum = parseInt(card.id.split('-')[1]);
                     if (cardIdNum !== currentCardIndex) return; 
+
+                    if (isGameLocked(card)) {
+                        triggerToastNotification("🔒 KICKOFF PASSED");
+                        return;
+                    }
 
                     isDragging = true;
                     card.classList.add('dragging');
@@ -699,11 +763,22 @@
             
             if (cardIdNum !== currentCardIndex) return;
 
+            if (isGameLocked(card)) {
+                triggerToastNotification("🔒 KICKOFF PASSED");
+                return;
+            }
+
             const animationClass = pickType === 'home' ? 'swipe-left' : 'swipe-right';
             executePick(card, pickType, animationClass);
         }
 
         async function executePick(cardElement, pickType, animationClass) {
+            if (isGameLocked(cardElement)) {
+                triggerToastNotification("🔒 KICKOFF PASSED");
+                cardElement.style.transform = 'translateX(0px) rotate(0deg)';
+                return;
+            }
+
             const cardId = cardElement.id;
             const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
             
@@ -777,7 +852,8 @@
                 const previousCardId = `card-${currentCardIndex}`;
                 const previousCard = document.getElementById(previousCardId);
                 if (previousCard) {
-                    previousCard.className = 'matchup-card';
+                    const isLocked = isGameLocked(previousCard);
+                    previousCard.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
                     previousCard.removeAttribute('style');
                     previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
                 }
@@ -795,6 +871,11 @@
             const targetCardId = `card-${targetCardIndex}`;
             const targetCard = document.getElementById(targetCardId);
             if (!targetCard) return;
+
+            if (isGameLocked(targetCard)) {
+                triggerToastNotification("🔒 GAME ALREADY STARTED");
+                return;
+            }
 
             currentCardIndex = targetCardIndex;
 
@@ -814,7 +895,8 @@
                 awayBtn.innerText = targetCard.getAttribute('data-away');
             }
 
-            targetCard.className = 'matchup-card';
+            const isLocked = isGameLocked(targetCard);
+            targetCard.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
             targetCard.removeAttribute('style');
             targetCard.style.zIndex = totalCards - (currentCardIndex - 1);
 
@@ -838,7 +920,15 @@
         function triggerToastNotification(teamName) {
             const toast = document.getElementById('toast');
             clearTimeout(toastTimeout);
-            toast.innerText = teamName === "PICK REMOVED" ? "PICK REMOVED" : `LOCKED: ${teamName}`;
+            
+            if (teamName === "PICK REMOVED") {
+                toast.innerText = "PICK REMOVED";
+            } else if (teamName.includes("🔒")) {
+                toast.innerText = teamName;
+            } else {
+                toast.innerText = `LOCKED: ${teamName}`;
+            }
+
             toast.classList.add('show');
             
             toastTimeout = setTimeout(() => {
