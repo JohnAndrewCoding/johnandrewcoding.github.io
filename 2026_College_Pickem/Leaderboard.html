@@ -127,15 +127,57 @@
 
             const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Fetch profiles table directly
-            const { data: profiles, error: profileErr } = await supabaseClient
-                .from('profiles')
-                .select('*');
+            // 1. Fetch profiles, completed games, and user picks simultaneously
+            const [
+                { data: profiles, error: profileErr },
+                { data: games, error: gameErr },
+                { data: picks, error: pickErr }
+            ] = await Promise.all([
+                supabaseClient.from('profiles').select('*'),
+                supabaseClient.from('games').select('*').eq('is_completed', true),
+                supabaseClient.from('picks').select('*')
+            ]);
 
             if (profileErr || !profiles) {
-                console.error("Supabase error:", profileErr);
+                console.error("Profiles fetch error:", profileErr);
                 container.innerHTML = `<div style="font-size:0.6rem; color:red;">ERROR LOADING DATA.</div>`;
                 return;
+            }
+
+            // Map completed games by ID and card_id (string/int) to ensure winning team lookup
+            const completedGamesMap = {};
+            if (games && !gameErr) {
+                games.forEach(g => {
+                    if (g.winning_team) {
+                        completedGamesMap[g.id] = g.winning_team;
+                        // Map by string ID if card_id stores game ID as a string
+                        completedGamesMap[String(g.id)] = g.winning_team;
+                    }
+                });
+            }
+
+            // 2. Aggregate W-L stats per device_uid
+            const userStats = {};
+            if (picks && !pickErr) {
+                picks.forEach(p => {
+                    const uid = p.device_uid;
+                    if (!uid) return;
+
+                    if (!userStats[uid]) {
+                        userStats[uid] = { wins: 0, losses: 0, total: 0 };
+                    }
+
+                    // Match pick's card_id against completed games map
+                    const winningTeam = completedGamesMap[p.card_id];
+                    if (winningTeam) {
+                        userStats[uid].total += 1;
+                        if (p.chosen_team === winningTeam) {
+                            userStats[uid].wins += 1;
+                        } else {
+                            userStats[uid].losses += 1;
+                        }
+                    }
+                });
             }
 
             // Calculate conference leaders
@@ -147,22 +189,18 @@
                 if (p.big12_wins > maxB12 && p.big12_wins > 0) maxB12 = p.big12_wins;
             });
 
-            // Process profiles & calculate W-L + percentage from profile columns
+            // 3. Process profile statistics
             profiles.forEach(p => {
-                // Read wins/losses from profile attributes with fallback checks
-                p.wins = p.total_correct ?? p.wins ?? 0;
-                p.losses = p.total_losses ?? p.losses ?? 0;
-                
-                // If total_picks is provided, use it to derive losses if losses wasn't explicitly set
-                if (p.total_picks !== undefined && p.total_picks !== null && p.losses === 0) {
-                    p.losses = Math.max(0, p.total_picks - p.wins);
-                }
+                const uid = p.device_uid;
+                const stats = userStats[uid] || { wins: 0, losses: 0, total: 0 };
 
-                const totalGames = p.wins + p.losses;
-                p.accuracyNum = totalGames > 0 ? (p.wins / totalGames) * 100 : 0;
+                p.wins = stats.wins;
+                p.losses = stats.losses;
+                p.total = stats.total;
+                p.accuracyNum = p.total > 0 ? (p.wins / p.total) * 100 : 0;
             });
 
-            // Sort profiles by wins descending, then accuracy percentage descending
+            // Sort profiles by wins desc, then accuracy desc
             profiles.sort((a, b) => {
                 if (b.wins !== a.wins) return b.wins - a.wins;
                 return b.accuracyNum - a.accuracyNum;
