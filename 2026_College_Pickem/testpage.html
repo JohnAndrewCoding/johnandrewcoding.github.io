@@ -185,7 +185,8 @@
 
         .matchup-card.dragging .teams-wrapper,
         .matchup-card.dragging .team-btn,
-        .matchup-card.dragging .team-display-block {
+        .matchup-card.dragging .team-display-block,
+        .matchup-card.dragging .venue-link {
             pointer-events: none;
         }
 
@@ -195,6 +196,21 @@
             color: #64748b;
             font-size: 0.6rem;
             line-height: 1.4;
+        }
+
+        .venue-link {
+            color: #64748b;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            cursor: pointer;
+            display: inline-block;
+            transition: color 0.2s ease;
+        }
+
+        @media (hover: hover) {
+            .venue-link:hover {
+                color: var(--retro-blue);
+            }
         }
 
         .lock-indicator {
@@ -549,7 +565,6 @@
                     const homeRecord = (homeTeamData.records && homeTeamData.records.length > 0) ? homeTeamData.records[0].summary : "0-0";
                     const awayRecord = (awayTeamData.records && awayTeamData.records.length > 0) ? awayTeamData.records[0].summary : "0-0";
 
-                    // Formats to full school name ("Mississippi State" instead of "MISS ST")
                     const home = {
                         id: homeTeamData.team.id,
                         name: homeTeamData.team.location || homeTeamData.team.nickname || homeTeamData.team.name,
@@ -577,6 +592,8 @@
                         ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
                         : "LOCATION N/A";
 
+                    const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
+
                     const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
 
                     const homePickedStyle = (existingPick === home.name) 
@@ -600,9 +617,11 @@
                     card.innerHTML = `
                         <span class="matchup-number">
                             ${formattedTime}<br>
-                            <small style="font-size: 0.45rem; color: #64748b; line-height: 1.4;">
-                                ${stadiumName}<br>${stadiumLoc}
-                            </small>
+                            <a href="${gamecastUrl}" target="_blank" rel="noopener noreferrer" class="venue-link" onclick="event.stopPropagation();">
+                                <small style="font-size: 0.45rem; line-height: 1.4;">
+                                    ${stadiumName}<br>${stadiumLoc}
+                                </small>
+                            </a>
                             ${isLocked ? '<span class="lock-indicator">🔒 KICKOFF PASSED</span>' : ''}
                         </span>
                         <div class="teams-wrapper">
