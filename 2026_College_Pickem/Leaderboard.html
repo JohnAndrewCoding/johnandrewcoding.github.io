@@ -1,7 +1,118 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Analyst Desk - Standings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+    <style>
+        :root {
+            --bg-canvas: #0f172a;
+            --bg-card: #1e293b;
+            --retro-yellow: #facc15;
+            --retro-blue: #38bdf8;
+            --retro-green: #4ade80;
+            --pixel-font: 'Press Start 2P', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-canvas);
+            color: #ffffff;
+            font-family: var(--pixel-font);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .top-nav { display: flex; gap: 0.5rem; width: 100%; max-width: 520px; margin-bottom: 1rem; }
+        .nav-link-btn {
+            background: #000; color: #fff; border: 2px solid #fff; padding: 0.5rem;
+            text-decoration: none; font-family: var(--pixel-font); font-size: 0.55rem; flex: 1; text-align: center;
+        }
+
+        header { text-align: center; margin-bottom: 1.25rem; }
+        .title { font-size: 1.2rem; color: var(--retro-yellow); text-shadow: 3px 3px 0px #000; }
+        .subtitle { font-size: 0.55rem; color: var(--retro-blue); margin-top: 0.4rem; }
+
+        .leaderboard-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 0.75rem; }
+        
+        .card {
+            background: var(--bg-card);
+            border: 4px solid #000;
+            box-shadow: 4px 4px 0px #000;
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+        .card.active-user { border-color: var(--retro-green); }
+
+        .card-row { display: flex; justify-content: space-between; align-items: center; }
+        .analyst-identity { display: flex; align-items: center; gap: 0.5rem; }
+        .rank { font-size: 0.75rem; color: var(--retro-yellow); }
+        .analyst-name { font-size: 0.7rem; color: #fff; }
+
+        /* Conference Chips */
+        .conf-chip { font-size: 0.45rem; padding: 2px 4px; border: 1px solid #fff; font-weight: bold; margin-right: 2px; display: inline-block; }
+        .sec-chip { background: #003366; color: #ffd700; }
+        .acc-chip { background: #002147; color: #f58220; }
+        .big10-chip { background: #00417d; color: #ffffff; }
+        .big12-chip { background: #ef4444; color: #ffffff; }
+
+        .rep-score { font-size: 0.55rem; color: #fff; }
+
+        /* Custom Retro Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #000;
+            border: 1px solid #475569;
+            padding: 1px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .footer-action { margin-top: 1rem; width: 100%; max-width: 520px; }
+        .edit-btn {
+            display: block; width: 100%; background: #000; color: var(--retro-yellow);
+            border: 3px solid var(--retro-yellow); text-align: center; text-decoration: none;
+            padding: 0.75rem; font-family: var(--pixel-font); font-size: 0.6rem; box-shadow: 4px 4px 0px #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="ViewPicks.html" class="nav-link-btn">VIEW PICKS</a>
+        <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS</a>
+        <a href="ViewGames.html" class="nav-link-btn">LIVE GAMES</a>
+    </div>
+
+    <header>
+        <h1 class="title">ANALYST DESK</h1>
+        <div class="subtitle">LEAGUE REPUTATION STANDINGS</div>
+    </header>
+
+    <div class="leaderboard-container" id="leaderboard">
+        <div style="font-size: 0.6rem; text-align: center;">LOADING LEAGUE DATA...</div>
+    </div>
+
+    <div class="footer-action">
+        <a href="EditCoach.html" class="edit-btn">⚙ EDIT ANALYST SUITE</a>
+    </div>
+
+    <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const currentUID = localStorage.getItem('my_device_uid');
 
         window.addEventListener('DOMContentLoaded', loadLeaderboard);
@@ -9,15 +120,23 @@
         async function loadLeaderboard() {
             const container = document.getElementById('leaderboard');
 
-            // 1. Fetch profiles, games, and user picks simultaneously
+            // Verify Supabase library initialized properly
+            if (typeof supabase === 'undefined') {
+                container.innerHTML = `<div style="font-size:0.6rem; color:red;">FAILED TO LOAD SUPABASE SDK. CHECK NETWORK/CDN.</div>`;
+                return;
+            }
+
+            const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Fetch profiles, completed games, and picks simultaneously
             const [
                 { data: profiles, error: profileErr },
                 { data: games, error: gameErr },
                 { data: picks, error: pickErr }
             ] = await Promise.all([
                 supabaseClient.from('profiles').select('*'),
-                supabaseClient.from('games').select('*').eq('completed', true), // fetch completed games
-                supabaseClient.from('user_picks').select('*')                   // fetch all user picks
+                supabaseClient.from('games').select('*').eq('completed', true),
+                supabaseClient.from('user_picks').select('*')
             ]);
 
             if (profileErr || !profiles) {
@@ -25,16 +144,15 @@
                 return;
             }
 
-            // Map games by ID to easily check the winning team
+            // Map completed games by ID to check winner
             const completedGamesMap = {};
             if (games) {
                 games.forEach(g => {
-                    // Adjust 'winner_team' to match your database column for completed game winner
                     completedGamesMap[g.id] = g.winner_team || g.winning_team;
                 });
             }
 
-            // 2. Aggregate dynamic W-L records per user
+            // Aggregate W-L stats per user
             const userStats = {};
             if (picks) {
                 picks.forEach(p => {
@@ -43,7 +161,6 @@
                         userStats[uid] = { wins: 0, total: 0 };
                     }
 
-                    // Check if pick belongs to a completed game
                     if (completedGamesMap[p.game_id]) {
                         userStats[uid].total += 1;
                         if (p.selected_team === completedGamesMap[p.game_id]) {
@@ -62,12 +179,11 @@
                 if (p.big12_wins > maxB12 && p.big12_wins > 0) maxB12 = p.big12_wins;
             });
 
-            // 3. Process profiles with real-time dynamic stats
+            // Calculate stats and fallback to profiles table if user_picks aren't mapped
             profiles.forEach(p => {
                 const uid = p.device_uid || p.id;
                 const stats = userStats[uid] || { wins: 0, total: 0 };
 
-                // Fallback to table column if dynamic picks are not present
                 p.wins = stats.total > 0 ? stats.wins : (p.total_correct || 0);
                 p.total = stats.total > 0 ? stats.total : (p.total_picks || 0);
                 p.losses = p.total >= p.wins ? p.total - p.wins : 0;
@@ -155,3 +271,5 @@
             });
         }
     </script>
+</body>
+</html>
