@@ -127,7 +127,7 @@
 
             const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // 1. Fetch profiles, completed games, and user picks simultaneously
+            // Fetch profiles, completed games, and picks concurrently
             const [
                 { data: profiles, error: profileErr },
                 { data: games, error: gameErr },
@@ -144,38 +144,39 @@
                 return;
             }
 
-            // Map completed games by ID and card_id (string/int) to ensure winning team lookup
-            const completedGamesMap = {};
+            // Map completed games by winning team and IDs
+            const completedWinners = new Set();
             if (games && !gameErr) {
                 games.forEach(g => {
                     if (g.winning_team) {
-                        completedGamesMap[g.id] = g.winning_team;
-                        // Map by string ID if card_id stores game ID as a string
-                        completedGamesMap[String(g.id)] = g.winning_team;
+                        completedWinners.add(String(g.winning_team).trim().toLowerCase());
                     }
                 });
             }
 
-            // 2. Aggregate W-L stats per device_uid
+            // Map W-L stats per device_uid by matching picks against completed game winners
             const userStats = {};
             if (picks && !pickErr) {
                 picks.forEach(p => {
                     const uid = p.device_uid;
-                    if (!uid) return;
+                    if (!uid || !p.chosen_team) return;
 
                     if (!userStats[uid]) {
                         userStats[uid] = { wins: 0, losses: 0, total: 0 };
                     }
 
-                    // Match pick's card_id against completed games map
-                    const winningTeam = completedGamesMap[p.card_id];
-                    if (winningTeam) {
+                    const chosen = String(p.chosen_team).trim().toLowerCase();
+
+                    // Check if the chosen team matches a completed game winner
+                    if (completedWinners.has(chosen)) {
+                        userStats[uid].wins += 1;
                         userStats[uid].total += 1;
-                        if (p.chosen_team === winningTeam) {
-                            userStats[uid].wins += 1;
-                        } else {
-                            userStats[uid].losses += 1;
-                        }
+                    } else if (games && games.some(g => 
+                        (String(g.home_team).trim().toLowerCase() === chosen || String(g.away_team).trim().toLowerCase() === chosen) &&
+                        g.winning_team && String(g.winning_team).trim().toLowerCase() !== chosen
+                    )) {
+                        userStats[uid].losses += 1;
+                        userStats[uid].total += 1;
                     }
                 });
             }
@@ -189,7 +190,7 @@
                 if (p.big12_wins > maxB12 && p.big12_wins > 0) maxB12 = p.big12_wins;
             });
 
-            // 3. Process profile statistics
+            // Process profile statistics
             profiles.forEach(p => {
                 const uid = p.device_uid;
                 const stats = userStats[uid] || { wins: 0, losses: 0, total: 0 };
@@ -232,7 +233,6 @@
                 };
             });
 
-            // Dynamic Red (0%) -> Green (100%) color lookup function
             function getRepColor(pct) {
                 const red = Math.round(255 - (pct * 2.55));
                 const green = Math.round(pct * 2.55);
@@ -245,7 +245,6 @@
                 const accuracy = profile.accuracyNum.toFixed(1);
                 const barColor = getRepColor(profile.accuracyNum);
 
-                // Conf King Chips
                 let confBadgesHTML = '';
                 if (profile.sec_wins === maxSEC && maxSEC > 0) confBadgesHTML += `<span class="conf-chip sec-chip">SEC</span>`;
                 if (profile.acc_wins === maxACC && maxACC > 0) confBadgesHTML += `<span class="conf-chip acc-chip">ACC</span>`;
