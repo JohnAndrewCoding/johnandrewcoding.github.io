@@ -1,4 +1,214 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Pick'em Stack</title>
+    <!-- Include Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --retro-bg: #0f172a;
+            --retro-card: #1e293b;
+            --retro-border: #334155;
+            --retro-yellow: #f59e0b;
+            --retro-green: #10b981;
+            --retro-red: #ef4444;
+            --retro-text: #f8fafc;
+        }
+
+        body {
+            background-color: var(--retro-bg);
+            color: var(--retro-text);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-btn {
+            background: var(--retro-card);
+            border: 1px solid var(--retro-border);
+            color: var(--retro-text);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #deck {
+            position: relative;
+            width: 320px;
+            height: 480px;
+            margin-top: 1rem;
+        }
+
+        .matchup-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--retro-card);
+            border: 2px solid var(--retro-border);
+            box-sizing: border-box;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            user-select: none;
+            touch-action: pan-y;
+            visibility: hidden;
+        }
+
+        .matchup-card.active-stack {
+            visibility: visible;
+        }
+
+        .matchup-card.is-locked {
+            border-color: var(--retro-red);
+        }
+
+        .matchup-number {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .teams-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .team-display-block {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .team-btn {
+            flex: 1;
+            background: #0f172a;
+            border: 1px solid var(--retro-border);
+            color: var(--retro-text);
+            padding: 0.75rem;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .team-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .vs-divider {
+            text-align: center;
+            font-weight: bold;
+            color: var(--retro-yellow);
+            font-size: 0.8rem;
+        }
+
+        .helmet-icon {
+            width: 24px;
+            height: 24px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px;
+        }
+
+        .pixel { background: transparent; }
+        .p-fill { background: var(--team-color, #ffffff); }
+        .p-dark { background: #000000; }
+        .p-face { background: #cbd5e1; }
+
+        .card-nav-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .nav-card-btn {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-family: inherit;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        .game-info-bar {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--retro-yellow);
+            border-top: 1px dashed var(--retro-border);
+            padding-top: 0.5rem;
+        }
+
+        #progress {
+            margin-top: 1rem;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            background: var(--retro-yellow);
+            color: #000;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            display: none;
+            z-index: 9999;
+        }
+
+        .toast.show { display: block; }
+
+        .swipe-left { transform: translateX(-150%) rotate(-20deg) !important; opacity: 0; }
+        .swipe-right { transform: translateX(150%) rotate(20deg) !important; opacity: 0; }
+        .swipe-up { transform: translateY(-150%) !important; opacity: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="header-nav">
+        <button class="nav-btn" onclick="changeWeek(-1)">&lt;</button>
+        <span id="week-display" style="font-weight: bold;">WEEK 01</span>
+        <button class="nav-btn" onclick="changeWeek(1)">&gt;</button>
+    </div>
+
+    <div id="deck"></div>
+
+    <div id="progress">LOADING MATCHUPS...</div>
+
+    <div style="margin-top: 1rem;">
+        <button id="undo-btn" class="nav-btn" onclick="undoLastPick()">[ UNDO LAST PICK ]</button>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Set up Supabase Client
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const deviceUID = localStorage.getItem('device_uid') || 'demo-user-123';
+
         let currentWeek = 1; 
         let currentCardIndex = 1;
         let totalCards = 0;
@@ -30,8 +240,10 @@
             const progressDisplay = document.getElementById('progress');
 
             currentCardIndex = 1;
-            progressDisplay.removeAttribute('style');
-            progressDisplay.innerText = "LOADING MATCHUPS...";
+            if (progressDisplay) {
+                progressDisplay.removeAttribute('style');
+                progressDisplay.innerText = "LOADING MATCHUPS...";
+            }
             updateBottomButtonStates();
 
             try {
@@ -59,21 +271,21 @@
                 const data = await response.json();
                 
                 if (!data.events || data.events.length === 0) {
-                    progressDisplay.innerText = "NO GAMES FOUND";
-                    deck.innerHTML = ''; 
+                    if (progressDisplay) progressDisplay.innerText = "NO GAMES FOUND";
+                    if (deck) deck.innerHTML = ''; 
                     return;
                 }
 
                 gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
 
                 if (gamesData.length === 0) {
-                    progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
-                    deck.innerHTML = '';
+                    if (progressDisplay) progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
+                    if (deck) deck.innerHTML = '';
                     return;
                 }
 
                 totalCards = gamesData.length;
-                deck.innerHTML = ''; 
+                if (deck) deck.innerHTML = ''; 
 
                 gamesData.forEach((gameEvent, index) => {
                     const matchupNum = index + 1;
@@ -150,7 +362,7 @@
                                     ${stadiumName}<br>${stadiumLoc}
                                 </small>
                             </a>
-                            ${isLocked ? '<span class="lock-indicator">🔒 KICKOFF PASSED</span>' : ''}
+                            ${isLocked ? '<span class="lock-indicator"><br>🔒 KICKOFF PASSED</span>' : ''}
                         </span>
                         <div class="teams-wrapper">
                             <div class="team-display-block">
@@ -158,7 +370,7 @@
                                 <button class="team-btn" id="${cardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
                                     ${home.name} ${existingPick === home.name ? '✓' : ''}
                                 </button>
-                                <span class="team-record">REC: ${home.record}</span>
+                                <span class="team-record" style="font-size:0.6rem;">REC: ${home.record}</span>
                             </div>
                             <div class="vs-divider">VS</div>
                             <div class="team-display-block">
@@ -166,7 +378,7 @@
                                 <button class="team-btn" id="${cardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
                                     ${away.name} ${existingPick === away.name ? '✓' : ''}
                                 </button>
-                                <span class="team-record">REC: ${away.record}</span>
+                                <span class="team-record" style="font-size:0.6rem;">REC: ${away.record}</span>
                             </div>
                         </div>
 
@@ -178,7 +390,7 @@
                         <div class="game-info-bar">${pointSpread}</div>
                     `;
 
-                    deck.appendChild(card);
+                    if (deck) deck.appendChild(card);
                 });
 
                 updateActiveCardVisibility();
@@ -187,7 +399,7 @@
 
             } catch (error) {
                 console.error("Failed to map ESPN payload structure:", error);
-                progressDisplay.innerText = "API CONNECTION ERROR";
+                if (progressDisplay) progressDisplay.innerText = "API CONNECTION ERROR";
             }
         }
 
@@ -197,14 +409,17 @@
                 currentWeek = 1;
                 return;
             }
-            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
-            document.getElementById('deck').innerHTML = '';
+            const weekDisplay = document.getElementById('week-display');
+            if (weekDisplay) {
+                weekDisplay.innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            }
+            const deck = document.getElementById('deck');
+            if (deck) deck.innerHTML = '';
             loadWeekGames();
         }
 
         function resetDeckStack() {
             document.querySelectorAll('.matchup-card').forEach((card, index) => {
-                const cardIdNum = parseInt(card.id.split('-')[1]);
                 const isLocked = isGameLocked(card);
                 card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
                 card.removeAttribute('style');
@@ -225,7 +440,9 @@
 
         function updateBottomButtonStates() {
             const undoBtn = document.getElementById('undo-btn');
-            undoBtn.disabled = (currentCardIndex <= 1 && getPickCount() === 0);
+            if (undoBtn) {
+                undoBtn.disabled = (currentCardIndex <= 1 && getPickCount() === 0);
+            }
         }
 
         function getPickCount() {
@@ -287,6 +504,8 @@
 
         function handleBtnPick(cardId, pickType) {
             const card = document.getElementById(cardId);
+            if (!card) return;
+
             const cardIdNum = parseInt(cardId.split('-')[1]);
             
             if (cardIdNum !== currentCardIndex) return;
@@ -319,11 +538,15 @@
             const homeBtn = document.getElementById(`${cardId}-btn-home`);
             const awayBtn = document.getElementById(`${cardId}-btn-away`);
 
-            homeBtn.style = pickType === 'home' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
-            homeBtn.innerHTML = `${cardElement.getAttribute('data-home')} ${pickType === 'home' ? '✓' : ''}`;
+            if (homeBtn) {
+                homeBtn.style = pickType === 'home' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
+                homeBtn.innerHTML = `${cardElement.getAttribute('data-home')} ${pickType === 'home' ? '✓' : ''}`;
+            }
 
-            awayBtn.style = pickType === 'away' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
-            awayBtn.innerHTML = `${cardElement.getAttribute('data-away')} ${pickType === 'away' ? '✓' : ''}`;
+            if (awayBtn) {
+                awayBtn.style = pickType === 'away' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
+                awayBtn.innerHTML = `${cardElement.getAttribute('data-away')} ${pickType === 'away' ? '✓' : ''}`;
+            }
 
             triggerToastNotification(chosenTeam);
 
@@ -453,6 +676,8 @@
 
         function triggerToastNotification(teamName) {
             const toast = document.getElementById('toast');
+            if (!toast) return;
+
             clearTimeout(toastTimeout);
             
             if (teamName === "PICK REMOVED") {
@@ -472,6 +697,8 @@
 
         function renderProgressUpdates() {
             const display = document.getElementById('progress');
+            if (!display) return;
+
             const pickCount = getPickCount();
 
             if (pickCount === totalCards && totalCards > 0) {
@@ -486,3 +713,5 @@
 
         window.addEventListener('DOMContentLoaded', loadWeekGames);
     </script>
+</body>
+</html>
