@@ -1,22 +1,170 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Picks Summary</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --retro-bg: #0f172a;
+            --retro-card: #1e293b;
+            --retro-border: #334155;
+            --retro-yellow: #f59e0b;
+            --retro-green: #10b981;
+            --retro-red: #ef4444;
+            --retro-text: #f8fafc;
+        }
+
+        body {
+            background-color: var(--retro-bg);
+            color: var(--retro-text);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-btn {
+            background: var(--retro-card);
+            border: 1px solid var(--retro-border);
+            color: var(--retro-text);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            background: var(--retro-card);
+            border: 1px solid var(--retro-border);
+            padding: 0.5rem 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.8rem;
+        }
+
+        #picks-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .pick-card {
+            background: var(--retro-card);
+            border: 1px solid var(--retro-border);
+            padding: 0.75rem;
+        }
+
+        .pick-card.missing {
+            border-color: var(--retro-red);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .matchup-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pick-status-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            border-top: 1px dashed var(--retro-border);
+            padding-top: 0.5rem;
+        }
+
+        .pick-choice {
+            color: var(--retro-yellow);
+            font-weight: bold;
+        }
+
+        .pick-choice.none {
+            color: var(--retro-red);
+        }
+
+        .empty-slate {
+            text-align: center;
+            color: #64748b;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-nav">
+        <button class="nav-btn" onclick="changeWeek(-1)">&lt;</button>
+        <span id="week-display" style="font-weight: bold;">WEEK 01</span>
+        <button class="nav-btn" onclick="changeWeek(1)">&gt;</button>
+    </div>
+
+    <div class="stats-bar">
+        <span>MADE: <strong id="stat-made">0</strong></span>
+        <span>MISSING: <strong id="stat-missing" style="color:var(--retro-red);">0</strong></span>
+        <span>TOTAL: <strong id="stat-total">0</strong></span>
+    </div>
+
+    <div id="picks-container">
+        <div class="empty-slate">LOADING PICKS...</div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const deviceUID = localStorage.getItem('device_uid') || 'demo-user-123';
+
         let currentWeek = 1;
 
         async function initMyPicks() {
-            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            const weekDisplay = document.getElementById('week-display');
+            if (weekDisplay) {
+                weekDisplay.innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            }
             await fetchUserPicks();
         }
 
         async function changeWeek(dir) {
             currentWeek += dir;
             if (currentWeek < 1) currentWeek = 1;
-            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
-            document.getElementById('picks-container').innerHTML = `<div class="empty-slate">LOADING PICKS...</div>`;
+
+            const weekDisplay = document.getElementById('week-display');
+            if (weekDisplay) {
+                weekDisplay.innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            }
+
+            const container = document.getElementById('picks-container');
+            if (container) {
+                container.innerHTML = `<div class="empty-slate">LOADING PICKS...</div>`;
+            }
             await fetchUserPicks();
         }
 
         async function fetchUserPicks() {
             const container = document.getElementById('picks-container');
-            
+            if (!container) return;
+
             try {
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
@@ -123,10 +271,16 @@
         }
 
         function updateStats(made, missing, total) {
-            document.getElementById('stat-made').innerText = made;
-            document.getElementById('stat-missing').innerText = missing;
-            document.getElementById('stat-total').innerText = total;
+            const statMade = document.getElementById('stat-made');
+            const statMissing = document.getElementById('stat-missing');
+            const statTotal = document.getElementById('stat-total');
+
+            if (statMade) statMade.innerText = made;
+            if (statMissing) statMissing.innerText = missing;
+            if (statTotal) statTotal.innerText = total;
         }
 
         window.addEventListener('DOMContentLoaded', initMyPicks);
     </script>
+</body>
+</html>
