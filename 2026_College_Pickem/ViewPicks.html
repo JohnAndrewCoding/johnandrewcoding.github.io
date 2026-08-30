@@ -129,12 +129,11 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const deviceUID = localStorage.getItem('device_uid') || 'demo-user-123';
-
         let currentWeek = 1;
 
         async function initMyPicks() {
@@ -173,12 +172,6 @@
 
                 const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
 
-                if (allowedIds.size === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO GAMES FOR WEEK ${currentWeek}</div>`;
-                    updateStats(0, 0, 0);
-                    return;
-                }
-
                 const { data: userPicks } = await supabaseClient
                     .from('picks')
                     .select('*')
@@ -194,7 +187,9 @@
                     return;
                 }
 
-                const filteredEvents = espnData.events.filter(e => allowedIds.has(String(e.id)));
+                const filteredEvents = allowedIds.size > 0 
+                    ? espnData.events.filter(e => allowedIds.has(String(e.id)))
+                    : espnData.events;
 
                 if (filteredEvents.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO MATCHUPS CONFIGURED</div>`;
@@ -226,8 +221,8 @@
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
 
-                    const homeName = home.team.abbreviation || home.team.shortDisplayName;
-                    const awayName = away.team.abbreviation || away.team.shortDisplayName;
+                    const homeName = home.team.location || home.team.name;
+                    const awayName = away.team.location || away.team.name;
 
                     const userChoice = matchingPick ? matchingPick.chosen_team : null;
                     const hasPicked = Boolean(userChoice);
