@@ -177,7 +177,6 @@
         }
 
         .toast.show { display: block; }
-
         .swipe-left { transform: translateX(-150%) rotate(-20deg) !important; opacity: 0; }
         .swipe-right { transform: translateX(150%) rotate(20deg) !important; opacity: 0; }
         .swipe-up { transform: translateY(-150%) !important; opacity: 0; }
@@ -202,9 +201,8 @@
     <div id="toast" class="toast"></div>
 
     <script>
-        // Set up Supabase Client
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const deviceUID = localStorage.getItem('device_uid') || 'demo-user-123';
@@ -276,7 +274,9 @@
                     return;
                 }
 
-                gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
+                gamesData = allowedIds.size > 0 
+                    ? data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)))
+                    : data.events;
 
                 if (gamesData.length === 0) {
                     if (progressDisplay) progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
@@ -332,7 +332,6 @@
                         : "LOCATION N/A";
 
                     const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
-
                     const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
 
                     const homePickedStyle = (existingPick === home.name) 
@@ -346,7 +345,7 @@
                     const disabledAttr = isLocked ? 'disabled' : '';
 
                     const card = document.createElement('div');
-                    card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
+                    card.className = `matchup-card ${isLocked ? 'is-locked' : ''} ${index === 0 ? 'active-stack' : ''}`;
                     card.id = cardId;
                     card.setAttribute('data-espn-id', espnGameId);
                     card.setAttribute('data-home', home.name);
@@ -398,17 +397,15 @@
                 initSwipeEngine();
 
             } catch (error) {
-                console.error("Failed to map ESPN payload structure:", error);
+                console.error("Failed to fetch ESPN data:", error);
                 if (progressDisplay) progressDisplay.innerText = "API CONNECTION ERROR";
             }
         }
 
         function changeWeek(direction) {
             currentWeek += direction;
-            if (currentWeek < 1) {
-                currentWeek = 1;
-                return;
-            }
+            if (currentWeek < 1) currentWeek = 1;
+            
             const weekDisplay = document.getElementById('week-display');
             if (weekDisplay) {
                 weekDisplay.innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
@@ -464,7 +461,6 @@
                     }
 
                     isDragging = true;
-                    card.classList.add('dragging');
                     startX = e.touches[0].clientX;
                     startY = e.touches[0].clientY;
                     card.style.transition = 'none'; 
@@ -472,19 +468,15 @@
 
                 card.addEventListener('touchmove', e => {
                     if (!isDragging) return;
-
                     const currentX = e.touches[0].clientX;
                     const deltaX = currentX - startX;
                     const rotationDegree = deltaX * 0.06; 
-                    
                     card.style.transform = `translateX(${deltaX}px) rotate(${rotationDegree}deg)`;
                 }, { passive: true });
 
                 card.addEventListener('touchend', e => {
                     if (!isDragging) return;
                     isDragging = false;
-                    card.classList.remove('dragging');
-                    
                     card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
 
                     const endX = e.changedTouches[0].clientX;
@@ -507,7 +499,6 @@
             if (!card) return;
 
             const cardIdNum = parseInt(cardId.split('-')[1]);
-            
             if (cardIdNum !== currentCardIndex) return;
 
             if (isGameLocked(card)) {
@@ -704,7 +695,6 @@
             if (pickCount === totalCards && totalCards > 0) {
                 display.innerText = "ALL PICKS LOCKED!";
                 display.style.color = "var(--retro-green)";      
-                display.style.borderColor = "var(--retro-green)";
             } else {
                 display.removeAttribute('style');
                 display.innerText = `GAME ${currentCardIndex} OF ${totalCards} (${pickCount}/${totalCards} LOCKED)`;
