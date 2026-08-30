@@ -156,8 +156,8 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentWeek = 1;
@@ -185,7 +185,7 @@
                     user_name: p.coach_name || p.player_name || 'ANALYST (' + p.device_uid.slice(0, 4) + ')'
                 }));
             } catch (err) {
-                console.error("Failed to load user roster:", err);
+                console.error("Failed to load users:", err);
             }
         }
 
@@ -217,11 +217,6 @@
 
                 const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
 
-                if (allowedIds.size === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
-                    return;
-                }
-
                 const { data: picksData } = await supabaseClient
                     .from('picks')
                     .select('*')
@@ -235,10 +230,12 @@
                     return;
                 }
 
-                const filteredEvents = espnData.events.filter(e => allowedIds.has(String(e.id)));
+                const filteredEvents = allowedIds.size > 0 
+                    ? espnData.events.filter(e => allowedIds.has(String(e.id)))
+                    : espnData.events;
 
                 if (filteredEvents.length === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS SET BY COMMISH YET</div>`;
+                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS SET FOR THIS WEEK</div>`;
                     return;
                 }
 
@@ -319,8 +316,6 @@
                         }
                     });
 
-                    const totalDisplayUsers = displayUsersMap.size;
-
                     const card = document.createElement('div');
                     card.className = 'game-card';
                     card.innerHTML = `
@@ -349,7 +344,7 @@
                         <div class="picks-panel">
                             <div class="picks-panel-title">
                                 <span>LEAGUE PICKS</span>
-                                <span>${cardPicks.length}/${totalDisplayUsers}</span>
+                                <span>${cardPicks.length}/${displayUsersMap.size}</span>
                             </div>
                             <div class="picks-grid">
                                 ${picksListHTML || '<div style="color:#64748b; text-align:center;">NO LEAGUE USERS</div>'}
