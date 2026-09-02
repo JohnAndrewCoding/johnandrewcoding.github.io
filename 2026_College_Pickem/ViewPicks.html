@@ -295,7 +295,7 @@
             try {
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
-                    .select('espn_game_id, game_index')
+                    .select('espn_game_id')
                     .eq('week_number', currentWeek);
 
                 const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
@@ -341,10 +341,7 @@
                 let totalMissing = 0;
 
                 filteredEvents.forEach((gameEvent, index) => {
-                    const espnId = String(gameEvent.id);
-                    const slateInfo = (slateData || []).find(s => String(s.espn_game_id) === espnId);
-                    const gameIndex = slateInfo ? slateInfo.game_index : (index + 1);
-
+                    const cardId = `card-${index + 1}`;
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
                     const isLocked = now >= gameDate;
@@ -355,10 +352,7 @@
                     const homeName = home.team.abbreviation || home.team.shortDisplayName;
                     const awayName = away.team.abbreviation || away.team.shortDisplayName;
 
-                    const userChoice = picksMap[espnId] 
-                                    || picksMap[`card-${gameIndex}`] 
-                                    || picksMap[String(gameIndex)];
-                    
+                    const userChoice = picksMap[cardId];
                     const hasPicked = Boolean(userChoice);
 
                     if (hasPicked) {
@@ -372,7 +366,7 @@
 
                     card.innerHTML = `
                         <div class="card-top">
-                            <span>MATCHUP #${gameIndex}</span>
+                            <span>MATCHUP #${index + 1}</span>
                             <span>${isLocked ? '🔒 LOCKED' : '🔓 OPEN'}</span>
                         </div>
 
