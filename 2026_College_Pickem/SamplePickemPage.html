@@ -523,10 +523,13 @@
 
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
-                    .select('espn_game_id')
+                    .select('espn_game_id, game_index')
                     .eq('week_number', currentWeek);
 
-                const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
+                const slateMapByEspnId = new Map();
+                (slateData || []).forEach(s => {
+                    slateMapByEspnId.set(String(s.espn_game_id), s);
+                });
 
                 const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const data = await response.json();
@@ -537,7 +540,7 @@
                     return;
                 }
 
-                gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
+                gamesData = data.events.filter(gameEvent => slateMapByEspnId.has(String(gameEvent.id)));
 
                 if (gamesData.length === 0) {
                     progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
@@ -549,8 +552,10 @@
                 deck.innerHTML = ''; 
 
                 gamesData.forEach((gameEvent, index) => {
-                    const matchupNum = index + 1;
-                    const cardId = `card-${matchupNum}`;
+                    const espnGameId = String(gameEvent.id);
+                    const slateInfo = slateMapByEspnId.get(espnGameId);
+                    const matchupNum = slateInfo ? slateInfo.game_index : (index + 1);
+
                     const competition = gameEvent.competitions[0];
                     
                     const homeTeamData = competition.competitors.find(c => c.homeAway === 'home');
@@ -595,7 +600,9 @@
 
                     const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
 
-                    const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
+                    const existingPick = (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][espnGameId])
+                                      || (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][`card-${matchupNum}`])
+                                      || (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][String(matchupNum)]);
 
                     const homePickedStyle = (existingPick === home.code) 
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
@@ -609,7 +616,8 @@
 
                     const card = document.createElement('div');
                     card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
-                    card.id = cardId;
+                    card.id = espnGameId;
+                    card.setAttribute('data-card-index', matchupNum);
                     card.setAttribute('data-home', home.code);
                     card.setAttribute('data-home-display', home.displayName);
                     card.setAttribute('data-away', away.code);
@@ -630,7 +638,7 @@
                         <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
-                                <button class="team-btn" id="${cardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
+                                <button class="team-btn" id="${espnGameId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${espnGameId}', 'home')">
                                     ${home.displayName} ${existingPick === home.code ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${home.record}</span>
@@ -638,7 +646,7 @@
                             <div class="vs-divider">VS</div>
                             <div class="team-display-block">
                                 ${helmetHTML(away.color)}
-                                <button class="team-btn" id="${cardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
+                                <button class="team-btn" id="${espnGameId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${espnGameId}', 'away')">
                                     ${away.displayName} ${existingPick === away.code ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${away.record}</span>
@@ -687,9 +695,9 @@
         }
 
         function updateActiveCardVisibility() {
-            document.querySelectorAll('.matchup-card').forEach(card => {
-                const cardIdNum = parseInt(card.id.split('-')[1]);
-                if (cardIdNum === currentCardIndex || cardIdNum === currentCardIndex + 1) {
+            const cards = document.querySelectorAll('.matchup-card');
+            cards.forEach((card, index) => {
+                if (index + 1 === currentCardIndex || index + 1 === currentCardIndex + 1) {
                     card.classList.add('active-stack');
                 } else {
                     card.classList.remove('active-stack');
@@ -710,10 +718,9 @@
         function initSwipeEngine() {
             const cards = document.querySelectorAll('.matchup-card');
             
-            cards.forEach(card => {
+            cards.forEach((card, index) => {
                 card.addEventListener('touchstart', e => {
-                    const cardIdNum = parseInt(card.id.split('-')[1]);
-                    if (cardIdNum !== currentCardIndex) return; 
+                    if (index + 1 !== currentCardIndex) return; 
 
                     if (isGameLocked(card)) {
                         triggerToastNotification("🔒 KICKOFF PASSED");
@@ -759,11 +766,12 @@
             });
         }
 
-        function handleBtnPick(cardId, pickType) {
-            const card = document.getElementById(cardId);
-            const cardIdNum = parseInt(cardId.split('-')[1]);
+        function handleBtnPick(espnGameId, pickType) {
+            const card = document.getElementById(espnGameId);
+            const cards = Array.from(document.querySelectorAll('.matchup-card'));
+            const cardIndex = cards.indexOf(card) + 1;
             
-            if (cardIdNum !== currentCardIndex) return;
+            if (cardIndex !== currentCardIndex) return;
 
             if (isGameLocked(card)) {
                 triggerToastNotification("🔒 KICKOFF PASSED");
@@ -781,17 +789,17 @@
                 return;
             }
 
-            const cardId = cardElement.id;
+            const espnGameId = cardElement.id;
             const chosenCode = cardElement.getAttribute(`data-${pickType}`);
             const chosenDisplay = cardElement.getAttribute(`data-${pickType}-display`);
             
             if (!savedPicks[`week-${currentWeek}`]) {
                 savedPicks[`week-${currentWeek}`] = {};
             }
-            savedPicks[`week-${currentWeek}`][cardId] = chosenCode;
+            savedPicks[`week-${currentWeek}`][espnGameId] = chosenCode;
 
-            const homeBtn = document.getElementById(`${cardId}-btn-home`);
-            const awayBtn = document.getElementById(`${cardId}-btn-away`);
+            const homeBtn = document.getElementById(`${espnGameId}-btn-home`);
+            const awayBtn = document.getElementById(`${espnGameId}-btn-away`);
 
             homeBtn.style = pickType === 'home' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
             homeBtn.innerHTML = `${cardElement.getAttribute('data-home-display')} ${pickType === 'home' ? '✓' : ''}`;
@@ -819,7 +827,7 @@
                 await supabaseClient.from('picks').upsert({
                     device_uid: deviceUID,
                     week_number: currentWeek,
-                    card_id: cardId,
+                    card_id: espnGameId,
                     chosen_team: chosenCode
                 }, { onConflict: 'device_uid,week_number,card_id' });
             } catch (err) {
@@ -828,9 +836,10 @@
         }
 
         function goToNextCard() {
-            const card = document.getElementById(`card-${currentCardIndex}`);
-            if (card) {
-                card.classList.add('swipe-up');
+            const cards = document.querySelectorAll('.matchup-card');
+            const currentCard = cards[currentCardIndex - 1];
+            if (currentCard) {
+                currentCard.classList.add('swipe-up');
             }
 
             currentCardIndex++;
@@ -852,8 +861,8 @@
                 currentCardIndex = totalCards;
                 resetDeckStack();
             } else {
-                const previousCardId = `card-${currentCardIndex}`;
-                const previousCard = document.getElementById(previousCardId);
+                const cards = document.querySelectorAll('.matchup-card');
+                const previousCard = cards[currentCardIndex - 1];
                 if (previousCard) {
                     const isLocked = isGameLocked(previousCard);
                     previousCard.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
@@ -871,8 +880,8 @@
             if (currentCardIndex <= 1 && getPickCount() === 0) return;
 
             const targetCardIndex = currentCardIndex === 1 ? totalCards : currentCardIndex - 1;
-            const targetCardId = `card-${targetCardIndex}`;
-            const targetCard = document.getElementById(targetCardId);
+            const cards = document.querySelectorAll('.matchup-card');
+            const targetCard = cards[targetCardIndex - 1];
             if (!targetCard) return;
 
             if (isGameLocked(targetCard)) {
@@ -881,13 +890,14 @@
             }
 
             currentCardIndex = targetCardIndex;
+            const espnGameId = targetCard.id;
 
             if (savedPicks[`week-${currentWeek}`]) {
-                delete savedPicks[`week-${currentWeek}`][targetCardId];
+                delete savedPicks[`week-${currentWeek}`][espnGameId];
             }
 
-            const homeBtn = document.getElementById(`${targetCardId}-btn-home`);
-            const awayBtn = document.getElementById(`${targetCardId}-btn-away`);
+            const homeBtn = document.getElementById(`${espnGameId}-btn-home`);
+            const awayBtn = document.getElementById(`${espnGameId}-btn-away`);
 
             if (homeBtn) {
                 homeBtn.style = '';
@@ -913,7 +923,7 @@
                 await supabaseClient.from('picks').delete().match({
                     device_uid: deviceUID,
                     week_number: currentWeek,
-                    card_id: targetCardId
+                    card_id: espnGameId
                 });
             } catch (err) {
                 console.error("Database delete error:", err);
