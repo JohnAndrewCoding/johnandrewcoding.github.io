@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
-    <!-- SUPABASE CLIENT INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
@@ -175,6 +173,8 @@
             margin-bottom: 0.75rem;
             border-bottom: 2px solid #334155;
             padding-bottom: 0.4rem;
+            display: flex;
+            justify-content: space-between;
         }
 
         table.master-table {
@@ -187,7 +187,7 @@
 
         table.master-table th, table.master-table td {
             border: 1px solid #334155;
-            padding: 0.5rem 0.25rem;
+            padding: 0.4rem 0.2rem;
         }
 
         table.master-table th {
@@ -206,17 +206,26 @@
             padding-left: 0.5rem;
         }
 
-        .pick-badge {
-            display: inline-block;
-            padding: 0.2rem 0.3rem;
-            border: 1px solid var(--retro-yellow);
-            color: var(--retro-yellow);
+        .pick-select {
             background: #000000;
+            color: var(--retro-yellow);
+            border: 1px solid var(--retro-yellow);
+            font-family: var(--pixel-font);
+            font-size: 0.5rem;
+            padding: 0.2rem;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
         }
 
-        .missing-badge {
+        .pick-select.missing {
             color: var(--retro-red);
-            font-style: italic;
+            border-color: var(--retro-red);
+        }
+
+        .pick-select:focus {
+            outline: none;
+            box-shadow: 0 0 5px var(--retro-yellow);
         }
 
         .empty-slate {
@@ -227,6 +236,21 @@
             padding: 2rem 0;
             background: var(--bg-card);
             border: 3px solid #000000;
+        }
+
+        .status-toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: #000000;
+            border: 2px solid var(--retro-green);
+            color: var(--retro-green);
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            padding: 0.75rem 1rem;
+            box-shadow: 3px 3px 0px #000;
+            display: none;
+            z-index: 1000;
         }
     </style>
 </head>
@@ -239,7 +263,7 @@
     </div>
 
     <header>
-        <h1 class="title">ADMIN MASTER SHEET</h1>
+        <h1 class="title">ADMIN MASTER OVERRIDE</h1>
     </header>
 
     <div class="week-controls">
@@ -269,15 +293,22 @@
         </div>
 
         <div class="matrix-card">
-            <div class="matrix-header">USER PICKS MATRIX</div>
+            <div class="matrix-header">
+                <span>USER PICKS MATRIX</span>
+                <span style="font-size: 0.5rem; color: var(--retro-yellow);">* CHANGES SAVE AUTOMATICALLY</span>
+            </div>
             <div id="matrix-container">
                 <div class="empty-slate">LOADING MASTER SHEET...</div>
             </div>
         </div>
     </div>
 
+    <div id="status-toast" class="status-toast">PICK OVERRIDDEN!</div>
+
     <script>
         let currentWeek = 1;
+        let globalGames = [];
+        let globalUsers = [];
 
         async function initAdminSheet() {
             document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
@@ -302,7 +333,7 @@
                     .select('device_uid, coach_name, player_name');
                 if (userErr) throw userErr;
 
-                const users = (profiles || []).map(p => ({
+                globalUsers = (profiles || []).map(p => ({
                     device_uid: p.device_uid,
                     name: p.coach_name || p.player_name || 'ANALYST (' + p.device_uid.slice(0, 4) + ')'
                 }));
@@ -318,15 +349,15 @@
 
                 if (allowedIds.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
-                    updateStats(users.length, 0, 0, 0);
+                    updateStats(globalUsers.length, 0, 0, 0);
                     return;
                 }
 
-                // 3. Fetch ESPN Matchup details to map team names to cards
+                // 3. Fetch ESPN Matchup details
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
                 
-                const games = [];
+                globalGames = [];
                 if (espnData.events) {
                     espnData.events
                         .filter(e => allowedIds.includes(String(e.id)))
@@ -334,11 +365,17 @@
                             const comp = event.competitions[0];
                             const home = comp.competitors.find(c => c.homeAway === 'home');
                             const away = comp.competitors.find(c => c.homeAway === 'away');
-                            games.push({
+                            
+                            const homeCode = home.team.abbreviation || home.team.shortDisplayName;
+                            const awayCode = away.team.abbreviation || away.team.shortDisplayName;
+
+                            globalGames.push({
                                 index: idx + 1,
-                                espn_id: String(event.id),
+                                primary_card_id: `card-${idx + 1}`,
                                 card_keys: [`card-${idx + 1}`, String(idx + 1), String(event.id)],
-                                label: `${away.team.abbreviation || away.team.shortDisplayName} @ ${home.team.abbreviation || home.team.shortDisplayName}`
+                                home_team: homeCode,
+                                away_team: awayCode,
+                                label: `${awayCode} @ ${homeCode}`
                             });
                         });
                 }
@@ -350,38 +387,37 @@
                     .eq('week_number', currentWeek);
                 if (picksErr) throw picksErr;
 
-                // Update Overview Stats
-                const totalExpected = users.length * games.length;
+                const totalExpected = globalUsers.length * globalGames.length;
                 const totalSubmitted = (picksData || []).length;
-                updateStats(users.length, games.length, totalExpected, totalSubmitted);
+                updateStats(globalUsers.length, globalGames.length, totalExpected, totalSubmitted);
 
-                if (games.length === 0) {
+                if (globalGames.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO MATCHUPS SET BY COMMISH YET</div>`;
                     return;
                 }
 
-                // Map picks by user and card keys
+                // Map existing picks
                 const pickMap = {}; // { device_uid: { cardKey: chosen_team } }
                 (picksData || []).forEach(p => {
                     if (!pickMap[p.device_uid]) pickMap[p.device_uid] = {};
                     pickMap[p.device_uid][String(p.card_id)] = p.chosen_team;
                 });
 
-                // 5. Construct Table HTML
+                // 5. Build Dropdown Matrix Table
                 let tableHTML = `<table class="master-table"><thead><tr><th style="text-align:left; padding-left:0.5rem;">USER</th>`;
                 
-                games.forEach(g => {
+                globalGames.forEach(g => {
                     tableHTML += `<th>G${g.index}<br><span style="font-size:0.45rem; color:#94a3b8;">${g.label}</span></th>`;
                 });
                 tableHTML += `<th>TOTAL</th></tr></thead><tbody>`;
 
-                users.forEach(u => {
+                globalUsers.forEach(u => {
                     let userPickCount = 0;
                     tableHTML += `<tr><td class="user-cell">${u.name}</td>`;
 
-                    games.forEach(g => {
+                    globalGames.forEach(g => {
                         const userPicks = pickMap[u.device_uid] || {};
-                        let foundPick = null;
+                        let foundPick = "";
 
                         for (const key of g.card_keys) {
                             if (userPicks[key]) {
@@ -390,15 +426,21 @@
                             }
                         }
 
-                        if (foundPick) {
-                            userPickCount++;
-                            tableHTML += `<td><span class="pick-badge">${foundPick}</span></td>`;
-                        } else {
-                            tableHTML += `<td><span class="missing-badge">MISSING</span></td>`;
-                        }
+                        if (foundPick) userPickCount++;
+
+                        const isMissing = !foundPick;
+                        const selectClass = isMissing ? 'pick-select missing' : 'pick-select';
+
+                        tableHTML += `<td>
+                            <select class="${selectClass}" onchange="savePickOverride('${u.device_uid}', '${g.primary_card_id}', this)">
+                                <option value="" ${isMissing ? 'selected' : ''}>-- NONE --</option>
+                                <option value="${g.away_team}" ${foundPick === g.away_team ? 'selected' : ''}>${g.away_team}</option>
+                                <option value="${g.home_team}" ${foundPick === g.home_team ? 'selected' : ''}>${g.home_team}</option>
+                            </select>
+                        </td>`;
                     });
 
-                    tableHTML += `<td style="color:var(--retro-green);">${userPickCount}/${games.length}</td></tr>`;
+                    tableHTML += `<td id="total-${u.device_uid}" style="color:var(--retro-green);">${userPickCount}/${globalGames.length}</td></tr>`;
                 });
 
                 tableHTML += `</tbody></table>`;
@@ -410,11 +452,68 @@
             }
         }
 
+        async function savePickOverride(deviceUid, cardId, selectEl) {
+            const chosenTeam = selectEl.value;
+
+            try {
+                if (chosenTeam === "") {
+                    // Delete the pick if reset to "-- NONE --"
+                    await supabaseClient
+                        .from('picks')
+                        .delete()
+                        .eq('device_uid', deviceUid)
+                        .eq('week_number', currentWeek)
+                        .eq('card_id', cardId);
+
+                    selectEl.className = "pick-select missing";
+                } else {
+                    // Upsert (Insert or Update) the override pick
+                    const { error } = await supabaseClient
+                        .from('picks')
+                        .upsert({
+                            device_uid: deviceUid,
+                            week_number: currentWeek,
+                            card_id: cardId,
+                            chosen_team: chosenTeam
+                        }, { onConflict: 'device_uid, week_number, card_id' });
+
+                    if (error) throw error;
+                    selectEl.className = "pick-select";
+                }
+
+                showToast("PICK UPDATED!");
+                await refreshSubmittedCount();
+
+            } catch (err) {
+                console.error("Failed to save pick override:", err);
+                alert("ERR SAVING PICK: Check database policies.");
+            }
+        }
+
+        async function refreshSubmittedCount() {
+            const { data: picksData } = await supabaseClient
+                .from('picks')
+                .select('device_uid')
+                .eq('week_number', currentWeek);
+
+            const submitted = (picksData || []).length;
+            document.getElementById('stat-submitted').innerText = submitted;
+        }
+
         function updateStats(users, games, expected, submitted) {
             document.getElementById('stat-users').innerText = users;
             document.getElementById('stat-games').innerText = games;
             document.getElementById('stat-expected').innerText = expected;
             document.getElementById('stat-submitted').innerText = submitted;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('status-toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2000);
         }
 
         window.addEventListener('DOMContentLoaded', initAdminSheet);
