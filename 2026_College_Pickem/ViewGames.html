@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
+    <!-- SUPABASE CLIENT INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
@@ -354,31 +355,28 @@
             try {
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
-                    .select('espn_game_id, game_index, id')
+                    .select('espn_game_id')
                     .eq('week_number', currentWeek);
 
-                if (!slateData || slateData.length === 0) {
+                const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
+
+                if (allowedIds.size === 0) {
                     container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
                     return;
                 }
-
-                const slateMapByEspnId = new Map();
-                slateData.forEach(s => {
-                    slateMapByEspnId.set(String(s.espn_game_id), s);
-                });
 
                 const { data: picksData } = await supabaseClient
                     .from('picks')
                     .select('device_uid, card_id, chosen_team')
                     .eq('week_number', currentWeek);
 
-                const picksByGameKey = {};
+                const picksByCard = {};
                 (picksData || []).forEach(p => {
                     const key = String(p.card_id);
-                    if (!picksByGameKey[key]) picksByGameKey[key] = [];
+                    if (!picksByCard[key]) picksByCard[key] = [];
                     
                     const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
-                    picksByGameKey[key].push({
+                    picksByCard[key].push({
                         device_uid: p.device_uid,
                         user_name: foundUser ? foundUser.user_name : 'PLAYER (' + p.device_uid.slice(0, 4) + ')',
                         chosen_team: p.chosen_team
@@ -393,39 +391,30 @@
                     return;
                 }
 
-                const filteredEvents = espnData.events.filter(e => slateMapByEspnId.has(String(e.id)));
+                const filteredEvents = espnData.events.filter(e => allowedIds.has(String(e.id)));
 
                 if (filteredEvents.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO MATCHUPS SET BY COMMISH YET</div>`;
                     return;
                 }
 
-                filteredEvents.sort((a, b) => {
-                    const isACompleted = a.status.type.state === 'post';
-                    const isBCompleted = b.status.type.state === 'post';
-
-                    if (isACompleted && !isBCompleted) return 1;
-                    if (!isACompleted && isBCompleted) return -1;
-
-                    return new Date(a.date) - new Date(b.date);
-                });
-
                 container.innerHTML = ''; 
 
                 const now = new Date();
 
-                filteredEvents.forEach((gameEvent) => {
-                    const espnGameId = String(gameEvent.id);
-                    const slateInfo = slateMapByEspnId.get(espnGameId);
-                    const gameIndex = slateInfo ? slateInfo.game_index : null;
+                filteredEvents.forEach((gameEvent, index) => {
+                    const stringCardId = `card-${index + 1}`;
+                    const numericCardId = String(index + 1);
+                    const espnCardId = String(gameEvent.id);
 
-                    const cardPicks = picksByGameKey[espnGameId] 
-                                   || (gameIndex !== null ? picksByGameKey[`card-${gameIndex}`] : null)
-                                   || (gameIndex !== null ? picksByGameKey[String(gameIndex)] : null)
+                    const cardPicks = picksByCard[stringCardId] 
+                                   || picksByCard[numericCardId] 
+                                   || picksByCard[espnCardId] 
                                    || [];
 
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
+                    
                     const isLocked = now >= gameDate;
 
                     const home = competition.competitors.find(c => c.homeAway === 'home');
