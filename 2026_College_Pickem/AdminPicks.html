@@ -1,1 +1,423 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Picks Master Sheet</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <!-- SUPABASE CLIENT INTEGRATION -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <style>
+        :root {
+            --bg-canvas: #0f172a;       
+            --bg-card: #1e293b;         
+            --retro-yellow: #facc15;    
+            --retro-blue: #38bdf8;      
+            --retro-green: #4ade80;     
+            --retro-red: #ef4444;
+            --pixel-font: 'Press Start 2P', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            background-color: var(--bg-canvas);
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 960px;
+            margin-bottom: 0.75rem;
+            gap: 0.5rem;
+        }
+
+        .nav-link-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 0.4rem 0.5rem;
+            text-decoration: none;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            text-align: center;
+            flex: 1;
+        }
+
+        @media (hover: hover) {
+            .nav-link-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 0.75rem;
+            width: 100%;
+            max-width: 960px;
+        }
+
+        .title {
+            font-family: var(--pixel-font);
+            font-size: 1.1rem;
+            color: var(--retro-yellow);
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 0.5rem;
+        }
+
+        .week-controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 960px;
+            margin-bottom: 0.75rem;
+            font-family: var(--pixel-font);
+            font-size: 0.75rem;
+        }
+
+        .week-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 3px solid #ffffff;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.65rem;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+        }
+
+        @media (hover: hover) {
+            .week-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
+        }
+
+        .week-display {
+            color: var(--retro-yellow);
+            align-self: center;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .admin-container {
+            width: 100%;
+            max-width: 960px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            background: var(--bg-card);
+            border: 3px solid #000000;
+            padding: 0.75rem;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            justify-content: space-around;
+            box-shadow: 4px 4px 0px #000000;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-val {
+            color: var(--retro-yellow);
+            font-size: 0.8rem;
+        }
+
+        .matrix-card {
+            background-color: var(--bg-card);
+            border: 4px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            padding: 0.75rem;
+            overflow-x: auto;
+        }
+
+        .matrix-header {
+            font-family: var(--pixel-font);
+            font-size: 0.7rem;
+            color: var(--retro-blue);
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 0.4rem;
+        }
+
+        table.master-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            text-align: center;
+        }
+
+        table.master-table th, table.master-table td {
+            border: 1px solid #334155;
+            padding: 0.5rem 0.25rem;
+        }
+
+        table.master-table th {
+            background-color: #000000;
+            color: var(--retro-yellow);
+        }
+
+        table.master-table td.user-cell {
+            text-align: left;
+            background-color: #000000;
+            color: #ffffff;
+            white-space: nowrap;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-left: 0.5rem;
+        }
+
+        .pick-badge {
+            display: inline-block;
+            padding: 0.2rem 0.3rem;
+            border: 1px solid var(--retro-yellow);
+            color: var(--retro-yellow);
+            background: #000000;
+        }
+
+        .missing-badge {
+            color: var(--retro-red);
+            font-style: italic;
+        }
+
+        .empty-slate {
+            text-align: center;
+            font-family: var(--pixel-font);
+            font-size: 0.65rem;
+            color: #64748b;
+            padding: 2rem 0;
+            background: var(--bg-card);
+            border: 3px solid #000000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="index.html" class="nav-link-btn">&lt; HOME</a>
+        <a href="ViewGames.html" class="nav-link-btn">LIVE MATCHUPS</a>
+        <a href="Leaderboard.html" class="nav-link-btn">STANDINGS &gt;</a>
+    </div>
+
+    <header>
+        <h1 class="title">ADMIN MASTER SHEET</h1>
+    </header>
+
+    <div class="week-controls">
+        <button class="week-btn" onclick="changeWeek(-1)">&lt; PREV</button>
+        <span class="week-display" id="week-display">WEEK 01</span>
+        <button class="week-btn" onclick="changeWeek(1)">NEXT &gt;</button>
+    </div>
+
+    <div class="admin-container">
+        <div class="stats-bar" id="stats-bar">
+            <div class="stat-item">
+                <span>TOTAL USERS</span>
+                <span class="stat-val" id="stat-users">0</span>
+            </div>
+            <div class="stat-item">
+                <span>SCHEDULED GAMES</span>
+                <span class="stat-val" id="stat-games">0</span>
+            </div>
+            <div class="stat-item">
+                <span>EXPECTED PICKS</span>
+                <span class="stat-val" id="stat-expected">0</span>
+            </div>
+            <div class="stat-item">
+                <span>SUBMITTED PICKS</span>
+                <span class="stat-val" id="stat-submitted">0</span>
+            </div>
+        </div>
+
+        <div class="matrix-card">
+            <div class="matrix-header">USER PICKS MATRIX</div>
+            <div id="matrix-container">
+                <div class="empty-slate">LOADING MASTER SHEET...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentWeek = 1;
+
+        async function initAdminSheet() {
+            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            await renderMasterSheet();
+        }
+
+        async function changeWeek(dir) {
+            currentWeek += dir;
+            if (currentWeek < 1) currentWeek = 1;
+            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            document.getElementById('matrix-container').innerHTML = `<div class="empty-slate">LOADING MASTER SHEET...</div>`;
+            await renderMasterSheet();
+        }
+
+        async function renderMasterSheet() {
+            const container = document.getElementById('matrix-container');
+
+            try {
+                // 1. Fetch Users
+                const { data: profiles, error: userErr } = await supabaseClient
+                    .from('profiles')
+                    .select('device_uid, coach_name, player_name');
+                if (userErr) throw userErr;
+
+                const users = (profiles || []).map(p => ({
+                    device_uid: p.device_uid,
+                    name: p.coach_name || p.player_name || 'ANALYST (' + p.device_uid.slice(0, 4) + ')'
+                }));
+
+                // 2. Fetch Weekly Slate
+                const { data: slateData, error: slateErr } = await supabaseClient
+                    .from('weekly_slates')
+                    .select('espn_game_id')
+                    .eq('week_number', currentWeek);
+                if (slateErr) throw slateErr;
+
+                const allowedIds = (slateData || []).map(s => String(s.espn_game_id));
+
+                if (allowedIds.length === 0) {
+                    container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
+                    updateStats(users.length, 0, 0, 0);
+                    return;
+                }
+
+                // 3. Fetch ESPN Matchup details to map team names to cards
+                const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
+                const espnData = await res.json();
+                
+                const games = [];
+                if (espnData.events) {
+                    espnData.events
+                        .filter(e => allowedIds.includes(String(e.id)))
+                        .forEach((event, idx) => {
+                            const comp = event.competitions[0];
+                            const home = comp.competitors.find(c => c.homeAway === 'home');
+                            const away = comp.competitors.find(c => c.homeAway === 'away');
+                            games.push({
+                                index: idx + 1,
+                                espn_id: String(event.id),
+                                card_keys: [`card-${idx + 1}`, String(idx + 1), String(event.id)],
+                                label: `${away.team.abbreviation || away.team.shortDisplayName} @ ${home.team.abbreviation || home.team.shortDisplayName}`
+                            });
+                        });
+                }
+
+                // 4. Fetch Picks
+                const { data: picksData, error: picksErr } = await supabaseClient
+                    .from('picks')
+                    .select('device_uid, card_id, chosen_team')
+                    .eq('week_number', currentWeek);
+                if (picksErr) throw picksErr;
+
+                // Update Overview Stats
+                const totalExpected = users.length * games.length;
+                const totalSubmitted = (picksData || []).length;
+                updateStats(users.length, games.length, totalExpected, totalSubmitted);
+
+                if (games.length === 0) {
+                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS SET BY COMMISH YET</div>`;
+                    return;
+                }
+
+                // Map picks by user and card keys
+                const pickMap = {}; // { device_uid: { cardKey: chosen_team } }
+                (picksData || []).forEach(p => {
+                    if (!pickMap[p.device_uid]) pickMap[p.device_uid] = {};
+                    pickMap[p.device_uid][String(p.card_id)] = p.chosen_team;
+                });
+
+                // 5. Construct Table HTML
+                let tableHTML = `<table class="master-table"><thead><tr><th style="text-align:left; padding-left:0.5rem;">USER</th>`;
+                
+                games.forEach(g => {
+                    tableHTML += `<th>G${g.index}<br><span style="font-size:0.45rem; color:#94a3b8;">${g.label}</span></th>`;
+                });
+                tableHTML += `<th>TOTAL</th></tr></thead><tbody>`;
+
+                users.forEach(u => {
+                    let userPickCount = 0;
+                    tableHTML += `<tr><td class="user-cell">${u.name}</td>`;
+
+                    games.forEach(g => {
+                        const userPicks = pickMap[u.device_uid] || {};
+                        let foundPick = null;
+
+                        for (const key of g.card_keys) {
+                            if (userPicks[key]) {
+                                foundPick = userPicks[key];
+                                break;
+                            }
+                        }
+
+                        if (foundPick) {
+                            userPickCount++;
+                            tableHTML += `<td><span class="pick-badge">${foundPick}</span></td>`;
+                        } else {
+                            tableHTML += `<td><span class="missing-badge">MISSING</span></td>`;
+                        }
+                    });
+
+                    tableHTML += `<td style="color:var(--retro-green);">${userPickCount}/${games.length}</td></tr>`;
+                });
+
+                tableHTML += `</tbody></table>`;
+                container.innerHTML = tableHTML;
+
+            } catch (err) {
+                console.error("Error generating master sheet:", err);
+                container.innerHTML = `<div class="empty-slate">ERROR LOADING MASTER SHEET DATA</div>`;
+            }
+        }
+
+        function updateStats(users, games, expected, submitted) {
+            document.getElementById('stat-users').innerText = users;
+            document.getElementById('stat-games').innerText = games;
+            document.getElementById('stat-expected').innerText = expected;
+            document.getElementById('stat-submitted').innerText = submitted;
+        }
+
+        window.addEventListener('DOMContentLoaded', initAdminSheet);
+    </script>
+</body>
+</html>
