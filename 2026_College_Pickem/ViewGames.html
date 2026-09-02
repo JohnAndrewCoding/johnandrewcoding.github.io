@@ -352,7 +352,6 @@
             const container = document.getElementById('games-container');
             
             try {
-                // Fetch current week slate mapping espn_game_id to game_index
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
                     .select('espn_game_id, game_index, id')
@@ -363,19 +362,16 @@
                     return;
                 }
 
-                // Map game identifiers to slate data
                 const slateMapByEspnId = new Map();
                 slateData.forEach(s => {
                     slateMapByEspnId.set(String(s.espn_game_id), s);
                 });
 
-                // Fetch picks for current week
                 const { data: picksData } = await supabaseClient
                     .from('picks')
                     .select('device_uid, card_id, chosen_team')
                     .eq('week_number', currentWeek);
 
-                // Index picks by multiple identifiers (ESPN game ID, card_id, or game index)
                 const picksByGameKey = {};
                 (picksData || []).forEach(p => {
                     const key = String(p.card_id);
@@ -389,7 +385,6 @@
                     });
                 });
 
-                // Fetch ESPN Scoreboard
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
 
@@ -398,7 +393,6 @@
                     return;
                 }
 
-                // Filter games matching weekly slates
                 const filteredEvents = espnData.events.filter(e => slateMapByEspnId.has(String(e.id)));
 
                 if (filteredEvents.length === 0) {
@@ -406,7 +400,6 @@
                     return;
                 }
 
-                // Sort games: Live and Upcoming sorted by Kickoff Time, completed games moved to bottom
                 filteredEvents.sort((a, b) => {
                     const isACompleted = a.status.type.state === 'post';
                     const isBCompleted = b.status.type.state === 'post';
@@ -426,7 +419,6 @@
                     const slateInfo = slateMapByEspnId.get(espnGameId);
                     const gameIndex = slateInfo ? slateInfo.game_index : null;
 
-                    // Match picks by ESPN Game ID, card-X format, or index number
                     const cardPicks = picksByGameKey[espnGameId] 
                                    || (gameIndex !== null ? picksByGameKey[`card-${gameIndex}`] : null)
                                    || (gameIndex !== null ? picksByGameKey[String(gameIndex)] : null)
