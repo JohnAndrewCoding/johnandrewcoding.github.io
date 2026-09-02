@@ -456,7 +456,7 @@
 
     <div class="week-controls">
         <button class="week-btn" id="prev-week-btn" onclick="changeWeek(-1)">&lt; PREV</button>
-        <span class="week-display" id="week-display">WEEK 01</span>
+        <span class="week-display" id="week-display">WEEK 00</span>
         <button class="week-btn" id="next-week-btn" onclick="changeWeek(1)">NEXT &gt;</button>
     </div>
 
@@ -472,7 +472,7 @@
     </div>
 
     <script>
-        let currentWeek = 1; 
+        let currentWeek = 0; // Default to Week 0
         let currentCardIndex = 1;
         let totalCards = 0;
         const savedPicks = {};
@@ -508,29 +508,37 @@
             updateBottomButtonStates();
 
             try {
-                const { data: databasePicks } = await supabaseClient
+                // Fetch user picks for the selected week
+                const { data: databasePicks, error: picksErr } = await supabaseClient
                     .from('picks')
-                    .select('card_id, chosen_team')
+                    .select('card_id, espn_game_id, chosen_team')
                     .eq('device_uid', deviceUID)
                     .eq('week_number', currentWeek);
+
+                if (picksErr) console.error("Picks load error:", picksErr);
 
                 savedPicks[`week-${currentWeek}`] = {};
                 if (databasePicks) {
                     databasePicks.forEach(p => {
-                        savedPicks[`week-${currentWeek}`][p.card_id] = p.chosen_team;
+                        const key = p.card_id || String(p.espn_game_id);
+                        savedPicks[`week-${currentWeek}`][key] = p.chosen_team;
                     });
                 }
 
-                const { data: slateData } = await supabaseClient
+                // Fetch slate metadata for selected week
+                const { data: slateData, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('espn_game_id, game_index')
                     .eq('week_number', currentWeek);
+
+                if (slateErr) console.error("Slate load error:", slateErr);
 
                 const slateMapByEspnId = new Map();
                 (slateData || []).forEach(s => {
                     slateMapByEspnId.set(String(s.espn_game_id), s);
                 });
 
+                // Request week from ESPN
                 const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const data = await response.json();
                 
@@ -555,6 +563,7 @@
                     const espnGameId = String(gameEvent.id);
                     const slateInfo = slateMapByEspnId.get(espnGameId);
                     const matchupNum = slateInfo ? slateInfo.game_index : (index + 1);
+                    const cardIdKey = `card-${matchupNum}`;
 
                     const competition = gameEvent.competitions[0];
                     
@@ -600,9 +609,8 @@
 
                     const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
 
-                    const existingPick = (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][espnGameId])
-                                      || (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][`card-${matchupNum}`])
-                                      || (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][String(matchupNum)]);
+                    const existingPick = (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][cardIdKey])
+                                      || (savedPicks[`week-${currentWeek}`] && savedPicks[`week-${currentWeek}`][espnGameId]);
 
                     const homePickedStyle = (existingPick === home.code) 
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
@@ -617,6 +625,7 @@
                     const card = document.createElement('div');
                     card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
                     card.id = espnGameId;
+                    card.setAttribute('data-card-id', cardIdKey);
                     card.setAttribute('data-card-index', matchupNum);
                     card.setAttribute('data-home', home.code);
                     card.setAttribute('data-home-display', home.displayName);
@@ -676,8 +685,8 @@
 
         function changeWeek(direction) {
             currentWeek += direction;
-            if (currentWeek < 1) {
-                currentWeek = 1;
+            if (currentWeek < 0) {
+                currentWeek = 0; // Allow Week 0
                 return;
             }
             document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
@@ -789,14 +798,15 @@
                 return;
             }
 
-            const espnGameId = cardElement.id;
+            const espnGameId = Number(cardElement.id);
+            const cardIdKey = cardElement.getAttribute('data-card-id');
             const chosenCode = cardElement.getAttribute(`data-${pickType}`);
             const chosenDisplay = cardElement.getAttribute(`data-${pickType}-display`);
             
             if (!savedPicks[`week-${currentWeek}`]) {
                 savedPicks[`week-${currentWeek}`] = {};
             }
-            savedPicks[`week-${currentWeek}`][espnGameId] = chosenCode;
+            savedPicks[`week-${currentWeek}`][cardIdKey] = chosenCode;
 
             const homeBtn = document.getElementById(`${espnGameId}-btn-home`);
             const awayBtn = document.getElementById(`${espnGameId}-btn-away`);
@@ -827,7 +837,8 @@
                 await supabaseClient.from('picks').upsert({
                     device_uid: deviceUID,
                     week_number: currentWeek,
-                    card_id: espnGameId,
+                    card_id: cardIdKey,
+                    espn_game_id: espnGameId,
                     chosen_team: chosenCode
                 }, { onConflict: 'device_uid,week_number,card_id' });
             } catch (err) {
@@ -891,9 +902,10 @@
 
             currentCardIndex = targetCardIndex;
             const espnGameId = targetCard.id;
+            const cardIdKey = targetCard.getAttribute('data-card-id');
 
             if (savedPicks[`week-${currentWeek}`]) {
-                delete savedPicks[`week-${currentWeek}`][espnGameId];
+                delete savedPicks[`week-${currentWeek}`][cardIdKey];
             }
 
             const homeBtn = document.getElementById(`${espnGameId}-btn-home`);
@@ -923,7 +935,7 @@
                 await supabaseClient.from('picks').delete().match({
                     device_uid: deviceUID,
                     week_number: currentWeek,
-                    card_id: espnGameId
+                    card_id: cardIdKey
                 });
             } catch (err) {
                 console.error("Database delete error:", err);
