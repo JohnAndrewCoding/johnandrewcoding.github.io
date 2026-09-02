@@ -127,162 +127,210 @@
 
             const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Fetch profiles, completed games, and user picks concurrently
-            const [
-                { data: profiles, error: profileErr },
-                { data: games, error: gameErr },
-                { data: picks, error: pickErr }
-            ] = await Promise.all([
-                supabaseClient.from('profiles').select('*'),
-                supabaseClient.from('games').select('*').eq('is_completed', true),
-                supabaseClient.from('picks').select('*')
-            ]);
+            try {
+                // 1. Fetch profiles, weekly_slates, and picks concurrently from Supabase
+                const [
+                    { data: profiles, error: profileErr },
+                    { data: slates, error: slateErr },
+                    { data: picks, error: pickErr }
+                ] = await Promise.all([
+                    supabaseClient.from('profiles').select('*'),
+                    supabaseClient.from('weekly_slates').select('week_number, espn_game_id'),
+                    supabaseClient.from('picks').select('*')
+                ]);
 
-            if (profileErr || !profiles) {
-                console.error("Profiles fetch error:", profileErr);
-                container.innerHTML = `<div style="font-size:0.6rem; color:red;">ERROR LOADING STANDINGS.</div>`;
-                return;
-            }
+                if (profileErr || !profiles) {
+                    console.error("Profiles fetch error:", profileErr);
+                    container.innerHTML = `<div style="font-size:0.6rem; color:red;">ERROR LOADING STANDINGS.</div>`;
+                    return;
+                }
 
-            // Map winning teams and losing teams from completed games
-            const winningTeams = new Set();
-            const losingTeams = new Set();
+                // 2. Determine all active weeks present in the slates table
+                const activeWeeks = [...new Set((slates || []).map(s => s.week_number))];
+                
+                // Fetch scoreboard details from ESPN for every week present in the schedule
+                const winnersByGame = {}; // { espn_game_id: winner_team_code }
+                const cardIndexToWinner = {}; // { "week-card_id": winner_team_code }
 
-            if (games && !gameErr) {
-                games.forEach(g => {
-                    if (g.winning_team) {
-                        const winner = String(g.winning_team).trim().toLowerCase();
-                        const home = g.home_team ? String(g.home_team).trim().toLowerCase() : '';
-                        const away = g.away_team ? String(g.away_team).trim().toLowerCase() : '';
+                await Promise.all(activeWeeks.map(async (wk) => {
+                    try {
+                        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${wk}`);
+                        const espnData = await res.json();
+                        
+                        if (espnData.events) {
+                            // Filter events matching our database slate for this week
+                            const weekSlates = (slates || []).filter(s => s.week_number === wk);
+                            const allowedGameIds = new Set(weekSlates.map(s => String(s.espn_game_id)));
 
-                        winningTeams.add(winner);
-                        if (home && home !== winner) losingTeams.add(home);
-                        if (away && away !== winner) losingTeams.add(away);
+                            let matchingIdx = 1;
+                            espnData.events.forEach((event) => {
+                                const gameId = String(event.id);
+                                if (allowedGameIds.has(gameId)) {
+                                    const state = event.status?.type?.state; // 'post' means finished
+                                    
+                                    if (state === 'post') {
+                                        const comp = event.competitions[0];
+                                        const home = comp.competitors.find(c => c.homeAway === 'home');
+                                        const away = comp.competitors.find(c => c.homeAway === 'away');
+                                        
+                                        const homeScore = parseInt(home.score || 0);
+                                        const awayScore = parseInt(away.score || 0);
+
+                                        let winnerCode = null;
+                                        if (homeScore > awayScore) {
+                                            winnerCode = home.team.abbreviation || home.team.shortDisplayName;
+                                        } else if (awayScore > homeScore) {
+                                            winnerCode = away.team.abbreviation || away.team.shortDisplayName;
+                                        }
+
+                                        if (winnerCode) {
+                                            const cleanWinner = String(winnerCode).trim().toLowerCase();
+                                            winnersByGame[gameId] = cleanWinner;
+                                            
+                                            // Store mappings for card format (card-1, 1, espn_id)
+                                            cardIndexToWinner[`${wk}_card-${matchingIdx}`] = cleanWinner;
+                                            cardIndexToWinner[`${wk}_${matchingIdx}`] = cleanWinner;
+                                            cardIndexToWinner[`${wk}_${gameId}`] = cleanWinner;
+                                        }
+                                    }
+                                    matchingIdx++;
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error(`Failed to fetch ESPN data for week ${wk}:`, e);
                     }
-                });
-            }
+                }));
 
-            // Calculate Wins/Losses for each device_uid
-            const userStats = {};
-            if (picks && !pickErr) {
-                picks.forEach(p => {
+                // 3. Compute W-L and Total Picks per user
+                const userStats = {};
+                (picks || []).forEach(p => {
                     const uid = p.device_uid;
-                    if (!uid || !p.chosen_team) return;
+                    if (!uid || !p.chosen_team || !p.week_number || !p.card_id) return;
 
                     if (!userStats[uid]) {
-                        userStats[uid] = { wins: 0, losses: 0, total: 0 };
+                        userStats[uid] = { wins: 0, total: 0 };
                     }
 
-                    const chosen = String(p.chosen_team).trim().toLowerCase();
+                    const userPick = String(p.chosen_team).trim().toLowerCase();
+                    const wk = p.week_number;
+                    const card = String(p.card_id);
 
-                    if (winningTeams.has(chosen)) {
-                        userStats[uid].wins += 1;
+                    // Check if game has ended and determine outcome
+                    const winner = cardIndexToWinner[`${wk}_${card}`] || winnersByGame[card];
+
+                    if (winner) {
                         userStats[uid].total += 1;
-                    } else if (losingTeams.has(chosen)) {
-                        userStats[uid].losses += 1;
-                        userStats[uid].total += 1;
+                        if (userPick === winner) {
+                            userStats[uid].wins += 1;
+                        }
                     }
                 });
-            }
 
-            // Calculate overall conference leaders for badge display
-            let maxSEC = -1, maxACC = -1, maxB10 = -1, maxB12 = -1;
-            profiles.forEach(p => {
-                const sec = p.sec_wins || 0;
-                const acc = p.acc_wins || 0;
-                const b10 = p.big10_wins || 0;
-                const b12 = p.big12_wins || 0;
-                if (sec > maxSEC && sec > 0) maxSEC = sec;
-                if (acc > maxACC && acc > 0) maxACC = acc;
-                if (b10 > maxB10 && b10 > 0) maxB10 = b10;
-                if (b12 > maxB12 && b12 > 0) maxB12 = b12;
-            });
+                // 4. Calculate Conference Leaders
+                let maxSEC = -1, maxACC = -1, maxB10 = -1, maxB12 = -1;
+                profiles.forEach(p => {
+                    const sec = p.sec_wins || 0;
+                    const acc = p.acc_wins || 0;
+                    const b10 = p.big10_wins || 0;
+                    const b12 = p.big12_wins || 0;
+                    if (sec > maxSEC && sec > 0) maxSEC = sec;
+                    if (acc > maxACC && acc > 0) maxACC = acc;
+                    if (b10 > maxB10 && b10 > 0) maxB10 = b10;
+                    if (b12 > maxB12 && b12 > 0) maxB12 = b12;
+                });
 
-            // Assign stats to profiles
-            profiles.forEach(p => {
-                const stats = userStats[p.device_uid] || { wins: 0, losses: 0, total: 0 };
-                p.wins = stats.wins;
-                p.losses = stats.losses;
-                p.total = stats.total;
-                p.accuracyNum = p.total > 0 ? (p.wins / p.total) * 100 : 0;
-            });
+                // 5. Attach computed statistics to user profiles
+                profiles.forEach(p => {
+                    const stats = userStats[p.device_uid] || { wins: 0, total: 0 };
+                    p.wins = stats.wins;
+                    p.total = stats.total;
+                    p.losses = p.total - p.wins;
+                    p.accuracyNum = p.total > 0 ? (p.wins / p.total) * 100 : 0;
+                });
 
-            // Sort profiles by Wins descending, then Accuracy descending
-            profiles.sort((a, b) => {
-                if (b.wins !== a.wins) return b.wins - a.wins;
-                return b.accuracyNum - a.accuracyNum;
-            });
+                // 6. Sort profiles by Wins descending, then Accuracy Percentage descending
+                profiles.sort((a, b) => {
+                    if (b.wins !== a.wins) return b.wins - a.wins;
+                    return b.accuracyNum - a.accuracyNum;
+                });
 
-            // Rank assignment with tie formatting (T-1, T-2, etc.)
-            const rankedProfiles = profiles.map((p, idx, list) => {
-                let isTied = false;
-                let actualRank = idx + 1;
+                // 7. Assign ranks with tie handling (T-1, T-2, etc.)
+                const rankedProfiles = profiles.map((p, idx, list) => {
+                    let isTied = false;
+                    let actualRank = idx + 1;
 
-                if (idx > 0 && list[idx - 1].wins === p.wins && list[idx - 1].accuracyNum === p.accuracyNum) {
-                    isTied = true;
-                } else if (idx < list.length - 1 && list[idx + 1].wins === p.wins && list[idx + 1].accuracyNum === p.accuracyNum) {
-                    isTied = true;
-                }
-
-                if (isTied) {
-                    let firstTiedIdx = idx;
-                    while (firstTiedIdx > 0 && list[firstTiedIdx - 1].wins === p.wins && list[firstTiedIdx - 1].accuracyNum === p.accuracyNum) {
-                        firstTiedIdx--;
+                    if (idx > 0 && list[idx - 1].wins === p.wins && list[idx - 1].accuracyNum === p.accuracyNum) {
+                        isTied = true;
+                    } else if (idx < list.length - 1 && list[idx + 1].wins === p.wins && list[idx + 1].accuracyNum === p.accuracyNum) {
+                        isTied = true;
                     }
-                    actualRank = firstTiedIdx + 1;
+
+                    if (isTied) {
+                        let firstTiedIdx = idx;
+                        while (firstTiedIdx > 0 && list[firstTiedIdx - 1].wins === p.wins && list[firstTiedIdx - 1].accuracyNum === p.accuracyNum) {
+                            firstTiedIdx--;
+                        }
+                        actualRank = firstTiedIdx + 1;
+                    }
+
+                    return {
+                        ...p,
+                        rankDisplay: isTied ? `T-${actualRank}` : `#${actualRank}`,
+                        isTopRank: actualRank === 1
+                    };
+                });
+
+                // Color calculation for percentage bar
+                function getRepColor(pct) {
+                    const red = Math.round(255 - (pct * 2.55));
+                    const green = Math.round(pct * 2.55);
+                    return `rgb(${red}, ${green}, 50)`;
                 }
 
-                return {
-                    ...p,
-                    rankDisplay: isTied ? `T-${actualRank}` : `#${actualRank}`,
-                    isTopRank: actualRank === 1
-                };
-            });
+                // 8. Render final DOM cards
+                container.innerHTML = '';
+                rankedProfiles.forEach((profile) => {
+                    const isUser = profile.device_uid === currentUID;
+                    const accuracy = profile.accuracyNum.toFixed(1);
+                    const barColor = getRepColor(profile.accuracyNum);
 
-            // Dynamic color selection for accuracy bar
-            function getRepColor(pct) {
-                const red = Math.round(255 - (pct * 2.55));
-                const green = Math.round(pct * 2.55);
-                return `rgb(${red}, ${green}, 50)`;
-            }
+                    let confBadgesHTML = '';
+                    if (profile.sec_wins === maxSEC && maxSEC > 0) confBadgesHTML += `<span class="conf-chip sec-chip">SEC</span>`;
+                    if (profile.acc_wins === maxACC && maxACC > 0) confBadgesHTML += `<span class="conf-chip acc-chip">ACC</span>`;
+                    if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span>`;
+                    if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span>`;
 
-            container.innerHTML = '';
-            rankedProfiles.forEach((profile) => {
-                const isUser = profile.device_uid === currentUID;
-                const accuracy = profile.accuracyNum.toFixed(1);
-                const barColor = getRepColor(profile.accuracyNum);
+                    const displayName = profile.coach_name || profile.player_name || 'ANALYST';
+                    const crownPrefix = profile.isTopRank ? '👑 ' : '';
 
-                let confBadgesHTML = '';
-                if (profile.sec_wins === maxSEC && maxSEC > 0) confBadgesHTML += `<span class="conf-chip sec-chip">SEC</span>`;
-                if (profile.acc_wins === maxACC && maxACC > 0) confBadgesHTML += `<span class="conf-chip acc-chip">ACC</span>`;
-                if (profile.big10_wins === maxB10 && maxB10 > 0) confBadgesHTML += `<span class="conf-chip big10-chip">B10</span>`;
-                if (profile.big12_wins === maxB12 && maxB12 > 0) confBadgesHTML += `<span class="conf-chip big12-chip">B12</span>`;
-
-                const displayName = profile.coach_name || profile.player_name || 'ANALYST';
-                const crownPrefix = profile.isTopRank ? '👑 ' : '';
-
-                const card = document.createElement('div');
-                card.className = `card ${isUser ? 'active-user' : ''}`;
-                card.innerHTML = `
-                    <div class="card-row">
-                        <div class="analyst-identity">
-                            <span class="rank">${profile.rankDisplay}</span>
-                            <span class="analyst-name">${crownPrefix}${displayName} ${isUser ? '(YOU)' : ''}</span>
+                    const card = document.createElement('div');
+                    card.className = `card ${isUser ? 'active-user' : ''}`;
+                    card.innerHTML = `
+                        <div class="card-row">
+                            <div class="analyst-identity">
+                                <span class="rank">${profile.rankDisplay}</span>
+                                <span class="analyst-name">${crownPrefix}${displayName} ${isUser ? '(YOU)' : ''}</span>
+                            </div>
+                            <div class="rep-score">REP: ${accuracy}%</div>
                         </div>
-                        <div class="rep-score">REP: ${accuracy}%</div>
-                    </div>
-                    
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: ${accuracy}%; background-color: ${barColor};"></div>
-                    </div>
+                        
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: ${accuracy}%; background-color: ${barColor};"></div>
+                        </div>
 
-                    <div class="card-row">
-                        <div>${confBadgesHTML}</div>
-                        <div style="font-size: 0.55rem; color: #94a3b8;">${profile.wins}-${profile.losses}</div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+                        <div class="card-row">
+                            <div>${confBadgesHTML}</div>
+                            <div style="font-size: 0.55rem; color: #94a3b8;">${profile.wins}-${profile.losses}</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error("Leaderboard calculation error:", err);
+                container.innerHTML = `<div style="font-size:0.6rem; color:red;">ERROR CALCULATING LEADERBOARD DATA.</div>`;
+            }
         }
     </script>
 </body>
