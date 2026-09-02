@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
-    <!-- SUPABASE CLIENT INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
@@ -25,7 +24,7 @@
     <style>
         :root {
             --bg-canvas: #0f172a;       
-            --bg-card: #1e293b;          
+            --bg-card: #1e293b;         
             --retro-yellow: #facc15;    
             --retro-blue: #38bdf8;      
             --retro-green: #4ade80;     
@@ -246,7 +245,7 @@
             padding: 0.75rem 0.25rem;
             cursor: pointer;
             font-family: var(--pixel-font);
-            font-size: 0.6rem;
+            font-size: 0.55rem;
             line-height: 1.2;
             box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
             word-wrap: break-word;
@@ -567,14 +566,16 @@
 
                     const home = {
                         id: homeTeamData.team.id,
-                        name: homeTeamData.team.location || homeTeamData.team.nickname || homeTeamData.team.name,
+                        code: homeTeamData.team.abbreviation || homeTeamData.team.shortDisplayName,
+                        displayName: homeTeamData.team.displayName || homeTeamData.team.location,
                         color: homeTeamData.team.color || 'dc2626',
                         record: homeRecord
                     };
 
                     const away = {
                         id: awayTeamData.team.id,
-                        name: awayTeamData.team.location || awayTeamData.team.nickname || awayTeamData.team.name,
+                        code: awayTeamData.team.abbreviation || awayTeamData.team.shortDisplayName,
+                        displayName: awayTeamData.team.displayName || awayTeamData.team.location,
                         color: awayTeamData.team.color || '1e3a8a',
                         record: awayRecord
                     };
@@ -596,11 +597,11 @@
 
                     const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
 
-                    const homePickedStyle = (existingPick === home.name) 
+                    const homePickedStyle = (existingPick === home.code) 
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
                         : '';
 
-                    const awayPickedStyle = (existingPick === away.name) 
+                    const awayPickedStyle = (existingPick === away.code) 
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
                         : '';
 
@@ -609,8 +610,10 @@
                     const card = document.createElement('div');
                     card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
                     card.id = cardId;
-                    card.setAttribute('data-home', home.name);
-                    card.setAttribute('data-away', away.name);
+                    card.setAttribute('data-home', home.code);
+                    card.setAttribute('data-home-display', home.displayName);
+                    card.setAttribute('data-away', away.code);
+                    card.setAttribute('data-away-display', away.displayName);
                     card.setAttribute('data-kickoff', gameEvent.date);
                     
                     card.style.zIndex = totalCards - index;
@@ -628,7 +631,7 @@
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
                                 <button class="team-btn" id="${cardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
-                                    ${home.name} ${existingPick === home.name ? '✓' : ''}
+                                    ${home.displayName} ${existingPick === home.code ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${home.record}</span>
                             </div>
@@ -636,7 +639,7 @@
                             <div class="team-display-block">
                                 ${helmetHTML(away.color)}
                                 <button class="team-btn" id="${cardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
-                                    ${away.name} ${existingPick === away.name ? '✓' : ''}
+                                    ${away.displayName} ${existingPick === away.code ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${away.record}</span>
                             </div>
@@ -676,7 +679,6 @@
 
         function resetDeckStack() {
             document.querySelectorAll('.matchup-card').forEach((card, index) => {
-                const cardIdNum = parseInt(card.id.split('-')[1]);
                 const isLocked = isGameLocked(card);
                 card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
                 card.removeAttribute('style');
@@ -780,23 +782,24 @@
             }
 
             const cardId = cardElement.id;
-            const chosenTeam = cardElement.getAttribute(`data-${pickType}`);
+            const chosenCode = cardElement.getAttribute(`data-${pickType}`);
+            const chosenDisplay = cardElement.getAttribute(`data-${pickType}-display`);
             
-            if(!savedPicks[`week-${currentWeek}`]) {
+            if (!savedPicks[`week-${currentWeek}`]) {
                 savedPicks[`week-${currentWeek}`] = {};
             }
-            savedPicks[`week-${currentWeek}`][cardId] = chosenTeam;
+            savedPicks[`week-${currentWeek}`][cardId] = chosenCode;
 
             const homeBtn = document.getElementById(`${cardId}-btn-home`);
             const awayBtn = document.getElementById(`${cardId}-btn-away`);
 
             homeBtn.style = pickType === 'home' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
-            homeBtn.innerHTML = `${cardElement.getAttribute('data-home')} ${pickType === 'home' ? '✓' : ''}`;
+            homeBtn.innerHTML = `${cardElement.getAttribute('data-home-display')} ${pickType === 'home' ? '✓' : ''}`;
 
             awayBtn.style = pickType === 'away' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
-            awayBtn.innerHTML = `${cardElement.getAttribute('data-away')} ${pickType === 'away' ? '✓' : ''}`;
+            awayBtn.innerHTML = `${cardElement.getAttribute('data-away-display')} ${pickType === 'away' ? '✓' : ''}`;
 
-            triggerToastNotification(chosenTeam);
+            triggerToastNotification(chosenDisplay);
 
             cardElement.removeAttribute('style'); 
             cardElement.classList.add(animationClass);
@@ -817,7 +820,7 @@
                     device_uid: deviceUID,
                     week_number: currentWeek,
                     card_id: cardId,
-                    chosen_team: chosenTeam
+                    chosen_team: chosenCode
                 }, { onConflict: 'device_uid,week_number,card_id' });
             } catch (err) {
                 console.error("Database save error:", err);
@@ -888,11 +891,11 @@
 
             if (homeBtn) {
                 homeBtn.style = '';
-                homeBtn.innerText = targetCard.getAttribute('data-home');
+                homeBtn.innerText = targetCard.getAttribute('data-home-display');
             }
             if (awayBtn) {
                 awayBtn.style = '';
-                awayBtn.innerText = targetCard.getAttribute('data-away');
+                awayBtn.innerText = targetCard.getAttribute('data-away-display');
             }
 
             const isLocked = isGameLocked(targetCard);
