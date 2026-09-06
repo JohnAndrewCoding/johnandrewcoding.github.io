@@ -482,6 +482,7 @@
         let startY = 0;
         let isDragging = false;
         let toastTimeout = null; 
+        const BUFFER_MS = 5 * 60 * 1000; // 5 minute buffer in milliseconds
 
         const helmetHTML = (color) => `
             <div class="helmet-icon" style="--team-color: #${color};">
@@ -495,7 +496,8 @@
         function isGameLocked(cardElement) {
             const kickoffStr = cardElement.getAttribute('data-kickoff');
             if (!kickoffStr) return false;
-            return Date.now() >= new Date(kickoffStr).getTime();
+            // Allow 5 minutes buffer after kickoff
+            return Date.now() >= (new Date(kickoffStr).getTime() + BUFFER_MS);
         }
 
         async function loadWeekGames() {
@@ -537,10 +539,17 @@
                     return;
                 }
 
-                gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
+                // Filter games that are set by commish AND haven't passed kickoff + 5 min buffer
+                const now = Date.now();
+                gamesData = data.events.filter(gameEvent => {
+                    const isAllowed = allowedIds.has(String(gameEvent.id));
+                    const kickoffTime = new Date(gameEvent.date).getTime();
+                    const hasStarted = now >= (kickoffTime + BUFFER_MS);
+                    return isAllowed && !hasStarted;
+                });
 
                 if (gamesData.length === 0) {
-                    progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
+                    progressDisplay.innerText = "NO UPCOMING GAMES TO PICK";
                     deck.innerHTML = '';
                     return;
                 }
@@ -551,6 +560,7 @@
                 gamesData.forEach((gameEvent, index) => {
                     const matchupNum = index + 1;
                     const cardId = `card-${matchupNum}`;
+                    const gameId = String(gameEvent.id);
                     const competition = gameEvent.competitions[0];
                     
                     const homeTeamData = competition.competitors.find(c => c.homeAway === 'home');
@@ -581,7 +591,7 @@
                     };
 
                     const kickoffDate = new Date(gameEvent.date);
-                    const isLocked = Date.now() >= kickoffDate.getTime();
+                    const isLocked = Date.now() >= (kickoffDate.getTime() + BUFFER_MS);
 
                     const formattedTime = kickoffDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) + 
                                           " @ " + 
@@ -595,13 +605,26 @@
 
                     const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
 
-                    const existingPick = savedPicks[`week-${currentWeek}`] ? savedPicks[`week-${currentWeek}`][cardId] : null;
+                    // Check both cardId and espn_game_id for pre-existing picks
+                    const currentWeekPicks = savedPicks[`week-${currentWeek}`] || {};
+                    const existingPick = currentWeekPicks[cardId] || currentWeekPicks[gameId] || null;
 
-                    const homePickedStyle = (existingPick === home.code) 
+                    // Flexible match for team pick selection UI (matches code or full display name)
+                    const isHomeSelected = existingPick && (
+                        existingPick.trim().toUpperCase() === home.code.trim().toUpperCase() || 
+                        existingPick.trim().toUpperCase() === home.displayName.trim().toUpperCase()
+                    );
+                    
+                    const isAwaySelected = existingPick && (
+                        existingPick.trim().toUpperCase() === away.code.trim().toUpperCase() || 
+                        existingPick.trim().toUpperCase() === away.displayName.trim().toUpperCase()
+                    );
+
+                    const homePickedStyle = isHomeSelected 
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
                         : '';
 
-                    const awayPickedStyle = (existingPick === away.code) 
+                    const awayPickedStyle = isAwaySelected 
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
                         : '';
 
@@ -625,13 +648,13 @@
                                     ${stadiumName}<br>${stadiumLoc}
                                 </small>
                             </a>
-                            ${isLocked ? '<span class="lock-indicator">🔒 KICKOFF PASSED</span>' : ''}
+                            ${isLocked ? '<span class="lock-indicator">🔒 GAME STARTED</span>' : ''}
                         </span>
                         <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
                                 <button class="team-btn" id="${cardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
-                                    ${home.displayName} ${existingPick === home.code ? '✓' : ''}
+                                    ${home.displayName} ${isHomeSelected ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${home.record}</span>
                             </div>
@@ -639,7 +662,7 @@
                             <div class="team-display-block">
                                 ${helmetHTML(away.color)}
                                 <button class="team-btn" id="${cardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
-                                    ${away.displayName} ${existingPick === away.code ? '✓' : ''}
+                                    ${away.displayName} ${isAwaySelected ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${away.record}</span>
                             </div>
@@ -716,7 +739,7 @@
                     if (cardIdNum !== currentCardIndex) return; 
 
                     if (isGameLocked(card)) {
-                        triggerToastNotification("🔒 KICKOFF PASSED");
+                        triggerToastNotification("🔒 GAME STARTED");
                         return;
                     }
 
@@ -766,7 +789,7 @@
             if (cardIdNum !== currentCardIndex) return;
 
             if (isGameLocked(card)) {
-                triggerToastNotification("🔒 KICKOFF PASSED");
+                triggerToastNotification("🔒 GAME STARTED");
                 return;
             }
 
@@ -776,7 +799,7 @@
 
         async function executePick(cardElement, pickType, animationClass) {
             if (isGameLocked(cardElement)) {
-                triggerToastNotification("🔒 KICKOFF PASSED");
+                triggerToastNotification("🔒 GAME STARTED");
                 cardElement.style.transform = 'translateX(0px) rotate(0deg)';
                 return;
             }
