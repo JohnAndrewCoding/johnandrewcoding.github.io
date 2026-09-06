@@ -192,6 +192,25 @@
             gap: 0.4rem;
             font-family: var(--pixel-font);
             box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            cursor: pointer;
+            transition: border-color 0.15s ease-in-out;
+            position: relative;
+        }
+
+        .scoreboard-led.unlocked:hover {
+            border-color: var(--retro-yellow);
+        }
+
+        .scoreboard-led.locked {
+            cursor: not-allowed;
+        }
+
+        .tap-hint {
+            font-size: 0.45rem;
+            color: var(--retro-yellow);
+            text-align: center;
+            margin-top: 0.2rem;
+            letter-spacing: 0.5px;
         }
 
         .team-score-row {
@@ -199,6 +218,13 @@
             justify-content: space-between;
             align-items: center;
             font-size: 0.75rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 2px;
+        }
+
+        .team-score-row.user-selected {
+            background-color: rgba(250, 204, 21, 0.15);
+            border: 1px dashed var(--retro-yellow);
         }
 
         .team-meta {
@@ -349,6 +375,59 @@
             await renderGamesAndPicks();
         }
 
+        async function toggleUserPick(cardId, awayTeam, homeTeam, isLocked) {
+            if (isLocked) {
+                alert("This game has already started and picks are locked!");
+                return;
+            }
+
+            try {
+                // Fetch current pick for user
+                const { data, error } = await supabaseClient
+                    .from('picks')
+                    .select('*')
+                    .eq('device_uid', deviceUID)
+                    .eq('week_number', parseInt(currentWeek))
+                    .or(`card_id.eq.${cardId},card_id.eq.${cardId.replace('card-', '')}`);
+
+                if (error) throw error;
+
+                let existingPick = data && data.length > 0 ? data[0] : null;
+                let newTeam = awayTeam;
+
+                if (existingPick) {
+                    // Switch to opposite team
+                    newTeam = existingPick.chosen_team === awayTeam ? homeTeam : awayTeam;
+                    
+                    const { error: updateErr } = await supabaseClient
+                        .from('picks')
+                        .update({ chosen_team: newTeam })
+                        .eq('id', existingPick.id);
+
+                    if (updateErr) throw updateErr;
+                } else {
+                    // Create new pick with default (away team) if none existed
+                    const { error: insertErr } = await supabaseClient
+                        .from('picks')
+                        .insert([{
+                            device_uid: deviceUID,
+                            week_number: parseInt(currentWeek),
+                            card_id: cardId,
+                            chosen_team: awayTeam
+                        }]);
+
+                    if (insertErr) throw insertErr;
+                }
+
+                // Re-render display to reflect pick swap instantly
+                await renderGamesAndPicks();
+
+            } catch (err) {
+                console.error("Failed to update pick:", err);
+                alert("Error updating pick. Please try again.");
+            }
+        }
+
         async function renderGamesAndPicks() {
             const container = document.getElementById('games-container');
             
@@ -387,7 +466,7 @@
                 const eventMap = new Map();
                 (espnData.events || []).forEach(e => eventMap.set(String(e.id), e));
 
-                // Map slate items with games
+                // Map slate rows preserving strict original card order
                 const slateGames = slateData
                     .map((row, idx) => ({
                         slateRow: row,
@@ -402,34 +481,13 @@
                     return;
                 }
 
-                // STRICT SORTING ORDER: 1. Live -> 2. Upcoming/Pending -> 3. Finished
-                slateGames.sort((a, b) => {
-                    const stateA = String(a.gameEvent.status?.type?.state || '').toLowerCase();
-                    const stateB = String(b.gameEvent.status?.type?.state || '').toLowerCase();
-
-                    const getPriority = (state) => {
-                        if (state === 'in' || state === 'in_progress') return 1;  // Live
-                        if (state === 'post' || state === 'final') return 3;     // Finished
-                        return 2;                                                // Pending / Upcoming
-                    };
-
-                    const priorityA = getPriority(stateA);
-                    const priorityB = getPriority(stateB);
-
-                    if (priorityA !== priorityB) {
-                        return priorityA - priorityB;
-                    }
-
-                    return new Date(a.gameEvent.date) - new Date(b.gameEvent.date);
-                });
-
                 container.innerHTML = ''; 
                 const now = new Date();
 
                 slateGames.forEach(({ slateRow, cardIndex, cardIdStr, gameEvent }) => {
                     const espnGameId = String(slateRow.espn_game_id);
 
-                    // Robust pick matching against card_id (numeric or string), espn_game_id, or card-X format
+                    // Filter user picks matching this game card
                     const cardPicks = (picksData || []).filter(p => {
                         const pCardId = String(p.card_id || '');
                         const pGameId = String(p.espn_game_id || '');
@@ -476,6 +534,10 @@
                         }
                     });
 
+                    // Check currentUser's pick on this card
+                    const myPickObj = cardPicks.find(p => p.device_uid === deviceUID);
+                    const myPick = myPickObj ? myPickObj.chosen_team : null;
+
                     let picksListHTML = '';
 
                     displayUsersMap.forEach((userName, uid) => {
@@ -493,7 +555,7 @@
                                 </div>`;
                         } else {
                             const statusTag = userPick 
-                                ? `<span class="pick-status-done">LOCKED ✓</span>`
+                                ? `<span class="pick-status-done">${userPick.chosen_team} ✓</span>`
                                 : `<span class="pick-status-pending">WAITING...</span>`;
 
                             picksListHTML += `
@@ -508,27 +570,32 @@
 
                     const card = document.createElement('div');
                     card.className = 'game-card';
+
+                    const isAwaySelected = myPick === awayName;
+                    const isHomeSelected = myPick === homeName;
+
                     card.innerHTML = `
                         <div class="scoreboard-header">
                             <span class="${statusClass}">${statusDetail}</span>
                             <span class="lock-indicator">${isLocked ? '🔒 LOCKED' : '🔓 OPEN'}</span>
                         </div>
 
-                        <div class="scoreboard-led">
-                            <div class="team-score-row">
+                        <div class="scoreboard-led ${isLocked ? 'locked' : 'unlocked'}" onclick="toggleUserPick('${cardIdStr}', '${awayName}', '${homeName}', ${isLocked})">
+                            <div class="team-score-row ${isAwaySelected ? 'user-selected' : ''}">
                                 <div class="team-meta">
                                     <div class="team-color-box" style="background-color: #${away.team.color || '1e3a8a'};"></div>
-                                    <span class="team-code">${awayName}</span>
+                                    <span class="team-code">${awayName} ${isAwaySelected ? '★' : ''}</span>
                                 </div>
                                 <span class="score-num ${parseInt(awayScore) > parseInt(homeScore) && statusState === 'post' ? 'winner' : ''}">${awayScore}</span>
                             </div>
-                            <div class="team-score-row">
+                            <div class="team-score-row ${isHomeSelected ? 'user-selected' : ''}">
                                 <div class="team-meta">
                                     <div class="team-color-box" style="background-color: #${home.team.color || 'dc2626'};"></div>
-                                    <span class="team-code">${homeName}</span>
+                                    <span class="team-code">${homeName} ${isHomeSelected ? '★' : ''}</span>
                                 </div>
                                 <span class="score-num ${parseInt(homeScore) > parseInt(awayScore) && statusState === 'post' ? 'winner' : ''}">${homeScore}</span>
                             </div>
+                            ${!isLocked ? `<div class="tap-hint">[ TAP CARD TO TOGGLE PICK ]</div>` : ''}
                         </div>
 
                         <div class="picks-panel">
