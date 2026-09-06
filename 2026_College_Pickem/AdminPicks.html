@@ -237,7 +237,7 @@
         }
 
         .game-col-header {
-            min-width: 90px; /* Gives each game a standardized width */
+            min-width: 90px;
             padding: 0.4rem;
         }
 
@@ -332,11 +332,9 @@
                 <thead>
                     <tr id="matrix-header-row">
                         <th class="sticky-col">USER</th>
-                        <!-- Game columns generated dynamically -->
                     </tr>
                 </thead>
                 <tbody id="matrix-body">
-                    <!-- User rows generated dynamically -->
                 </tbody>
             </table>
         </div>
@@ -511,15 +509,32 @@
 
                     selectEl.className = 'pick-select no-pick';
                 } else {
-                    // Upsert pick into database
-                    await supabaseClient
+                    // Check if pick record exists before performing insert/update
+                    const { data: existingPick } = await supabaseClient
                         .from('picks')
-                        .upsert({
-                            device_uid: uid,
-                            week_number: currentWeek,
-                            card_id: cardKey,
-                            chosen_team: chosenTeam
-                        }, { onConflict: 'device_uid,week_number,card_id' });
+                        .select('id')
+                        .eq('device_uid', uid)
+                        .eq('week_number', currentWeek)
+                        .eq('card_id', cardKey)
+                        .maybeSingle();
+
+                    if (existingPick) {
+                        // Update existing record
+                        await supabaseClient
+                            .from('picks')
+                            .update({ chosen_team: chosenTeam })
+                            .eq('id', existingPick.id);
+                    } else {
+                        // Insert new record
+                        await supabaseClient
+                            .from('picks')
+                            .insert({
+                                device_uid: uid,
+                                week_number: currentWeek,
+                                card_id: cardKey,
+                                chosen_team: chosenTeam
+                            });
+                    }
 
                     selectEl.className = 'pick-select has-pick';
                 }
