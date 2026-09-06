@@ -203,25 +203,43 @@
 
                 if (profErr) throw profErr;
 
-                // 2. Fetch All Slate Games
+                // 2. Fetch Weekly Slates (ordered by id to preserve row mapping)
                 const { data: slates, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
-                    .select('week_number, espn_game_id, slot_index');
+                    .select('id, week_number, espn_game_id')
+                    .order('id', { ascending: true });
 
                 if (slateErr) throw slateErr;
 
-                // 3. Fetch All Picks
+                // 3. Fetch Picks
                 const { data: picks, error: pickErr } = await supabaseClient
                     .from('picks')
                     .select('device_uid, week_number, card_id, chosen_team');
 
                 if (pickErr) throw pickErr;
 
-                // 4. Group weeks to minimize ESPN API requests
-                const weeks = [...new Set((slates || []).map(s => s.week_number))];
-                const completedGames = new Map(); // espn_game_id -> winning_team_names (Set)
+                // 4. Map Slate games to card IDs (e.g., week 1, 1st game -> card-1)
+                const slateMap = {}; // key: "week_cardId" or "week_gameId" -> value: espn_game_id
+                const weekRowCounters = {};
 
-                // Fetch ESPN results for each week represented in slates
+                (slates || []).forEach(s => {
+                    const w = s.week_number;
+                    const gameId = String(s.espn_game_id);
+
+                    if (!weekRowCounters[w]) weekRowCounters[w] = 0;
+                    weekRowCounters[w] += 1;
+
+                    const cardKey = `card-${weekRowCounters[w]}`;
+
+                    // Map by card_id name and game ID
+                    slateMap[`${w}_${cardKey}`] = gameId;
+                    slateMap[`${w}_${gameId}`] = gameId;
+                });
+
+                // 5. Fetch ESPN results for active weeks
+                const weeks = [...new Set((slates || []).map(s => s.week_number))];
+                const completedGames = new Map(); // espn_game_id -> Set of winning team identifiers
+
                 for (const week of weeks) {
                     try {
                         const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${week}`);
@@ -252,22 +270,11 @@
                             }
                         });
                     } catch (e) {
-                        console.error(`Failed to fetch ESPN data for week ${week}:`, e);
+                        console.error(`Failed to fetch ESPN scores for week ${week}:`, e);
                     }
                 }
 
-                // Create a lookup map for slates by week and slot
-                const slateMap = {};
-                (slates || []).forEach(s => {
-                    const gameId = String(s.espn_game_id);
-                    slateMap[`${s.week_number}_${gameId}`] = gameId;
-                    if (s.slot_index) {
-                        slateMap[`${s.week_number}_card-${s.slot_index}`] = gameId;
-                        slateMap[`${s.week_number}_${s.slot_index}`] = gameId;
-                    }
-                });
-
-                // 5. Score Each User
+                // 6. Calculate Win/Loss records per user
                 const userScores = (profiles || []).map(p => {
                     const uid = p.device_uid;
                     const userName = p.coach_name || p.player_name || 'ANALYST (' + uid.slice(0, 4) + ')';
@@ -306,7 +313,7 @@
                     };
                 });
 
-                // Sort by Win Percentage (highest first), then by total wins
+                // Sort by Win Percentage descending, then by total wins
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
                 if (userScores.length === 0) {
@@ -314,7 +321,7 @@
                     return;
                 }
 
-                // 6. Render Leaderboard Cards
+                // 7. Render Standings Cards
                 container.innerHTML = '';
                 userScores.forEach((user, idx) => {
                     const rank = idx + 1;
