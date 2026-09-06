@@ -293,31 +293,35 @@
             const container = document.getElementById('picks-container');
             
             try {
+                // 1. Fetch active games for this week from weekly_slates
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
                     .select('espn_game_id')
-                    .eq('week_number', currentWeek);
+                    .eq('week_number', Number(currentWeek));
 
                 const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
 
-                if (allowedIds.size === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO GAMES FOR WEEK ${currentWeek}</div>`;
-                    updateStats(0, 0, 0);
-                    return;
-                }
-
+                // 2. Fetch all user picks for this week and device
                 const { data: userPicks } = await supabaseClient
                     .from('picks')
                     .select('card_id, chosen_team')
                     .eq('device_uid', deviceUID)
-                    .eq('week_number', currentWeek);
+                    .eq('week_number', Number(currentWeek));
 
-                const picksMap = {};
+                // Map picks by card_id ("card-1", "card-2", etc.) AND create a Set of picked team names
+                const picksMapByCardId = {};
+                const pickedTeamsSet = new Set();
+
                 (userPicks || []).forEach(p => {
-                    // Normalize card_id to string format to guarantee map resolution
-                    picksMap[String(p.card_id)] = p.chosen_team;
+                    if (p.card_id) {
+                        picksMapByCardId[String(p.card_id).trim().toLowerCase()] = p.chosen_team;
+                    }
+                    if (p.chosen_team) {
+                        pickedTeamsSet.add(String(p.chosen_team).trim().toUpperCase());
+                    }
                 });
 
+                // 3. Fetch current live slate from ESPN API
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
 
@@ -327,7 +331,11 @@
                     return;
                 }
 
-                const filteredEvents = espnData.events.filter(e => allowedIds.has(String(e.id)));
+                // Filter games matching weekly slate if configured
+                let filteredEvents = espnData.events;
+                if (allowedIds.size > 0) {
+                    filteredEvents = espnData.events.filter(e => allowedIds.has(String(e.id)));
+                }
 
                 if (filteredEvents.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO MATCHUPS CONFIGURED</div>`;
@@ -342,8 +350,9 @@
                 let totalMissing = 0;
 
                 filteredEvents.forEach((gameEvent, index) => {
-                    // Match directly using the ESPN Game ID stored in the DB
-                    const cardId = String(gameEvent.id);
+                    const espnGameId = String(gameEvent.id);
+                    const cardKey = `card-${index + 1}`; // matches "card-1", "card-2"
+
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
                     const isLocked = now >= gameDate;
@@ -351,10 +360,23 @@
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
 
-                    const homeName = home.team.abbreviation || home.team.shortDisplayName;
-                    const awayName = away.team.abbreviation || away.team.shortDisplayName;
+                    const homeAbbr = (home.team.abbreviation || home.team.shortDisplayName || '').toUpperCase();
+                    const awayAbbr = (away.team.abbreviation || away.team.shortDisplayName || '').toUpperCase();
 
-                    const userChoice = picksMap[cardId];
+                    // MULTI-LEVEL MATCHING:
+                    // Level 1: Match exact ESPN Game ID
+                    // Level 2: Match "card-X" label
+                    // Level 3: Check if either team name exists in the user's saved picks
+                    let userChoice = picksMapByCardId[espnGameId] || picksMapByCardId[cardKey];
+
+                    if (!userChoice) {
+                        if (pickedTeamsSet.has(awayAbbr)) {
+                            userChoice = awayAbbr;
+                        } else if (pickedTeamsSet.has(homeAbbr)) {
+                            userChoice = homeAbbr;
+                        }
+                    }
+
                     const hasPicked = Boolean(userChoice);
 
                     if (hasPicked) {
@@ -373,7 +395,7 @@
                         </div>
 
                         <div class="matchup-title">
-                            ${awayName} vs ${homeName}
+                            ${awayAbbr} vs ${homeAbbr}
                         </div>
 
                         <div class="pick-status-box">
@@ -401,7 +423,6 @@
             document.getElementById('stat-total').innerText = total;
         }
 
-        // Direct fallback trigger to prevent lifecycle hangs
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initMyPicks);
         } else {
