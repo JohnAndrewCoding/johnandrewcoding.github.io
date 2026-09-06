@@ -205,6 +205,16 @@
             justify-content: space-between;
             align-items: center;
             font-size: 0.65rem;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .pick-status-box.clickable {
+            cursor: pointer;
+            border-color: var(--retro-blue);
+        }
+
+        .pick-status-box.clickable:hover {
+            background-color: #0f172a;
         }
 
         .pick-label {
@@ -218,6 +228,13 @@
         .pick-choice.none {
             color: var(--retro-red);
             animation: blink 1.5s infinite;
+        }
+
+        .tap-hint {
+            font-size: 0.45rem;
+            color: var(--retro-blue);
+            text-align: right;
+            margin-top: -0.2rem;
         }
 
         @keyframes blink {
@@ -341,7 +358,8 @@
                 let totalMissing = 0;
 
                 filteredEvents.forEach((gameEvent, index) => {
-                    const cardId = `card-${index + 1}`;
+                    // Match directly by espn_game_id to guarantee consistency across pages
+                    const cardId = String(gameEvent.id);
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
                     const isLocked = now >= gameDate;
@@ -352,8 +370,8 @@
                     const homeName = home.team.abbreviation || home.team.shortDisplayName;
                     const awayName = away.team.abbreviation || away.team.shortDisplayName;
 
-                    const userChoice = picksMap[cardId];
-                    const hasPicked = Boolean(userChoice);
+                    let userChoice = picksMap[cardId];
+                    let hasPicked = Boolean(userChoice);
 
                     if (hasPicked) {
                         totalMade++;
@@ -363,6 +381,7 @@
 
                     const card = document.createElement('div');
                     card.className = `pick-card ${!hasPicked ? 'missing' : ''}`;
+                    card.id = `card-wrapper-${cardId}`;
 
                     card.innerHTML = `
                         <div class="card-top">
@@ -374,15 +393,53 @@
                             ${awayName} vs ${homeName}
                         </div>
 
-                        <div class="pick-status-box">
+                        <div class="pick-status-box ${!isLocked ? 'clickable' : ''}" id="status-box-${cardId}">
                             <span class="pick-label">YOUR SELECTION:</span>
-                            <span class="pick-choice ${!hasPicked ? 'none' : ''}">
+                            <span class="pick-choice ${!hasPicked ? 'none' : ''}" id="choice-text-${cardId}">
                                 ${hasPicked ? userChoice : '⚠ NO PICK MADE'}
                             </span>
                         </div>
+                        ${!isLocked ? `<div class="tap-hint">TAP TO TOGGLE PICK</div>` : ''}
                     `;
 
                     container.appendChild(card);
+
+                    // Allow pick toggling if game is unlocked
+                    if (!isLocked) {
+                        const statusBox = card.querySelector(`#status-box-${cardId}`);
+                        statusBox.addEventListener('click', async () => {
+                            let nextChoice = awayName;
+                            if (userChoice === awayName) {
+                                nextChoice = homeName;
+                            }
+
+                            // Optimistically update UI
+                            const choiceText = document.getElementById(`choice-text-${cardId}`);
+                            const isFirstPick = !userChoice;
+                            
+                            userChoice = nextChoice;
+                            choiceText.innerText = nextChoice;
+                            choiceText.classList.remove('none');
+                            card.classList.remove('missing');
+
+                            // Update local counts
+                            if (isFirstPick) {
+                                totalMade++;
+                                totalMissing--;
+                                updateStats(totalMade, totalMissing, filteredEvents.length);
+                            }
+
+                            // Save pick to database
+                            await supabaseClient
+                                .from('picks')
+                                .upsert({
+                                    device_uid: deviceUID,
+                                    week_number: currentWeek,
+                                    card_id: cardId,
+                                    chosen_team: nextChoice
+                                }, { onConflict: 'device_uid,week_number,card_id' });
+                        });
+                    }
                 });
 
                 updateStats(totalMade, totalMissing, filteredEvents.length);
