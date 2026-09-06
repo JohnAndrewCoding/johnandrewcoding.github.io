@@ -153,6 +153,39 @@
             align-items: center;
         }
 
+        .empty-slate-card {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-card);
+            border: 6px solid #000000;
+            box-shadow: 6px 6px 0px #000000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            box-sizing: border-box;
+            z-index: 1;
+        }
+
+        .empty-slate-title {
+            font-family: var(--pixel-font);
+            font-size: 0.85rem;
+            color: var(--retro-yellow);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .empty-slate-sub {
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            color: var(--retro-green);
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
         .matchup-card {
             position: absolute;
             width: 100%;
@@ -172,10 +205,6 @@
             transform-origin: center bottom;
             z-index: 10;
             visibility: hidden; 
-        }
-
-        .matchup-card.is-locked {
-            border-color: var(--retro-red);
         }
 
         .matchup-card.active-stack {
@@ -210,13 +239,6 @@
             .venue-link:hover {
                 color: var(--retro-blue);
             }
-        }
-
-        .lock-indicator {
-            display: block;
-            color: var(--retro-red);
-            font-size: 0.55rem;
-            margin-top: 0.2rem;
         }
 
         .teams-wrapper {
@@ -257,14 +279,8 @@
             text-align: center;
         }
 
-        .team-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            border-color: #475569 !important;
-        }
-
         @media (hover: hover) {
-            .team-btn:not(:disabled):hover {
+            .team-btn:hover {
                 border-color: var(--retro-yellow);
                 color: var(--retro-yellow);
             }
@@ -304,15 +320,8 @@
             transition: all 0.2s ease;
         }
 
-        .nav-card-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            border-color: #334155;
-            color: #334155;
-        }
-
         @media (hover: hover) {
-            .nav-card-btn:not(:disabled):hover {
+            .nav-card-btn:hover {
                 border-color: #ffffff;
                 color: #ffffff;
             }
@@ -482,7 +491,7 @@
         let startY = 0;
         let isDragging = false;
         let toastTimeout = null; 
-        const BUFFER_MS = 5 * 60 * 1000;
+        const BUFFER_MS = 5 * 60 * 1000; // 5 minute lock buffer
 
         const helmetHTML = (color) => `
             <div class="helmet-icon" style="--team-color: #${color};">
@@ -493,12 +502,33 @@
                 <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
             </div>`;
 
-        function isGameLocked(cardElement) {
-            const kickoffStr = cardElement.getAttribute('data-kickoff');
+        function isGameStartedOrLocked(kickoffStr) {
             if (!kickoffStr) return false;
             const kickoffTime = new Date(kickoffStr).getTime();
             if (isNaN(kickoffTime)) return false;
             return Date.now() >= (kickoffTime + BUFFER_MS);
+        }
+
+        function renderAllGamesStartedScreen() {
+            const deck = document.getElementById('deck');
+            const progressDisplay = document.getElementById('progress');
+
+            progressDisplay.innerText = "WEEK CONCLUDED";
+            progressDisplay.style.color = "var(--retro-red)";
+            progressDisplay.style.borderColor = "var(--retro-red)";
+
+            deck.innerHTML = `
+                <div class="empty-slate-card">
+                    <div class="empty-slate-title">
+                        ALL GAMES FOR WEEK ${currentWeek}<br>HAVE STARTED OR CONCLUDED!
+                    </div>
+                    <div class="empty-slate-sub">
+                        ✓ PICKS ARE LOCKED
+                    </div>
+                    <a href="ViewPicks.html" class="nav-link-btn" style="width: 100%; display: block;">VIEW MY PICKS &gt;</a>
+                </div>
+            `;
+            updateBottomButtonStates();
         }
 
         async function loadWeekGames() {
@@ -519,14 +549,12 @@
 
                 savedPicks[`week-${currentWeek}`] = {};
 
-                // 1. Populate memory state from Supabase
                 if (databasePicks && databasePicks.length > 0) {
                     databasePicks.forEach(p => {
                         savedPicks[`week-${currentWeek}`][p.card_id] = p.chosen_team;
                     });
                 }
 
-                // 2. LocalStorage Fallback so picks are never lost locally
                 Object.keys(localStorage).forEach(key => {
                     if (key.startsWith(`pick_w${currentWeek}_`)) {
                         const gameId = key.replace(`pick_w${currentWeek}_`, '');
@@ -547,16 +575,20 @@
                 const data = await response.json();
                 
                 if (!data.events || data.events.length === 0) {
-                    progressDisplay.innerText = "NO GAMES FOUND";
-                    deck.innerHTML = ''; 
+                    renderAllGamesStartedScreen();
                     return;
                 }
 
-                gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
+                // Filter 1: Must be in weekly slate
+                // Filter 2: Must NOT have started yet (+ 5 min buffer)
+                gamesData = data.events.filter(gameEvent => {
+                    const isAllowed = allowedIds.has(String(gameEvent.id));
+                    const isStarted = isGameStartedOrLocked(gameEvent.date);
+                    return isAllowed && !isStarted;
+                });
 
                 if (gamesData.length === 0) {
-                    progressDisplay.innerText = "NO MATCHUPS CONFIGURED";
-                    deck.innerHTML = '';
+                    renderAllGamesStartedScreen();
                     return;
                 }
 
@@ -597,8 +629,6 @@
                     };
 
                     const kickoffDate = new Date(gameEvent.date);
-                    const isLocked = Date.now() >= (kickoffDate.getTime() + BUFFER_MS);
-
                     const formattedTime = kickoffDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }) + 
                                           " @ " + 
                                           kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -632,10 +662,8 @@
                         ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' 
                         : '';
 
-                    const disabledAttr = isLocked ? 'disabled' : '';
-
                     const card = document.createElement('div');
-                    card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
+                    card.className = 'matchup-card';
                     card.id = domCardId;
                     card.setAttribute('data-espn-id', gameId);
                     card.setAttribute('data-home', home.code);
@@ -653,12 +681,11 @@
                                     ${stadiumName}<br>${stadiumLoc}
                                 </small>
                             </a>
-                            ${isLocked ? '<span class="lock-indicator">🔒 GAME STARTED</span>' : ''}
                         </span>
                         <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
-                                <button class="team-btn" id="${domCardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${domCardId}', 'home')">
+                                <button class="team-btn" id="${domCardId}-btn-home" style="${homePickedStyle}" onclick="handleBtnPick('${domCardId}', 'home')">
                                     ${home.displayName} ${isHomeSelected ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${home.record}</span>
@@ -666,7 +693,7 @@
                             <div class="vs-divider">VS</div>
                             <div class="team-display-block">
                                 ${helmetHTML(away.color)}
-                                <button class="team-btn" id="${domCardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${domCardId}', 'away')">
+                                <button class="team-btn" id="${domCardId}-btn-away" style="${awayPickedStyle}" onclick="handleBtnPick('${domCardId}', 'away')">
                                     ${away.displayName} ${isAwaySelected ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${away.record}</span>
@@ -707,8 +734,7 @@
 
         function resetDeckStack() {
             document.querySelectorAll('.matchup-card').forEach((card, index) => {
-                const isLocked = isGameLocked(card);
-                card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
+                card.className = 'matchup-card';
                 card.removeAttribute('style');
                 card.style.zIndex = totalCards - index;
             });
@@ -727,7 +753,7 @@
 
         function updateBottomButtonStates() {
             const undoBtn = document.getElementById('undo-btn');
-            undoBtn.disabled = (currentCardIndex <= 1 && getPickCount() === 0);
+            undoBtn.disabled = (totalCards === 0 || (currentCardIndex <= 1 && getPickCount() === 0));
         }
 
         function getPickCount() {
@@ -742,11 +768,6 @@
                 card.addEventListener('touchstart', e => {
                     const cardIdNum = parseInt(card.id.split('-')[1]);
                     if (cardIdNum !== currentCardIndex) return; 
-
-                    if (isGameLocked(card)) {
-                        triggerToastNotification("🔒 GAME STARTED");
-                        return;
-                    }
 
                     isDragging = true;
                     card.classList.add('dragging');
@@ -793,22 +814,11 @@
             
             if (cardIdNum !== currentCardIndex) return;
 
-            if (isGameLocked(card)) {
-                triggerToastNotification("🔒 GAME STARTED");
-                return;
-            }
-
             const animationClass = pickType === 'home' ? 'swipe-left' : 'swipe-right';
             executePick(card, pickType, animationClass);
         }
 
         async function executePick(cardElement, pickType, animationClass) {
-            if (isGameLocked(cardElement)) {
-                triggerToastNotification("🔒 GAME STARTED");
-                cardElement.style.transform = 'translateX(0px) rotate(0deg)';
-                return;
-            }
-
             const domCardId = cardElement.id;
             const espnGameId = cardElement.getAttribute('data-espn-id');
             const chosenCode = cardElement.getAttribute(`data-${pickType}`);
@@ -819,7 +829,6 @@
             }
             savedPicks[`week-${currentWeek}`][espnGameId] = chosenCode;
 
-            // Save to LocalStorage immediately as a reliable fallback
             localStorage.setItem(`pick_w${currentWeek}_${espnGameId}`, chosenCode);
 
             const homeBtn = document.getElementById(`${domCardId}-btn-home`);
@@ -847,7 +856,6 @@
             renderProgressUpdates();
             updateBottomButtonStates();
 
-            // Save to Supabase with full payload matching database columns
             try {
                 const { error } = await supabaseClient.from('picks').upsert({
                     device_uid: deviceUID,
@@ -893,8 +901,7 @@
                 const previousCardId = `card-${currentCardIndex}`;
                 const previousCard = document.getElementById(previousCardId);
                 if (previousCard) {
-                    const isLocked = isGameLocked(previousCard);
-                    previousCard.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
+                    previousCard.className = 'matchup-card';
                     previousCard.removeAttribute('style');
                     previousCard.style.zIndex = totalCards - (currentCardIndex - 1);
                 }
@@ -906,17 +913,12 @@
         }
 
         async function undoLastPick() {
-            if (currentCardIndex <= 1 && getPickCount() === 0) return;
+            if (totalCards === 0 || (currentCardIndex <= 1 && getPickCount() === 0)) return;
 
             const targetCardIndex = currentCardIndex === 1 ? totalCards : currentCardIndex - 1;
             const targetCardId = `card-${targetCardIndex}`;
             const targetCard = document.getElementById(targetCardId);
             if (!targetCard) return;
-
-            if (isGameLocked(targetCard)) {
-                triggerToastNotification("🔒 GAME ALREADY STARTED");
-                return;
-            }
 
             const espnGameId = targetCard.getAttribute('data-espn-id');
             currentCardIndex = targetCardIndex;
@@ -938,8 +940,7 @@
                 awayBtn.innerText = targetCard.getAttribute('data-away-display');
             }
 
-            const isLocked = isGameLocked(targetCard);
-            targetCard.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
+            targetCard.className = 'matchup-card';
             targetCard.removeAttribute('style');
             targetCard.style.zIndex = totalCards - (currentCardIndex - 1);
 
@@ -966,8 +967,6 @@
             
             if (teamName === "PICK REMOVED") {
                 toast.innerText = "PICK REMOVED";
-            } else if (teamName.includes("🔒")) {
-                toast.innerText = teamName;
             } else {
                 toast.innerText = `LOCKED: ${teamName}`;
             }
@@ -980,11 +979,12 @@
         }
 
         function renderProgressUpdates() {
+            if (totalCards === 0) return;
             const display = document.getElementById('progress');
             const pickCount = getPickCount();
 
-            if (pickCount === totalCards && totalCards > 0) {
-                display.innerText = "ALL PICKS LOCKED!";
+            if (pickCount === totalCards) {
+                display.innerText = "ALL OPEN PICKS LOCKED!";
                 display.style.color = "var(--retro-green)";      
                 display.style.borderColor = "var(--retro-green)";
             } else {
