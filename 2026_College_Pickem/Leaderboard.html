@@ -505,16 +505,25 @@
                     return;
                 }
 
-                // 7. Render Standings Cards with click listener
+                // 7. Render Standings Cards handling ties
                 container.innerHTML = '';
+                
+                let currentRank = 1;
                 userScores.forEach((user, idx) => {
-                    const rank = idx + 1;
+                    // Check if current user has the same win percentage as the previous user
+                    if (idx > 0 && user.winPct === userScores[idx - 1].winPct) {
+                        // Rank stays equal to the first tied user's rank
+                    } else {
+                        // Otherwise, rank matches 1-based index position
+                        currentRank = idx + 1;
+                    }
+
                     const card = document.createElement('div');
-                    card.className = `leaderboard-card ${rank === 1 ? 'rank-1' : ''}`;
+                    card.className = `leaderboard-card ${currentRank === 1 ? 'rank-1' : ''}`;
                     card.onclick = () => openUserModal(user.device_uid, user.userName);
 
                     card.innerHTML = `
-                        <div class="rank-badge">#${rank}</div>
+                        <div class="rank-badge">#${currentRank}</div>
                         <div class="user-details">
                             <span class="user-name">${user.userName}</span>
                             <span class="user-record">REC: ${user.wins}-${user.losses}</span>
