@@ -161,6 +161,11 @@
             font-size: 0.5rem;
         }
 
+        .card-number-badge {
+            color: var(--retro-yellow);
+            font-size: 0.55rem;
+        }
+
         .status-badge {
             color: var(--retro-blue);
         }
@@ -186,31 +191,37 @@
         .scoreboard-led {
             background-color: #000000;
             border: 3px solid #475569;
-            padding: 0.5rem;
+            padding: 0.6rem;
             display: flex;
             flex-direction: column;
-            gap: 0.4rem;
+            gap: 0.5rem;
             font-family: var(--pixel-font);
             box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
             cursor: pointer;
             transition: border-color 0.15s ease-in-out;
-            position: relative;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
+        .scoreboard-led.unlocked:active,
         .scoreboard-led.unlocked:hover {
             border-color: var(--retro-yellow);
         }
 
         .scoreboard-led.locked {
             cursor: not-allowed;
+            opacity: 0.85;
         }
 
         .tap-hint {
-            font-size: 0.45rem;
+            font-size: 0.5rem;
             color: var(--retro-yellow);
             text-align: center;
-            margin-top: 0.2rem;
+            margin-top: 0.3rem;
             letter-spacing: 0.5px;
+            background: rgba(250, 204, 21, 0.1);
+            padding: 0.25rem;
+            border: 1px dashed var(--retro-yellow);
         }
 
         .team-score-row {
@@ -218,13 +229,13 @@
             justify-content: space-between;
             align-items: center;
             font-size: 0.75rem;
-            padding: 0.2rem 0.4rem;
+            padding: 0.3rem 0.4rem;
             border-radius: 2px;
         }
 
         .team-score-row.user-selected {
-            background-color: rgba(250, 204, 21, 0.15);
-            border: 1px dashed var(--retro-yellow);
+            background-color: rgba(250, 204, 21, 0.2);
+            border: 1px solid var(--retro-yellow);
         }
 
         .team-meta {
@@ -375,29 +386,33 @@
             await renderGamesAndPicks();
         }
 
-        async function toggleUserPick(cardId, awayTeam, homeTeam, isLocked) {
+        async function toggleUserPick(cardIndex, cardIdStr, awayTeam, homeTeam, isLocked) {
             if (isLocked) {
                 alert("This game has already started and picks are locked!");
                 return;
             }
 
             try {
-                // Fetch current pick for user
+                // Query both formatted card string ("card-1") and numeric index (1)
                 const { data, error } = await supabaseClient
                     .from('picks')
                     .select('*')
                     .eq('device_uid', deviceUID)
-                    .eq('week_number', parseInt(currentWeek))
-                    .or(`card_id.eq.${cardId},card_id.eq.${cardId.replace('card-', '')}`);
+                    .eq('week_number', parseInt(currentWeek));
 
                 if (error) throw error;
 
-                let existingPick = data && data.length > 0 ? data[0] : null;
+                // Find existing pick matching either identifier
+                const existingPick = (data || []).find(p => 
+                    String(p.card_id) === String(cardIdStr) || 
+                    String(p.card_id) === String(cardIndex)
+                );
+
                 let newTeam = awayTeam;
 
                 if (existingPick) {
                     // Switch to opposite team
-                    newTeam = existingPick.chosen_team === awayTeam ? homeTeam : awayTeam;
+                    newTeam = (existingPick.chosen_team === awayTeam) ? homeTeam : awayTeam;
                     
                     const { error: updateErr } = await supabaseClient
                         .from('picks')
@@ -406,25 +421,35 @@
 
                     if (updateErr) throw updateErr;
                 } else {
-                    // Create new pick with default (away team) if none existed
+                    // Insert new pick (tries inserting card_id as cardIdStr or numeric fallback)
+                    const payload = {
+                        device_uid: deviceUID,
+                        week_number: parseInt(currentWeek),
+                        card_id: cardIdStr,
+                        chosen_team: awayTeam
+                    };
+
                     const { error: insertErr } = await supabaseClient
                         .from('picks')
-                        .insert([{
-                            device_uid: deviceUID,
-                            week_number: parseInt(currentWeek),
-                            card_id: cardId,
-                            chosen_team: awayTeam
-                        }]);
+                        .insert([payload]);
 
-                    if (insertErr) throw insertErr;
+                    if (insertErr) {
+                        // Fallback if card_id column in database is integer type
+                        payload.card_id = cardIndex;
+                        const { error: retryErr } = await supabaseClient
+                            .from('picks')
+                            .insert([payload]);
+                        
+                        if (retryErr) throw retryErr;
+                    }
                 }
 
-                // Re-render display to reflect pick swap instantly
+                // Re-render UI immediately to reflect new pick state
                 await renderGamesAndPicks();
 
             } catch (err) {
                 console.error("Failed to update pick:", err);
-                alert("Error updating pick. Please try again.");
+                alert("Error updating pick: " + (err.message || "Database error"));
             }
         }
 
@@ -432,12 +457,11 @@
             const container = document.getElementById('games-container');
             
             try {
-                // 1. Fetch weekly slates ordered by ID
+                // 1. Fetch weekly slates sorted explicitly by ID
                 const { data: slateData, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, espn_game_id')
-                    .eq('week_number', parseInt(currentWeek))
-                    .order('id', { ascending: true });
+                    .eq('week_number', parseInt(currentWeek));
 
                 if (slateErr) throw slateErr;
 
@@ -445,6 +469,9 @@
                     container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
                     return;
                 }
+
+                // Sort numerically by ID to enforce exact card ordering
+                slateData.sort((a, b) => a.id - b.id);
 
                 // 2. Fetch picks for current week
                 const { data: picksData, error: picksErr } = await supabaseClient
@@ -466,7 +493,7 @@
                 const eventMap = new Map();
                 (espnData.events || []).forEach(e => eventMap.set(String(e.id), e));
 
-                // Map slate rows preserving strict original card order
+                // Align slate rows with ESPN events
                 const slateGames = slateData
                     .map((row, idx) => ({
                         slateRow: row,
@@ -534,7 +561,7 @@
                         }
                     });
 
-                    // Check currentUser's pick on this card
+                    // Determine current device's pick
                     const myPickObj = cardPicks.find(p => p.device_uid === deviceUID);
                     const myPick = myPickObj ? myPickObj.chosen_team : null;
 
@@ -567,35 +594,35 @@
                     });
 
                     const totalDisplayUsers = displayUsersMap.size;
+                    const isAwaySelected = myPick === awayName;
+                    const isHomeSelected = myPick === homeName;
 
                     const card = document.createElement('div');
                     card.className = 'game-card';
 
-                    const isAwaySelected = myPick === awayName;
-                    const isHomeSelected = myPick === homeName;
-
                     card.innerHTML = `
                         <div class="scoreboard-header">
+                            <span class="card-number-badge">GAME #${cardIndex}</span>
                             <span class="${statusClass}">${statusDetail}</span>
                             <span class="lock-indicator">${isLocked ? '🔒 LOCKED' : '🔓 OPEN'}</span>
                         </div>
 
-                        <div class="scoreboard-led ${isLocked ? 'locked' : 'unlocked'}" onclick="toggleUserPick('${cardIdStr}', '${awayName}', '${homeName}', ${isLocked})">
+                        <div class="scoreboard-led ${isLocked ? 'locked' : 'unlocked'}" id="led-card-${cardIndex}">
                             <div class="team-score-row ${isAwaySelected ? 'user-selected' : ''}">
                                 <div class="team-meta">
                                     <div class="team-color-box" style="background-color: #${away.team.color || '1e3a8a'};"></div>
-                                    <span class="team-code">${awayName} ${isAwaySelected ? '★' : ''}</span>
+                                    <span class="team-code">${awayName} ${isAwaySelected ? '★ (YOUR PICK)' : ''}</span>
                                 </div>
                                 <span class="score-num ${parseInt(awayScore) > parseInt(homeScore) && statusState === 'post' ? 'winner' : ''}">${awayScore}</span>
                             </div>
                             <div class="team-score-row ${isHomeSelected ? 'user-selected' : ''}">
                                 <div class="team-meta">
                                     <div class="team-color-box" style="background-color: #${home.team.color || 'dc2626'};"></div>
-                                    <span class="team-code">${homeName} ${isHomeSelected ? '★' : ''}</span>
+                                    <span class="team-code">${homeName} ${isHomeSelected ? '★ (YOUR PICK)' : ''}</span>
                                 </div>
                                 <span class="score-num ${parseInt(homeScore) > parseInt(awayScore) && statusState === 'post' ? 'winner' : ''}">${homeScore}</span>
                             </div>
-                            ${!isLocked ? `<div class="tap-hint">[ TAP CARD TO TOGGLE PICK ]</div>` : ''}
+                            ${!isLocked ? `<div class="tap-hint">[ TAP HERE TO ${myPick ? 'SWITCH' : 'PICK'} TEAM ]</div>` : ''}
                         </div>
 
                         <div class="picks-panel">
@@ -610,6 +637,14 @@
                     `;
 
                     container.appendChild(card);
+
+                    // Explicit Event Listener Binding
+                    const ledElement = card.querySelector(`#led-card-${cardIndex}`);
+                    if (ledElement) {
+                        ledElement.addEventListener('click', () => {
+                            toggleUserPick(cardIndex, cardIdStr, awayName, homeName, isLocked);
+                        });
+                    }
                 });
 
             } catch (err) {
