@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <!-- SUPABASE CLIENT INTEGRATION -->
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
@@ -368,34 +367,13 @@
                     return;
                 }
 
-                // Map game ID to card label
-                const gameToCardMap = {};
-                slateData.forEach((row, idx) => {
-                    const gId = String(row.espn_game_id);
-                    gameToCardMap[gId] = `card-${idx + 1}`;
-                });
-
                 // 2. Fetch picks for current week
                 const { data: picksData, error: picksErr } = await supabaseClient
                     .from('picks')
-                    .select('device_uid, card_id, chosen_team')
+                    .select('device_uid, card_id, chosen_team, espn_game_id')
                     .eq('week_number', parseInt(currentWeek));
 
                 if (picksErr) throw picksErr;
-
-                // Index picks by card_id
-                const picksByCard = {};
-                (picksData || []).forEach(p => {
-                    const key = String(p.card_id);
-                    if (!picksByCard[key]) picksByCard[key] = [];
-                    
-                    const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
-                    picksByCard[key].push({
-                        device_uid: p.device_uid,
-                        user_name: foundUser ? foundUser.user_name : 'PLAYER (' + p.device_uid.slice(0, 4) + ')',
-                        chosen_team: p.chosen_team
-                    });
-                });
 
                 // 3. Fetch ESPN Scoreboard
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
@@ -409,19 +387,25 @@
                 const eventMap = new Map();
                 (espnData.events || []).forEach(e => eventMap.set(String(e.id), e));
 
-                const filteredEvents = slateData
-                    .map(row => eventMap.get(String(row.espn_game_id)))
-                    .filter(Boolean);
+                // Map slate items with games
+                const slateGames = slateData
+                    .map((row, idx) => ({
+                        slateRow: row,
+                        cardIndex: idx + 1,
+                        cardIdStr: `card-${idx + 1}`,
+                        gameEvent: eventMap.get(String(row.espn_game_id))
+                    }))
+                    .filter(item => Boolean(item.gameEvent));
 
-                if (filteredEvents.length === 0) {
+                if (slateGames.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO MATCHUPS FOUND FOR THIS SLATE</div>`;
                     return;
                 }
 
                 // STRICT SORTING ORDER: 1. Live -> 2. Upcoming/Pending -> 3. Finished
-                filteredEvents.sort((a, b) => {
-                    const stateA = String(a.status?.type?.state || '').toLowerCase();
-                    const stateB = String(b.status?.type?.state || '').toLowerCase();
+                slateGames.sort((a, b) => {
+                    const stateA = String(a.gameEvent.status?.type?.state || '').toLowerCase();
+                    const stateB = String(b.gameEvent.status?.type?.state || '').toLowerCase();
 
                     const getPriority = (state) => {
                         if (state === 'in' || state === 'in_progress') return 1;  // Live
@@ -436,20 +420,33 @@
                         return priorityA - priorityB;
                     }
 
-                    // Secondary sort: earlier kickoff date first
-                    return new Date(a.date) - new Date(b.date);
+                    return new Date(a.gameEvent.date) - new Date(b.gameEvent.date);
                 });
 
                 container.innerHTML = ''; 
                 const now = new Date();
 
-                filteredEvents.forEach((gameEvent) => {
-                    const espnGameId = String(gameEvent.id);
-                    const assignedCardKey = gameToCardMap[espnGameId];
+                slateGames.forEach(({ slateRow, cardIndex, cardIdStr, gameEvent }) => {
+                    const espnGameId = String(slateRow.espn_game_id);
 
-                    const cardPicks = picksByCard[assignedCardKey] 
-                                   || picksByCard[espnGameId] 
-                                   || [];
+                    // Robust pick matching against card_id (numeric or string), espn_game_id, or card-X format
+                    const cardPicks = (picksData || []).filter(p => {
+                        const pCardId = String(p.card_id || '');
+                        const pGameId = String(p.espn_game_id || '');
+
+                        return pCardId === cardIdStr ||
+                               pCardId === String(cardIndex) ||
+                               pCardId === String(slateRow.id) ||
+                               pGameId === espnGameId ||
+                               pCardId === espnGameId;
+                    }).map(p => {
+                        const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
+                        return {
+                            device_uid: p.device_uid,
+                            user_name: foundUser ? foundUser.user_name : 'PLAYER (' + p.device_uid.slice(0, 4) + ')',
+                            chosen_team: p.chosen_team
+                        };
+                    });
 
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
