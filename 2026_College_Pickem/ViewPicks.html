@@ -167,6 +167,22 @@
             background: var(--retro-yellow);
         }
 
+        .section-header {
+            font-family: var(--pixel-font);
+            font-size: 0.65rem;
+            color: var(--retro-blue);
+            background: #000000;
+            padding: 0.5rem;
+            border-left: 4px solid var(--retro-blue);
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+        }
+
+        .section-header.locked-header {
+            color: #94a3b8;
+            border-left-color: #64748b;
+        }
+
         .pick-card {
             background-color: var(--bg-card);
             border: 3px solid #000000;
@@ -176,6 +192,22 @@
             flex-direction: column;
             gap: 0.5rem;
             font-family: var(--pixel-font);
+            transition: border-color 0.15s ease, transform 0.05s ease;
+        }
+
+        .pick-card.open-card {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .pick-card.open-card:active {
+            transform: scale(0.98);
+        }
+
+        .pick-card.locked-card {
+            opacity: 0.8;
+            cursor: not-allowed;
+            border-color: #334155;
         }
 
         .pick-card.missing {
@@ -218,6 +250,12 @@
         .pick-choice.none {
             color: var(--retro-red);
             animation: blink 1.5s infinite;
+        }
+
+        .tap-hint {
+            font-size: 0.45rem;
+            color: var(--retro-yellow);
+            text-align: right;
         }
 
         @keyframes blink {
@@ -304,17 +342,19 @@
                 // 2. Fetch all user picks for this week and device
                 const { data: userPicks } = await supabaseClient
                     .from('picks')
-                    .select('card_id, chosen_team')
+                    .select('card_id, espn_game_id, chosen_team')
                     .eq('device_uid', deviceUID)
                     .eq('week_number', Number(currentWeek));
 
-                // Map picks by card_id ("card-1", "card-2", etc.) AND create a Set of picked team names
                 const picksMapByCardId = {};
                 const pickedTeamsSet = new Set();
 
                 (userPicks || []).forEach(p => {
                     if (p.card_id) {
                         picksMapByCardId[String(p.card_id).trim().toLowerCase()] = p.chosen_team;
+                    }
+                    if (p.espn_game_id) {
+                        picksMapByCardId[String(p.espn_game_id)] = p.chosen_team;
                     }
                     if (p.chosen_team) {
                         pickedTeamsSet.add(String(p.chosen_team).trim().toUpperCase());
@@ -349,9 +389,12 @@
                 let totalMade = 0;
                 let totalMissing = 0;
 
+                const openGames = [];
+                const lockedGames = [];
+
                 filteredEvents.forEach((gameEvent, index) => {
                     const espnGameId = String(gameEvent.id);
-                    const cardKey = `card-${index + 1}`; // matches "card-1", "card-2"
+                    const cardKey = `card-${index + 1}`;
 
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
@@ -363,10 +406,6 @@
                     const homeAbbr = (home.team.abbreviation || home.team.shortDisplayName || '').toUpperCase();
                     const awayAbbr = (away.team.abbreviation || away.team.shortDisplayName || '').toUpperCase();
 
-                    // MULTI-LEVEL MATCHING:
-                    // Level 1: Match exact ESPN Game ID
-                    // Level 2: Match "card-X" label
-                    // Level 3: Check if either team name exists in the user's saved picks
                     let userChoice = picksMapByCardId[espnGameId] || picksMapByCardId[cardKey];
 
                     if (!userChoice) {
@@ -385,35 +424,142 @@
                         totalMissing++;
                     }
 
-                    const card = document.createElement('div');
-                    card.className = `pick-card ${!hasPicked ? 'missing' : ''}`;
+                    const gameObj = {
+                        index: index + 1,
+                        espnGameId,
+                        cardKey,
+                        isLocked,
+                        homeAbbr,
+                        awayAbbr,
+                        userChoice,
+                        hasPicked
+                    };
 
-                    card.innerHTML = `
-                        <div class="card-top">
-                            <span>MATCHUP #${index + 1}</span>
-                            <span>${isLocked ? '🔒 LOCKED' : '🔓 OPEN'}</span>
-                        </div>
-
-                        <div class="matchup-title">
-                            ${awayAbbr} vs ${homeAbbr}
-                        </div>
-
-                        <div class="pick-status-box">
-                            <span class="pick-label">YOUR SELECTION:</span>
-                            <span class="pick-choice ${!hasPicked ? 'none' : ''}">
-                                ${hasPicked ? userChoice : '⚠ NO PICK MADE'}
-                            </span>
-                        </div>
-                    `;
-
-                    container.appendChild(card);
+                    if (isLocked) {
+                        lockedGames.push(gameObj);
+                    } else {
+                        openGames.push(gameObj);
+                    }
                 });
+
+                // Render Open Games
+                if (openGames.length > 0) {
+                    const openHeader = document.createElement('div');
+                    openHeader.className = 'section-header';
+                    openHeader.innerText = `🔓 OPEN FOR PICKS (${openGames.length})`;
+                    container.appendChild(openHeader);
+
+                    openGames.forEach(game => {
+                        container.appendChild(createGameCard(game));
+                    });
+                }
+
+                // Render Locked Games
+                if (lockedGames.length > 0) {
+                    const lockedHeader = document.createElement('div');
+                    lockedHeader.className = 'section-header locked-header';
+                    lockedHeader.innerText = `🔒 LOCKED / IN PROGRESS (${lockedGames.length})`;
+                    container.appendChild(lockedHeader);
+
+                    lockedGames.forEach(game => {
+                        container.appendChild(createGameCard(game));
+                    });
+                }
 
                 updateStats(totalMade, totalMissing, filteredEvents.length);
 
             } catch (err) {
                 console.error("Error loading user picks sheet:", err);
                 container.innerHTML = `<div class="empty-slate">ERROR LOADING PICKS</div>`;
+            }
+        }
+
+        function createGameCard(game) {
+            const card = document.createElement('div');
+            card.id = `card-elem-${game.cardKey}`;
+            card.className = `pick-card ${game.isLocked ? 'locked-card' : 'open-card'} ${!game.hasPicked ? 'missing' : ''}`;
+
+            card.innerHTML = `
+                <div class="card-top">
+                    <span>MATCHUP #${game.index}</span>
+                    <span>${game.isLocked ? '🔒 LOCKED' : '🔓 TAP TO TOGGLE'}</span>
+                </div>
+
+                <div class="matchup-title">
+                    ${game.awayAbbr} vs ${game.homeAbbr}
+                </div>
+
+                <div class="pick-status-box">
+                    <span class="pick-label">SELECTION:</span>
+                    <span class="pick-choice ${!game.hasPicked ? 'none' : ''}" id="choice-text-${game.cardKey}">
+                        ${game.hasPicked ? game.userChoice : '⚠ NO PICK MADE'}
+                    </span>
+                </div>
+                ${!game.isLocked ? '<div class="tap-hint">Tap card to change pick</div>' : ''}
+            `;
+
+            if (!game.isLocked) {
+                card.onclick = () => togglePick(game);
+            }
+
+            return card;
+        }
+
+        async function togglePick(game) {
+            let nextPick = '';
+
+            // Toggle logic: no pick -> away -> home -> away
+            if (!game.userChoice) {
+                nextPick = game.awayAbbr;
+            } else if (game.userChoice === game.awayAbbr) {
+                nextPick = game.homeAbbr;
+            } else {
+                nextPick = game.awayAbbr;
+            }
+
+            const wasPickedBefore = game.hasPicked;
+            game.userChoice = nextPick;
+            game.hasPicked = true;
+
+            // Update DOM element directly
+            const cardElem = document.getElementById(`card-elem-${game.cardKey}`);
+            const choiceTextElem = document.getElementById(`choice-text-${game.cardKey}`);
+
+            if (cardElem && choiceTextElem) {
+                cardElem.classList.remove('missing');
+                choiceTextElem.classList.remove('none');
+                choiceTextElem.innerText = nextPick;
+            }
+
+            // Update stats immediately
+            if (!wasPickedBefore) {
+                const madeElem = document.getElementById('stat-made');
+                const missingElem = document.getElementById('stat-missing');
+                madeElem.innerText = Number(madeElem.innerText) + 1;
+                missingElem.innerText = Math.max(0, Number(missingElem.innerText) - 1);
+            }
+
+            // Save locally
+            localStorage.setItem(`pick_week${currentWeek}_${game.cardKey}`, nextPick);
+
+            // Persist to Supabase
+            try {
+                const { error } = await supabaseClient
+                    .from('picks')
+                    .upsert({
+                        device_uid: deviceUID,
+                        week_number: Number(currentWeek),
+                        card_id: game.cardKey,
+                        espn_game_id: game.espnGameId,
+                        chosen_team: nextPick,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'device_uid,week_number,card_id' });
+
+                if (error) {
+                    console.error("Error upserting pick to Supabase:", error);
+                }
+            } catch (err) {
+                console.error("Failed to sync pick to database:", err);
             }
         }
 
