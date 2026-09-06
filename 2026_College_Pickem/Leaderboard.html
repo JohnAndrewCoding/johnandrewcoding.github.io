@@ -115,6 +115,18 @@
             justify-content: space-between;
             align-items: center;
             font-family: var(--pixel-font);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .leaderboard-card:active {
+            transform: scale(0.98);
+        }
+
+        @media (hover: hover) {
+            .leaderboard-card:hover {
+                border-color: var(--retro-yellow);
+            }
         }
 
         .leaderboard-card.rank-1 {
@@ -173,6 +185,153 @@
             background: var(--bg-card);
             border: 3px solid #000000;
         }
+
+        /* MODAL STYLES */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background-color: var(--bg-card);
+            border: 4px solid var(--retro-yellow);
+            box-shadow: 6px 6px 0px #000000;
+            width: 100%;
+            max-width: 440px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            font-family: var(--pixel-font);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px dashed #475569;
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-title {
+            font-size: 0.8rem;
+            color: var(--retro-yellow);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+        }
+
+        .close-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 0.2rem 0.5rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+        }
+
+        .modal-week-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            background: #000000;
+            padding: 0.4rem;
+            border: 2px solid #334155;
+        }
+
+        .modal-week-btn {
+            background: var(--bg-card);
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 0.3rem 0.5rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+        }
+
+        .modal-week-display {
+            font-size: 0.65rem;
+            color: var(--retro-blue);
+        }
+
+        .modal-picks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow-y: auto;
+            max-height: 50vh;
+            padding-right: 0.25rem;
+        }
+
+        .modal-pick-card {
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            font-size: 0.55rem;
+        }
+
+        .modal-pick-card.correct {
+            border-color: var(--retro-green);
+        }
+
+        .modal-pick-card.incorrect {
+            border-color: var(--retro-red);
+        }
+
+        .modal-matchup-row {
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+        }
+
+        .modal-pick-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px dashed #334155;
+            padding-top: 0.3rem;
+        }
+
+        .result-badge {
+            padding: 0.15rem 0.3rem;
+            border-radius: 2px;
+        }
+
+        .result-badge.correct {
+            color: var(--retro-green);
+        }
+
+        .result-badge.incorrect {
+            color: var(--retro-red);
+        }
+
+        .result-badge.pending {
+            color: var(--retro-yellow);
+        }
     </style>
 </head>
 <body>
@@ -191,7 +350,36 @@
         <div class="empty-slate">CALCULATING STANDINGS...</div>
     </div>
 
+    <!-- USER BREAKDOWN MODAL -->
+    <div class="modal-overlay" id="user-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-user-name">COACH BREAKDOWN</span>
+                <button class="close-btn" onclick="closeModal()">X</button>
+            </div>
+
+            <div class="modal-week-controls">
+                <button class="modal-week-btn" onclick="changeModalWeek(-1)">&lt; PREV</button>
+                <span class="modal-week-display" id="modal-week-display">WEEK 01</span>
+                <button class="modal-week-btn" onclick="changeModalWeek(1)">NEXT &gt;</button>
+            </div>
+
+            <div class="modal-picks-list" id="modal-picks-list">
+                <!-- User picks render here -->
+            </div>
+        </div>
+    </div>
+
     <script>
+        let globalProfiles = [];
+        let globalSlates = [];
+        let globalPicks = [];
+        let globalGamesCache = {}; // week_number -> raw ESPN event data
+        let globalSlateMap = {};
+
+        let activeUserUid = null;
+        let activeModalWeek = 1;
+
         async function loadLeaderboard() {
             const container = document.getElementById('leaderboard-container');
 
@@ -200,29 +388,27 @@
                 const { data: profiles, error: profErr } = await supabaseClient
                     .from('profiles')
                     .select('device_uid, coach_name, player_name');
-
                 if (profErr) throw profErr;
+                globalProfiles = profiles || [];
 
-                // 2. Fetch Weekly Slates (ordered by id to preserve row mapping)
+                // 2. Fetch Weekly Slates
                 const { data: slates, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, week_number, espn_game_id')
                     .order('id', { ascending: true });
-
                 if (slateErr) throw slateErr;
+                globalSlates = slates || [];
 
                 // 3. Fetch Picks
                 const { data: picks, error: pickErr } = await supabaseClient
                     .from('picks')
                     .select('device_uid, week_number, card_id, chosen_team');
-
                 if (pickErr) throw pickErr;
+                globalPicks = picks || [];
 
-                // 4. Map Slate games to card IDs (e.g., week 1, 1st game -> card-1)
-                const slateMap = {}; // key: "week_cardId" or "week_gameId" -> value: espn_game_id
+                // 4. Map Slate games to card IDs
                 const weekRowCounters = {};
-
-                (slates || []).forEach(s => {
+                globalSlates.forEach(s => {
                     const w = s.week_number;
                     const gameId = String(s.espn_game_id);
 
@@ -230,20 +416,19 @@
                     weekRowCounters[w] += 1;
 
                     const cardKey = `card-${weekRowCounters[w]}`;
-
-                    // Map by card_id name and game ID
-                    slateMap[`${w}_${cardKey}`] = gameId;
-                    slateMap[`${w}_${gameId}`] = gameId;
+                    globalSlateMap[`${w}_${cardKey}`] = gameId;
+                    globalSlateMap[`${w}_${gameId}`] = gameId;
                 });
 
                 // 5. Fetch ESPN results for active weeks
-                const weeks = [...new Set((slates || []).map(s => s.week_number))];
-                const completedGames = new Map(); // espn_game_id -> Set of winning team identifiers
+                const weeks = [...new Set(globalSlates.map(s => s.week_number))];
+                const completedGames = new Map();
 
                 for (const week of weeks) {
                     try {
                         const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${week}`);
                         const espnData = await res.json();
+                        globalGamesCache[week] = espnData.events || [];
 
                         (espnData.events || []).forEach(event => {
                             if (event.status.type.state === 'post') {
@@ -275,18 +460,18 @@
                 }
 
                 // 6. Calculate Win/Loss records per user
-                const userScores = (profiles || []).map(p => {
+                const userScores = globalProfiles.map(p => {
                     const uid = p.device_uid;
                     const userName = p.coach_name || p.player_name || 'ANALYST (' + uid.slice(0, 4) + ')';
                     
-                    const userPicks = (picks || []).filter(pick => pick.device_uid === uid);
+                    const userPicks = globalPicks.filter(pick => pick.device_uid === uid);
 
                     let wins = 0;
                     let losses = 0;
 
                     userPicks.forEach(pick => {
                         const lookupKey = `${pick.week_number}_${pick.card_id}`;
-                        const gameId = slateMap[lookupKey] || String(pick.card_id);
+                        const gameId = globalSlateMap[lookupKey] || String(pick.card_id);
 
                         if (completedGames.has(gameId)) {
                             const winningNames = completedGames.get(gameId);
@@ -313,7 +498,6 @@
                     };
                 });
 
-                // Sort by Win Percentage descending, then by total wins
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
                 if (userScores.length === 0) {
@@ -321,12 +505,13 @@
                     return;
                 }
 
-                // 7. Render Standings Cards
+                // 7. Render Standings Cards with click listener
                 container.innerHTML = '';
                 userScores.forEach((user, idx) => {
                     const rank = idx + 1;
                     const card = document.createElement('div');
                     card.className = `leaderboard-card ${rank === 1 ? 'rank-1' : ''}`;
+                    card.onclick = () => openUserModal(user.device_uid, user.userName);
 
                     card.innerHTML = `
                         <div class="rank-badge">#${rank}</div>
@@ -347,6 +532,112 @@
                 console.error("Error generating leaderboard:", err);
                 container.innerHTML = `<div class="empty-slate">ERROR LOADING LEADERBOARD</div>`;
             }
+        }
+
+        function openUserModal(uid, userName) {
+            activeUserUid = uid;
+            activeModalWeek = 1;
+            document.getElementById('modal-user-name').innerText = userName.toUpperCase();
+            document.getElementById('user-modal').classList.add('active');
+            renderModalWeek();
+        }
+
+        function closeModal() {
+            document.getElementById('user-modal').classList.remove('active');
+        }
+
+        function changeModalWeek(dir) {
+            activeModalWeek += dir;
+            if (activeModalWeek < 1) activeModalWeek = 1;
+            renderModalWeek();
+        }
+
+        function renderModalWeek() {
+            document.getElementById('modal-week-display').innerText = `WEEK ${String(activeModalWeek).padStart(2, '0')}`;
+            const container = document.getElementById('modal-picks-list');
+            container.innerHTML = '';
+
+            const weekSlates = globalSlates.filter(s => s.week_number === activeModalWeek);
+            if (!weekSlates || weekSlates.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#64748b; padding:1rem;">NO SLATE FOR WEEK ${activeModalWeek}</div>`;
+                return;
+            }
+
+            const weekEvents = globalGamesCache[activeModalWeek] || [];
+            const eventMap = new Map();
+            weekEvents.forEach(e => eventMap.set(String(e.id), e));
+
+            const weekPicks = globalPicks.filter(p => p.device_uid === activeUserUid && p.week_number === activeModalWeek);
+
+            weekSlates.forEach((slate, idx) => {
+                const gameId = String(slate.espn_game_id);
+                const gameEvent = eventMap.get(gameId);
+                const cardKey = `card-${idx + 1}`;
+
+                const userPick = weekPicks.find(p => String(p.card_id) === cardKey || String(p.card_id) === gameId);
+                const chosenTeam = userPick ? userPick.chosen_team : 'NO PICK';
+
+                if (!gameEvent) {
+                    container.innerHTML += `
+                        <div class="modal-pick-card">
+                            <div class="modal-matchup-row"><span>MATCHUP ${idx+1}</span><span>N/A</span></div>
+                            <div class="modal-pick-result"><span>PICK: ${chosenTeam}</span><span class="result-badge pending">UNSCHEDULED</span></div>
+                        </div>`;
+                    return;
+                }
+
+                const comp = gameEvent.competitions[0];
+                const home = comp.competitors.find(c => c.homeAway === 'home');
+                const away = comp.competitors.find(c => c.homeAway === 'away');
+
+                const homeName = home.team.abbreviation || home.team.shortDisplayName;
+                const awayName = away.team.abbreviation || away.team.shortDisplayName;
+                const homeScore = home.score || '0';
+                const awayScore = away.score || '0';
+
+                const state = gameEvent.status.type.state;
+                let statusClass = '';
+                let resultText = '';
+
+                if (state === 'post') {
+                    const homeInt = parseInt(homeScore);
+                    const awayInt = parseInt(awayScore);
+                    let winningTeam = null;
+
+                    if (homeInt > awayInt) winningTeam = homeName;
+                    else if (awayInt > homeInt) winningTeam = awayName;
+
+                    const chosenUpper = (chosenTeam || '').trim().toUpperCase();
+                    const winUpper = (winningTeam || '').trim().toUpperCase();
+
+                    if (userPick && chosenUpper === winUpper) {
+                        statusClass = 'correct';
+                        resultText = '✓ CORRECT';
+                    } else {
+                        statusClass = 'incorrect';
+                        resultText = '✗ WRONG';
+                    }
+                } else if (state === 'in') {
+                    resultText = 'LIVE GAME';
+                } else {
+                    resultText = 'PENDING';
+                }
+
+                const cardEl = document.createElement('div');
+                cardEl.className = `modal-pick-card ${statusClass}`;
+                cardEl.innerHTML = `
+                    <div class="modal-matchup-row">
+                        <span>${awayName} ${awayScore} @ ${homeName} ${homeScore}</span>
+                        <span style="color:var(--retro-yellow);">${gameEvent.status.type.shortDetail}</span>
+                    </div>
+                    <div class="modal-pick-result">
+                        <span>PICK: <strong style="color:#fff;">${chosenTeam}</strong></span>
+                        <span class="result-badge ${statusClass || 'pending'}">${resultText}</span>
+                    </div>
+                `;
+
+                container.appendChild(cardEl);
+            });
         }
 
         window.addEventListener('DOMContentLoaded', loadLeaderboard);
