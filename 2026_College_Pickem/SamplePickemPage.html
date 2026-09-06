@@ -524,19 +524,11 @@
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
                     .select('espn_game_id')
-                    .eq('week_number', currentWeek)
-                    .order('id', { ascending: true });
+                    .eq('week_number', currentWeek);
 
-                if (!slateData || slateData.length === 0) {
-                    progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
-                    deck.innerHTML = '';
-                    return;
-                }
+                const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
 
-                const allowedIds = new Set(slateData.map(s => String(s.espn_game_id)));
-
-                // Query ESPN without groups=80 constraint
-                const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?week=${currentWeek}`);
+                const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const data = await response.json();
                 
                 if (!data.events || data.events.length === 0) {
@@ -545,17 +537,10 @@
                     return;
                 }
 
-                const eventMap = new Map();
-                (data.events || []).forEach(evt => {
-                    eventMap.set(String(evt.id), evt);
-                });
-
-                gamesData = slateData
-                    .map(slateItem => eventMap.get(String(slateItem.espn_game_id)))
-                    .filter(Boolean);
+                gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
 
                 if (gamesData.length === 0) {
-                    progressDisplay.innerText = "GAMES COULD NOT BE RESOLVED";
+                    progressDisplay.innerText = "NO GAMES SET BY COMMISH YET";
                     deck.innerHTML = '';
                     return;
                 }
