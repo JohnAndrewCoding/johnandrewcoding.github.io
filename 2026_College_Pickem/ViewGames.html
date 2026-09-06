@@ -353,7 +353,7 @@
             const container = document.getElementById('games-container');
             
             try {
-                // 1. Fetch weekly slates ordered by ID so slot indices match card-1, card-2...
+                // 1. Fetch weekly slates ordered by ID
                 const { data: slateData, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, espn_game_id')
@@ -367,12 +367,10 @@
                     return;
                 }
 
-                // Map game ID to card label (e.g. 401856766 -> "card-1") based on slate row position
+                // Map game ID to card label
                 const gameToCardMap = {};
-                const allowedIds = new Set();
                 slateData.forEach((row, idx) => {
                     const gId = String(row.espn_game_id);
-                    allowedIds.add(gId);
                     gameToCardMap[gId] = `card-${idx + 1}`;
                 });
 
@@ -384,7 +382,7 @@
 
                 if (picksErr) throw picksErr;
 
-                // Index picks by card_id (e.g., "card-1")
+                // Index picks by card_id
                 const picksByCard = {};
                 (picksData || []).forEach(p => {
                     const key = String(p.card_id);
@@ -407,7 +405,6 @@
                     return;
                 }
 
-                // Preserve the exact order set by commissioner slate
                 const eventMap = new Map();
                 (espnData.events || []).forEach(e => eventMap.set(String(e.id), e));
 
@@ -420,14 +417,35 @@
                     return;
                 }
 
+                // STRICT SORTING ORDER: 1. Live -> 2. Upcoming/Pending -> 3. Finished
+                filteredEvents.sort((a, b) => {
+                    const stateA = String(a.status?.type?.state || '').toLowerCase();
+                    const stateB = String(b.status?.type?.state || '').toLowerCase();
+
+                    const getPriority = (state) => {
+                        if (state === 'in' || state === 'in_progress') return 1;  // Live
+                        if (state === 'post' || state === 'final') return 3;     // Finished
+                        return 2;                                                // Pending / Upcoming
+                    };
+
+                    const priorityA = getPriority(stateA);
+                    const priorityB = getPriority(stateB);
+
+                    if (priorityA !== priorityB) {
+                        return priorityA - priorityB;
+                    }
+
+                    // Secondary sort: earlier kickoff date first
+                    return new Date(a.date) - new Date(b.date);
+                });
+
                 container.innerHTML = ''; 
                 const now = new Date();
 
                 filteredEvents.forEach((gameEvent) => {
                     const espnGameId = String(gameEvent.id);
-                    const assignedCardKey = gameToCardMap[espnGameId]; // e.g. "card-1"
+                    const assignedCardKey = gameToCardMap[espnGameId];
 
-                    // Lookup picks for this specific game
                     const cardPicks = picksByCard[assignedCardKey] 
                                    || picksByCard[espnGameId] 
                                    || [];
