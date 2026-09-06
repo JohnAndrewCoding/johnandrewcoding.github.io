@@ -353,33 +353,38 @@
             const container = document.getElementById('games-container');
             
             try {
-                // 1. Fetch weekly slates (including optional slot_index if used in pick page)
-                const { data: slateData } = await supabaseClient
+                // 1. Fetch weekly slates ordered by ID so slot indices match card-1, card-2...
+                const { data: slateData, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
-                    .select('espn_game_id, slot_index')
-                    .eq('week_number', currentWeek);
+                    .select('id, espn_game_id')
+                    .eq('week_number', parseInt(currentWeek))
+                    .order('id', { ascending: true });
+
+                if (slateErr) throw slateErr;
 
                 if (!slateData || slateData.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
                     return;
                 }
 
-                // Create lookups to map game ID <-> slot_index
-                const allowedIds = new Set(slateData.map(s => String(s.espn_game_id)));
-                const gameToSlotMap = {};
-                slateData.forEach((s, idx) => {
-                    const gameId = String(s.espn_game_id);
-                    // Use database slot_index if present, otherwise fallback to 1-based array index
-                    const slot = s.slot_index !== null && s.slot_index !== undefined ? s.slot_index : (idx + 1);
-                    gameToSlotMap[gameId] = slot;
+                // Map game ID to card label (e.g. 401856766 -> "card-1") based on slate row position
+                const gameToCardMap = {};
+                const allowedIds = new Set();
+                slateData.forEach((row, idx) => {
+                    const gId = String(row.espn_game_id);
+                    allowedIds.add(gId);
+                    gameToCardMap[gId] = `card-${idx + 1}`;
                 });
 
                 // 2. Fetch picks for current week
-                const { data: picksData } = await supabaseClient
+                const { data: picksData, error: picksErr } = await supabaseClient
                     .from('picks')
                     .select('device_uid, card_id, chosen_team')
-                    .eq('week_number', currentWeek);
+                    .eq('week_number', parseInt(currentWeek));
 
+                if (picksErr) throw picksErr;
+
+                // Index picks by card_id (e.g., "card-1")
                 const picksByCard = {};
                 (picksData || []).forEach(p => {
                     const key = String(p.card_id);
@@ -393,7 +398,7 @@
                     });
                 });
 
-                // 3. Fetch scoreboard data from ESPN
+                // 3. Fetch ESPN Scoreboard
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
 
@@ -402,30 +407,33 @@
                     return;
                 }
 
-                const filteredEvents = espnData.events.filter(e => allowedIds.has(String(e.id)));
+                // Preserve the exact order set by commissioner slate
+                const eventMap = new Map();
+                (espnData.events || []).forEach(e => eventMap.set(String(e.id), e));
+
+                const filteredEvents = slateData
+                    .map(row => eventMap.get(String(row.espn_game_id)))
+                    .filter(Boolean);
 
                 if (filteredEvents.length === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS SET BY COMMISH YET</div>`;
+                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS FOUND FOR THIS SLATE</div>`;
                     return;
                 }
 
                 container.innerHTML = ''; 
-
                 const now = new Date();
 
                 filteredEvents.forEach((gameEvent) => {
                     const espnGameId = String(gameEvent.id);
-                    const slotIndex = gameToSlotMap[espnGameId];
+                    const assignedCardKey = gameToCardMap[espnGameId]; // e.g. "card-1"
 
-                    // Look up picks using all possible card_id formats saved in the DB
-                    const cardPicks = picksByCard[espnGameId] 
-                                   || picksByCard[`card-${slotIndex}`] 
-                                   || picksByCard[String(slotIndex)] 
+                    // Lookup picks for this specific game
+                    const cardPicks = picksByCard[assignedCardKey] 
+                                   || picksByCard[espnGameId] 
                                    || [];
 
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
-                    
                     const isLocked = now >= gameDate;
 
                     const home = competition.competitors.find(c => c.homeAway === 'home');
