@@ -482,7 +482,7 @@
         let startY = 0;
         let isDragging = false;
         let toastTimeout = null; 
-        const BUFFER_MS = 5 * 60 * 1000; // 5 minute buffer in milliseconds
+        const BUFFER_MS = 5 * 60 * 1000;
 
         const helmetHTML = (color) => `
             <div class="helmet-icon" style="--team-color: #${color};">
@@ -496,7 +496,6 @@
         function isGameLocked(cardElement) {
             const kickoffStr = cardElement.getAttribute('data-kickoff');
             if (!kickoffStr) return false;
-            // Allow 5 minutes buffer after kickoff
             return Date.now() >= (new Date(kickoffStr).getTime() + BUFFER_MS);
         }
 
@@ -539,17 +538,10 @@
                     return;
                 }
 
-                // Filter games that are set by commish AND haven't passed kickoff + 5 min buffer
-                const now = Date.now();
-                gamesData = data.events.filter(gameEvent => {
-                    const isAllowed = allowedIds.has(String(gameEvent.id));
-                    const kickoffTime = new Date(gameEvent.date).getTime();
-                    const hasStarted = now >= (kickoffTime + BUFFER_MS);
-                    return isAllowed && !hasStarted;
-                });
+                gamesData = data.events.filter(gameEvent => allowedIds.has(String(gameEvent.id)));
 
                 if (gamesData.length === 0) {
-                    progressDisplay.innerText = "NO UPCOMING GAMES TO PICK";
+                    progressDisplay.innerText = "NO MATCHUPS CONFIGURED";
                     deck.innerHTML = '';
                     return;
                 }
@@ -559,8 +551,8 @@
 
                 gamesData.forEach((gameEvent, index) => {
                     const matchupNum = index + 1;
-                    const cardId = `card-${matchupNum}`;
                     const gameId = String(gameEvent.id);
+                    const domCardId = `card-${matchupNum}`;
                     const competition = gameEvent.competitions[0];
                     
                     const homeTeamData = competition.competitors.find(c => c.homeAway === 'home');
@@ -605,11 +597,9 @@
 
                     const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
 
-                    // Check both cardId and espn_game_id for pre-existing picks
                     const currentWeekPicks = savedPicks[`week-${currentWeek}`] || {};
-                    const existingPick = currentWeekPicks[cardId] || currentWeekPicks[gameId] || null;
+                    const existingPick = currentWeekPicks[gameId] || currentWeekPicks[domCardId] || null;
 
-                    // Flexible match for team pick selection UI (matches code or full display name)
                     const isHomeSelected = existingPick && (
                         existingPick.trim().toUpperCase() === home.code.trim().toUpperCase() || 
                         existingPick.trim().toUpperCase() === home.displayName.trim().toUpperCase()
@@ -632,7 +622,8 @@
 
                     const card = document.createElement('div');
                     card.className = `matchup-card ${isLocked ? 'is-locked' : ''}`;
-                    card.id = cardId;
+                    card.id = domCardId;
+                    card.setAttribute('data-espn-id', gameId);
                     card.setAttribute('data-home', home.code);
                     card.setAttribute('data-home-display', home.displayName);
                     card.setAttribute('data-away', away.code);
@@ -653,7 +644,7 @@
                         <div class="teams-wrapper">
                             <div class="team-display-block">
                                 ${helmetHTML(home.color)}
-                                <button class="team-btn" id="${cardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${cardId}', 'home')">
+                                <button class="team-btn" id="${domCardId}-btn-home" ${disabledAttr} style="${homePickedStyle}" onclick="handleBtnPick('${domCardId}', 'home')">
                                     ${home.displayName} ${isHomeSelected ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${home.record}</span>
@@ -661,7 +652,7 @@
                             <div class="vs-divider">VS</div>
                             <div class="team-display-block">
                                 ${helmetHTML(away.color)}
-                                <button class="team-btn" id="${cardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${cardId}', 'away')">
+                                <button class="team-btn" id="${domCardId}-btn-away" ${disabledAttr} style="${awayPickedStyle}" onclick="handleBtnPick('${domCardId}', 'away')">
                                     ${away.displayName} ${isAwaySelected ? '✓' : ''}
                                 </button>
                                 <span class="team-record">REC: ${away.record}</span>
@@ -782,9 +773,9 @@
             });
         }
 
-        function handleBtnPick(cardId, pickType) {
-            const card = document.getElementById(cardId);
-            const cardIdNum = parseInt(cardId.split('-')[1]);
+        function handleBtnPick(domCardId, pickType) {
+            const card = document.getElementById(domCardId);
+            const cardIdNum = parseInt(domCardId.split('-')[1]);
             
             if (cardIdNum !== currentCardIndex) return;
 
@@ -804,17 +795,18 @@
                 return;
             }
 
-            const cardId = cardElement.id;
+            const domCardId = cardElement.id;
+            const espnGameId = cardElement.getAttribute('data-espn-id');
             const chosenCode = cardElement.getAttribute(`data-${pickType}`);
             const chosenDisplay = cardElement.getAttribute(`data-${pickType}-display`);
             
             if (!savedPicks[`week-${currentWeek}`]) {
                 savedPicks[`week-${currentWeek}`] = {};
             }
-            savedPicks[`week-${currentWeek}`][cardId] = chosenCode;
+            savedPicks[`week-${currentWeek}`][espnGameId] = chosenCode;
 
-            const homeBtn = document.getElementById(`${cardId}-btn-home`);
-            const awayBtn = document.getElementById(`${cardId}-btn-away`);
+            const homeBtn = document.getElementById(`${domCardId}-btn-home`);
+            const awayBtn = document.getElementById(`${domCardId}-btn-away`);
 
             homeBtn.style = pickType === 'home' ? 'border-color: var(--retro-yellow); color: var(--retro-yellow); background: #000000;' : '';
             homeBtn.innerHTML = `${cardElement.getAttribute('data-home-display')} ${pickType === 'home' ? '✓' : ''}`;
@@ -842,7 +834,7 @@
                 await supabaseClient.from('picks').upsert({
                     device_uid: deviceUID,
                     week_number: currentWeek,
-                    card_id: cardId,
+                    card_id: espnGameId,
                     chosen_team: chosenCode
                 }, { onConflict: 'device_uid,week_number,card_id' });
             } catch (err) {
@@ -903,10 +895,11 @@
                 return;
             }
 
+            const espnGameId = targetCard.getAttribute('data-espn-id');
             currentCardIndex = targetCardIndex;
 
             if (savedPicks[`week-${currentWeek}`]) {
-                delete savedPicks[`week-${currentWeek}`][targetCardId];
+                delete savedPicks[`week-${currentWeek}`][espnGameId];
             }
 
             const homeBtn = document.getElementById(`${targetCardId}-btn-home`);
@@ -936,7 +929,7 @@
                 await supabaseClient.from('picks').delete().match({
                     device_uid: deviceUID,
                     week_number: currentWeek,
-                    card_id: targetCardId
+                    card_id: espnGameId
                 });
             } catch (err) {
                 console.error("Database delete error:", err);
