@@ -464,7 +464,7 @@
 
     <div class="bottom-controls-wrapper">
         <div class="retro-toast" id="toast">LOCKED</div>
-        <button class="action-btn" id="undo-btn" disabled ontouchend="undoLastPick(); event.preventDefault();" onclick="undoLastPick()">[ ] UNDO PICK</button>
+        <button class="action-btn" id="undo-btn" disabled onclick="undoLastPick()">[ ] UNDO PICK</button>
     </div>
     
     <div class="mobile-hint">
@@ -496,7 +496,9 @@
         function isGameLocked(cardElement) {
             const kickoffStr = cardElement.getAttribute('data-kickoff');
             if (!kickoffStr) return false;
-            return Date.now() >= (new Date(kickoffStr).getTime() + BUFFER_MS);
+            const kickoffTime = new Date(kickoffStr).getTime();
+            if (isNaN(kickoffTime)) return false;
+            return Date.now() >= (kickoffTime + BUFFER_MS);
         }
 
         async function loadWeekGames() {
@@ -516,11 +518,23 @@
                     .eq('week_number', currentWeek);
 
                 savedPicks[`week-${currentWeek}`] = {};
-                if (databasePicks) {
+
+                // 1. Populate memory state from Supabase
+                if (databasePicks && databasePicks.length > 0) {
                     databasePicks.forEach(p => {
                         savedPicks[`week-${currentWeek}`][p.card_id] = p.chosen_team;
                     });
                 }
+
+                // 2. LocalStorage Fallback so picks are never lost locally
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith(`pick_w${currentWeek}_`)) {
+                        const gameId = key.replace(`pick_w${currentWeek}_`, '');
+                        if (!savedPicks[`week-${currentWeek}`][gameId]) {
+                            savedPicks[`week-${currentWeek}`][gameId] = localStorage.getItem(key);
+                        }
+                    }
+                });
 
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
@@ -805,6 +819,9 @@
             }
             savedPicks[`week-${currentWeek}`][espnGameId] = chosenCode;
 
+            // Save to LocalStorage immediately as a reliable fallback
+            localStorage.setItem(`pick_w${currentWeek}_${espnGameId}`, chosenCode);
+
             const homeBtn = document.getElementById(`${domCardId}-btn-home`);
             const awayBtn = document.getElementById(`${domCardId}-btn-away`);
 
@@ -830,13 +847,19 @@
             renderProgressUpdates();
             updateBottomButtonStates();
 
+            // Save to Supabase with full payload matching database columns
             try {
-                await supabaseClient.from('picks').upsert({
+                const { error } = await supabaseClient.from('picks').upsert({
                     device_uid: deviceUID,
                     week_number: currentWeek,
                     card_id: espnGameId,
+                    espn_game_id: espnGameId,
                     chosen_team: chosenCode
                 }, { onConflict: 'device_uid,week_number,card_id' });
+
+                if (error) {
+                    console.error("Supabase Save Error Details:", error);
+                }
             } catch (err) {
                 console.error("Database save error:", err);
             }
@@ -901,6 +924,7 @@
             if (savedPicks[`week-${currentWeek}`]) {
                 delete savedPicks[`week-${currentWeek}`][espnGameId];
             }
+            localStorage.removeItem(`pick_w${currentWeek}_${espnGameId}`);
 
             const homeBtn = document.getElementById(`${targetCardId}-btn-home`);
             const awayBtn = document.getElementById(`${targetCardId}-btn-away`);
