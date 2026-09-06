@@ -2,18 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Admin Picks Master Sheet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Master Override</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
+    <!-- SUPABASE CLIENT INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const deviceUID = localStorage.getItem('my_device_uid');
+        if (!deviceUID) {
+            window.location.href = "index.html";
+        }
     </script>
 
     <style>
@@ -33,15 +39,12 @@
             padding: 0;
         }
 
-        html, body {
+        body {
             width: 100%;
             background-color: var(--bg-canvas);
             color: #ffffff;
             font-family: Arial, sans-serif;
             min-height: 100vh;
-        }
-
-        body {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -52,7 +55,7 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            max-width: 960px;
+            max-width: 1200px;
             margin-bottom: 0.75rem;
             gap: 0.5rem;
         }
@@ -61,32 +64,30 @@
             background: #000000;
             color: #ffffff;
             border: 2px solid #ffffff;
-            padding: 0.4rem 0.5rem;
+            padding: 0.5rem;
             text-decoration: none;
             font-family: var(--pixel-font);
-            font-size: 0.55rem;
+            font-size: 0.6rem;
             box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
             text-align: center;
             flex: 1;
         }
 
-        @media (hover: hover) {
-            .nav-link-btn:hover {
-                border-color: var(--retro-yellow);
-                color: var(--retro-yellow);
-            }
+        .nav-link-btn:hover {
+            border-color: var(--retro-yellow);
+            color: var(--retro-yellow);
         }
 
         header {
             text-align: center;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
             width: 100%;
-            max-width: 960px;
+            max-width: 1200px;
         }
 
         .title {
             font-family: var(--pixel-font);
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: var(--retro-yellow);
             text-shadow: 3px 3px 0px #000;
             margin-bottom: 0.5rem;
@@ -95,162 +96,191 @@
         .week-controls {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             width: 100%;
-            max-width: 960px;
-            margin-bottom: 0.75rem;
+            max-width: 1200px;
+            margin-bottom: 1rem;
+            background: #000000;
+            padding: 0.5rem;
+            border: 2px solid #334155;
             font-family: var(--pixel-font);
-            font-size: 0.75rem;
         }
 
         .week-btn {
-            background: #000000;
+            background: var(--bg-card);
             color: #ffffff;
-            border: 3px solid #ffffff;
-            padding: 0.5rem 0.75rem;
+            border: 1px solid #ffffff;
+            padding: 0.4rem 0.8rem;
             cursor: pointer;
             font-family: var(--pixel-font);
-            font-size: 0.65rem;
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
-        }
-
-        @media (hover: hover) {
-            .week-btn:hover {
-                border-color: var(--retro-yellow);
-                color: var(--retro-yellow);
-            }
+            font-size: 0.6rem;
         }
 
         .week-display {
-            color: var(--retro-yellow);
-            align-self: center;
-            text-shadow: 2px 2px 0px #000;
-        }
-
-        .admin-container {
-            width: 100%;
-            max-width: 960px;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .stats-bar {
-            display: flex;
-            gap: 1rem;
-            background: var(--bg-card);
-            border: 3px solid #000000;
-            padding: 0.75rem;
-            font-family: var(--pixel-font);
-            font-size: 0.6rem;
-            justify-content: space-around;
-            box-shadow: 4px 4px 0px #000000;
-        }
-
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .stat-val {
-            color: var(--retro-yellow);
             font-size: 0.8rem;
+            color: var(--retro-yellow);
         }
 
-        .matrix-card {
+        /* STATS BAR */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 2px solid #000000;
+            padding: 0.6rem;
+            text-align: center;
+            font-family: var(--pixel-font);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .stat-label {
+            font-size: 0.45rem;
+            color: #94a3b8;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-value {
+            font-size: 0.9rem;
+            color: var(--retro-yellow);
+        }
+
+        /* MATRIX CONTAINER & STICKY SCROLLING */
+        .matrix-wrapper {
+            width: 100%;
+            max-width: 1200px;
             background-color: var(--bg-card);
             border: 4px solid #000000;
             box-shadow: 4px 4px 0px #000000;
-            padding: 0.75rem;
-            overflow-x: auto;
+            padding: 1rem;
         }
 
         .matrix-header {
-            font-family: var(--pixel-font);
-            font-size: 0.7rem;
-            color: var(--retro-blue);
-            margin-bottom: 0.75rem;
-            border-bottom: 2px solid #334155;
-            padding-bottom: 0.4rem;
             display: flex;
             justify-content: space-between;
-        }
-
-        table.master-table {
-            width: 100%;
-            border-collapse: collapse;
+            align-items: center;
+            margin-bottom: 0.75rem;
             font-family: var(--pixel-font);
-            font-size: 0.55rem;
-            text-align: center;
         }
 
-        table.master-table th, table.master-table td {
-            border: 1px solid #334155;
-            padding: 0.4rem 0.2rem;
+        .matrix-title {
+            font-size: 0.8rem;
+            color: var(--retro-blue);
         }
 
-        table.master-table th {
-            background-color: #000000;
+        .matrix-subtitle {
+            font-size: 0.5rem;
             color: var(--retro-yellow);
         }
 
-        table.master-table td.user-cell {
-            text-align: left;
-            background-color: #000000;
-            color: #ffffff;
+        .table-scroll-container {
+            width: 100%;
+            overflow-x: auto;
+            border: 2px solid #000000;
+            background: #000000;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+
+        table.matrix-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: max-content;
+            font-family: var(--pixel-font);
+        }
+
+        table.matrix-table th, table.matrix-table td {
+            padding: 0.5rem 0.3rem;
+            text-align: center;
+            border-bottom: 1px solid #1e293b;
+            border-right: 1px solid #1e293b;
+        }
+
+        /* STICKY USER COLUMN */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: #0b1329 !important;
+            z-index: 10;
+            min-width: 140px;
+            max-width: 140px;
+            text-align: left !important;
+            padding-left: 0.6rem !important;
             white-space: nowrap;
-            max-width: 120px;
             overflow: hidden;
             text-overflow: ellipsis;
-            padding-left: 0.5rem;
-        }
-
-        .pick-select {
-            background: #000000;
+            font-size: 0.65rem;
             color: var(--retro-yellow);
-            border: 1px solid var(--retro-yellow);
-            font-family: var(--pixel-font);
-            font-size: 0.5rem;
-            padding: 0.2rem;
-            cursor: pointer;
-            width: 100%;
-            text-align: center;
+            border-right: 3px solid var(--retro-yellow) !important;
         }
 
-        .pick-select.missing {
+        th.sticky-col {
+            top: 0;
+            z-index: 20;
+            color: var(--retro-yellow);
+            background-color: #000000 !important;
+        }
+
+        /* STICKY HEADER ROW */
+        table.matrix-table th {
+            position: sticky;
+            top: 0;
+            background-color: #000000;
+            z-index: 5;
+            vertical-align: bottom;
+        }
+
+        .game-col-header {
+            min-width: 90px; /* Gives each game a standardized width */
+            padding: 0.4rem;
+        }
+
+        .game-num {
+            font-size: 0.6rem;
+            color: var(--retro-yellow);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .game-matchup {
+            font-size: 0.45rem;
+            color: #94a3b8;
+            line-height: 1.2;
+            display: block;
+        }
+
+        /* OVERRIDE DROPDOWN SELECTORS */
+        .pick-select {
+            background-color: #000000;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            padding: 0.3rem 0.1rem;
+            width: 100%;
+            border: 2px solid #334155;
+            text-align: center;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .pick-select.has-pick {
+            color: var(--retro-green);
+            border-color: var(--retro-green);
+        }
+
+        .pick-select.no-pick {
             color: var(--retro-red);
             border-color: var(--retro-red);
         }
 
-        .pick-select:focus {
-            outline: none;
-            box-shadow: 0 0 5px var(--retro-yellow);
-        }
-
-        .empty-slate {
-            text-align: center;
-            font-family: var(--pixel-font);
-            font-size: 0.65rem;
-            color: #64748b;
-            padding: 2rem 0;
-            background: var(--bg-card);
-            border: 3px solid #000000;
-        }
-
-        .status-toast {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            background: #000000;
-            border: 2px solid var(--retro-green);
-            color: var(--retro-green);
-            font-family: var(--pixel-font);
-            font-size: 0.6rem;
-            padding: 0.75rem 1rem;
-            box-shadow: 3px 3px 0px #000;
-            display: none;
-            z-index: 1000;
+        .pick-select option {
+            background-color: #1e293b;
+            color: #ffffff;
         }
     </style>
 </head>
@@ -272,251 +302,244 @@
         <button class="week-btn" onclick="changeWeek(1)">NEXT &gt;</button>
     </div>
 
-    <div class="admin-container">
-        <div class="stats-bar" id="stats-bar">
-            <div class="stat-item">
-                <span>TOTAL USERS</span>
-                <span class="stat-val" id="stat-users">0</span>
-            </div>
-            <div class="stat-item">
-                <span>SCHEDULED GAMES</span>
-                <span class="stat-val" id="stat-games">0</span>
-            </div>
-            <div class="stat-item">
-                <span>EXPECTED PICKS</span>
-                <span class="stat-val" id="stat-expected">0</span>
-            </div>
-            <div class="stat-item">
-                <span>SUBMITTED PICKS</span>
-                <span class="stat-val" id="stat-submitted">0</span>
-            </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">TOTAL USERS</div>
+            <div class="stat-value" id="stat-users">0</div>
         </div>
-
-        <div class="matrix-card">
-            <div class="matrix-header">
-                <span>USER PICKS MATRIX</span>
-                <span style="font-size: 0.5rem; color: var(--retro-yellow);">* CHANGES SAVE AUTOMATICALLY</span>
-            </div>
-            <div id="matrix-container">
-                <div class="empty-slate">LOADING MASTER SHEET...</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-label">SCHEDULED GAMES</div>
+            <div class="stat-value" id="stat-games">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">EXPECTED PICKS</div>
+            <div class="stat-value" id="stat-expected">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">SUBMITTED PICKS</div>
+            <div class="stat-value" id="stat-submitted">0</div>
         </div>
     </div>
 
-    <div id="status-toast" class="status-toast">PICK OVERRIDDEN!</div>
+    <div class="matrix-wrapper">
+        <div class="matrix-header">
+            <span class="matrix-title">USER PICKS MATRIX</span>
+            <span class="matrix-subtitle">* CHANGES SAVE AUTOMATICALLY</span>
+        </div>
+
+        <div class="table-scroll-container">
+            <table class="matrix-table" id="matrix-table">
+                <thead>
+                    <tr id="matrix-header-row">
+                        <th class="sticky-col">USER</th>
+                        <!-- Game columns generated dynamically -->
+                    </tr>
+                </thead>
+                <tbody id="matrix-body">
+                    <!-- User rows generated dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
         let currentWeek = 1;
-        let globalGames = [];
-        let globalUsers = [];
+        let profiles = [];
+        let slates = [];
+        let picks = [];
+        let espnGames = {};
 
-        async function initAdminSheet() {
-            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
-            await renderMasterSheet();
+        async function initAdminPage() {
+            await loadDataForWeek();
         }
 
-        async function changeWeek(dir) {
+        function changeWeek(dir) {
             currentWeek += dir;
             if (currentWeek < 1) currentWeek = 1;
             document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
-            document.getElementById('matrix-container').innerHTML = `<div class="empty-slate">LOADING MASTER SHEET...</div>`;
-            await renderMasterSheet();
+            loadDataForWeek();
         }
 
-        async function renderMasterSheet() {
-            const container = document.getElementById('matrix-container');
-
+        async function loadDataForWeek() {
             try {
-                // 1. Fetch Users
-                const { data: profiles, error: userErr } = await supabaseClient
+                // Fetch profiles
+                const { data: profData } = await supabaseClient
                     .from('profiles')
                     .select('device_uid, coach_name, player_name');
-                if (userErr) throw userErr;
+                profiles = profData || [];
 
-                globalUsers = (profiles || []).map(p => ({
-                    device_uid: p.device_uid,
-                    name: p.coach_name || p.player_name || 'ANALYST (' + p.device_uid.slice(0, 4) + ')'
-                }));
-
-                // 2. Fetch Weekly Slate
-                const { data: slateData, error: slateErr } = await supabaseClient
+                // Fetch slates for this week
+                const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
-                    .select('espn_game_id')
-                    .eq('week_number', currentWeek);
-                if (slateErr) throw slateErr;
+                    .select('id, week_number, espn_game_id')
+                    .eq('week_number', currentWeek)
+                    .order('id', { ascending: true });
+                slates = slateData || [];
 
-                const allowedIds = (slateData || []).map(s => String(s.espn_game_id));
-
-                if (allowedIds.length === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
-                    updateStats(globalUsers.length, 0, 0, 0);
-                    return;
-                }
-
-                // 3. Fetch ESPN Matchup details
-                const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
-                const espnData = await res.json();
-                
-                globalGames = [];
-                if (espnData.events) {
-                    espnData.events
-                        .filter(e => allowedIds.includes(String(e.id)))
-                        .forEach((event, idx) => {
-                            const comp = event.competitions[0];
-                            const home = comp.competitors.find(c => c.homeAway === 'home');
-                            const away = comp.competitors.find(c => c.homeAway === 'away');
-                            
-                            const homeCode = home.team.abbreviation || home.team.shortDisplayName;
-                            const awayCode = away.team.abbreviation || away.team.shortDisplayName;
-
-                            globalGames.push({
-                                index: idx + 1,
-                                primary_card_id: `card-${idx + 1}`,
-                                card_keys: [`card-${idx + 1}`, String(idx + 1), String(event.id)],
-                                home_team: homeCode,
-                                away_team: awayCode,
-                                label: `${awayCode} @ ${homeCode}`
-                            });
-                        });
-                }
-
-                // 4. Fetch Picks
-                const { data: picksData, error: picksErr } = await supabaseClient
+                // Fetch picks for this week
+                const { data: pickData } = await supabaseClient
                     .from('picks')
-                    .select('device_uid, card_id, chosen_team')
+                    .select('device_uid, week_number, card_id, chosen_team')
                     .eq('week_number', currentWeek);
-                if (picksErr) throw picksErr;
+                picks = pickData || [];
 
-                const totalExpected = globalUsers.length * globalGames.length;
-                const totalSubmitted = (picksData || []).length;
-                updateStats(globalUsers.length, globalGames.length, totalExpected, totalSubmitted);
-
-                if (globalGames.length === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS SET BY COMMISH YET</div>`;
-                    return;
+                // Fetch team names from ESPN API for headers & options
+                try {
+                    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
+                    const espnData = await res.json();
+                    
+                    espnGames = {};
+                    (espnData.events || []).forEach(evt => {
+                        const comp = evt.competitions[0];
+                        const home = comp.competitors.find(c => c.homeAway === 'home');
+                        const away = comp.competitors.find(c => c.homeAway === 'away');
+                        
+                        espnGames[String(evt.id)] = {
+                            homeAbbr: home.team.abbreviation || home.team.shortDisplayName,
+                            awayAbbr: away.team.abbreviation || away.team.shortDisplayName
+                        };
+                    });
+                } catch (e) {
+                    console.error("ESPN Fetch error:", e);
                 }
 
-                // Map existing picks
-                const pickMap = {}; // { device_uid: { cardKey: chosen_team } }
-                (picksData || []).forEach(p => {
-                    if (!pickMap[p.device_uid]) pickMap[p.device_uid] = {};
-                    pickMap[p.device_uid][String(p.card_id)] = p.chosen_team;
-                });
-
-                // 5. Build Dropdown Matrix Table
-                let tableHTML = `<table class="master-table"><thead><tr><th style="text-align:left; padding-left:0.5rem;">USER</th>`;
-                
-                globalGames.forEach(g => {
-                    tableHTML += `<th>G${g.index}<br><span style="font-size:0.45rem; color:#94a3b8;">${g.label}</span></th>`;
-                });
-                tableHTML += `<th>TOTAL</th></tr></thead><tbody>`;
-
-                globalUsers.forEach(u => {
-                    let userPickCount = 0;
-                    tableHTML += `<tr><td class="user-cell">${u.name}</td>`;
-
-                    globalGames.forEach(g => {
-                        const userPicks = pickMap[u.device_uid] || {};
-                        let foundPick = "";
-
-                        for (const key of g.card_keys) {
-                            if (userPicks[key]) {
-                                foundPick = userPicks[key];
-                                break;
-                            }
-                        }
-
-                        if (foundPick) userPickCount++;
-
-                        const isMissing = !foundPick;
-                        const selectClass = isMissing ? 'pick-select missing' : 'pick-select';
-
-                        tableHTML += `<td>
-                            <select class="${selectClass}" onchange="savePickOverride('${u.device_uid}', '${g.primary_card_id}', this)">
-                                <option value="" ${isMissing ? 'selected' : ''}>-- NONE --</option>
-                                <option value="${g.away_team}" ${foundPick === g.away_team ? 'selected' : ''}>${g.away_team}</option>
-                                <option value="${g.home_team}" ${foundPick === g.home_team ? 'selected' : ''}>${g.home_team}</option>
-                            </select>
-                        </td>`;
-                    });
-
-                    tableHTML += `<td id="total-${u.device_uid}" style="color:var(--retro-green);">${userPickCount}/${globalGames.length}</td></tr>`;
-                });
-
-                tableHTML += `</tbody></table>`;
-                container.innerHTML = tableHTML;
+                renderMatrix();
 
             } catch (err) {
-                console.error("Error generating master sheet:", err);
-                container.innerHTML = `<div class="empty-slate">ERROR LOADING MASTER SHEET DATA</div>`;
+                console.error("Error loading admin matrix data:", err);
             }
         }
 
-        async function savePickOverride(deviceUid, cardId, selectEl) {
-            const chosenTeam = selectEl.value;
+        function renderMatrix() {
+            const headerRow = document.getElementById('matrix-header-row');
+            const tbody = document.getElementById('matrix-body');
 
+            // Reset headers
+            headerRow.innerHTML = '<th class="sticky-col">USER</th>';
+            tbody.innerHTML = '';
+
+            // Update stats
+            const totalUsers = profiles.length;
+            const totalGames = slates.length;
+            const expectedPicks = totalUsers * totalGames;
+            const submittedPicks = picks.length;
+
+            document.getElementById('stat-users').innerText = totalUsers;
+            document.getElementById('stat-games').innerText = totalGames;
+            document.getElementById('stat-expected').innerText = expectedPicks;
+            document.getElementById('stat-submitted').innerText = submittedPicks;
+
+            // Map game ID references
+            const gameList = slates.map((s, idx) => {
+                const gameId = String(s.espn_game_id);
+                const cardKey = `card-${idx + 1}`;
+                const info = espnGames[gameId] || { homeAbbr: 'HOME', awayAbbr: 'AWAY' };
+                return {
+                    gameId,
+                    cardKey,
+                    index: idx + 1,
+                    awayAbbr: info.awayAbbr,
+                    homeAbbr: info.homeAbbr
+                };
+            });
+
+            // Build Table Headers
+            gameList.forEach(g => {
+                const th = document.createElement('th');
+                th.className = 'game-col-header';
+                th.innerHTML = `
+                    <span class="game-num">G${g.index}</span>
+                    <span class="game-matchup">${g.awayAbbr}<br>@<br>${g.homeAbbr}</span>
+                `;
+                headerRow.appendChild(th);
+            });
+
+            // Build User Rows
+            profiles.forEach(user => {
+                const tr = document.createElement('tr');
+
+                // Sticky Username Cell
+                const userName = user.coach_name || user.player_name || user.device_uid.slice(0, 6);
+                const tdUser = document.createElement('td');
+                tdUser.className = 'sticky-col';
+                tdUser.innerText = userName.toUpperCase();
+                tr.appendChild(tdUser);
+
+                // Build Pick Select Cells for each Game
+                gameList.forEach(g => {
+                    const td = document.createElement('td');
+
+                    // Check if pick exists for card_id or game_id
+                    const userPick = picks.find(p => 
+                        p.device_uid === user.device_uid && 
+                        (String(p.card_id) === g.cardKey || String(p.card_id) === g.gameId)
+                    );
+
+                    const currentChoice = userPick ? userPick.chosen_team : '';
+
+                    const select = document.createElement('select');
+                    select.className = `pick-select ${currentChoice ? 'has-pick' : 'no-pick'}`;
+                    
+                    // Options
+                    select.innerHTML = `
+                        <option value="">--</option>
+                        <option value="${g.awayAbbr}" ${currentChoice === g.awayAbbr ? 'selected' : ''}>${g.awayAbbr}</option>
+                        <option value="${g.homeAbbr}" ${currentChoice === g.homeAbbr ? 'selected' : ''}>${g.homeAbbr}</option>
+                    `;
+
+                    // Trigger database override save on change
+                    select.onchange = (e) => saveOverridePick(user.device_uid, g.cardKey, e.target.value, select);
+
+                    td.appendChild(select);
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function saveOverridePick(uid, cardKey, chosenTeam, selectEl) {
             try {
-                if (chosenTeam === "") {
-                    // Delete the pick if reset to "-- NONE --"
+                if (!chosenTeam) {
+                    // Remove pick from database if reset to '--'
                     await supabaseClient
                         .from('picks')
                         .delete()
-                        .eq('device_uid', deviceUid)
+                        .eq('device_uid', uid)
                         .eq('week_number', currentWeek)
-                        .eq('card_id', cardId);
+                        .eq('card_id', cardKey);
 
-                    selectEl.className = "pick-select missing";
+                    selectEl.className = 'pick-select no-pick';
                 } else {
-                    // Upsert (Insert or Update) the override pick
-                    const { error } = await supabaseClient
+                    // Upsert pick into database
+                    await supabaseClient
                         .from('picks')
                         .upsert({
-                            device_uid: deviceUid,
+                            device_uid: uid,
                             week_number: currentWeek,
-                            card_id: cardId,
+                            card_id: cardKey,
                             chosen_team: chosenTeam
-                        }, { onConflict: 'device_uid, week_number, card_id' });
+                        }, { onConflict: 'device_uid,week_number,card_id' });
 
-                    if (error) throw error;
-                    selectEl.className = "pick-select";
+                    selectEl.className = 'pick-select has-pick';
                 }
 
-                showToast("PICK UPDATED!");
-                await refreshSubmittedCount();
+                // Refresh overall counts
+                const { data: updatedPicks } = await supabaseClient
+                    .from('picks')
+                    .select('device_uid')
+                    .eq('week_number', currentWeek);
+                
+                if (updatedPicks) {
+                    document.getElementById('stat-submitted').innerText = updatedPicks.length;
+                }
 
             } catch (err) {
-                console.error("Failed to save pick override:", err);
-                alert("ERR SAVING PICK: Check database policies.");
+                console.error("Failed to save override pick:", err);
             }
         }
 
-        async function refreshSubmittedCount() {
-            const { data: picksData } = await supabaseClient
-                .from('picks')
-                .select('device_uid')
-                .eq('week_number', currentWeek);
-
-            const submitted = (picksData || []).length;
-            document.getElementById('stat-submitted').innerText = submitted;
-        }
-
-        function updateStats(users, games, expected, submitted) {
-            document.getElementById('stat-users').innerText = users;
-            document.getElementById('stat-games').innerText = games;
-            document.getElementById('stat-expected').innerText = expected;
-            document.getElementById('stat-submitted').innerText = submitted;
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('status-toast');
-            toast.innerText = msg;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 2000);
-        }
-
-        window.addEventListener('DOMContentLoaded', initAdminSheet);
+        window.addEventListener('DOMContentLoaded', initAdminPage);
     </script>
 </body>
 </html>
