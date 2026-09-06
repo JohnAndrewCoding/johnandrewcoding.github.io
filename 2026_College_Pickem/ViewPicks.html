@@ -310,6 +310,7 @@
             const container = document.getElementById('picks-container');
             
             try {
+                // Fetch active games in weekly slate
                 const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
                     .select('espn_game_id')
@@ -323,6 +324,7 @@
                     return;
                 }
 
+                // Fetch current user picks
                 const { data: userPicks } = await supabaseClient
                     .from('picks')
                     .select('card_id, chosen_team')
@@ -331,9 +333,10 @@
 
                 const picksMap = {};
                 (userPicks || []).forEach(p => {
-                    picksMap[p.card_id] = p.chosen_team;
+                    picksMap[String(p.card_id)] = p.chosen_team;
                 });
 
+                // Fetch scoreboard from ESPN
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
 
@@ -358,7 +361,6 @@
                 let totalMissing = 0;
 
                 filteredEvents.forEach((gameEvent, index) => {
-                    // Match directly by espn_game_id to guarantee consistency across pages
                     const cardId = String(gameEvent.id);
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
@@ -413,7 +415,6 @@
                                 nextChoice = homeName;
                             }
 
-                            // Optimistically update UI
                             const choiceText = document.getElementById(`choice-text-${cardId}`);
                             const isFirstPick = !userChoice;
                             
@@ -422,14 +423,12 @@
                             choiceText.classList.remove('none');
                             card.classList.remove('missing');
 
-                            // Update local counts
                             if (isFirstPick) {
                                 totalMade++;
                                 totalMissing--;
                                 updateStats(totalMade, totalMissing, filteredEvents.length);
                             }
 
-                            // Save pick to database
                             await supabaseClient
                                 .from('picks')
                                 .upsert({
@@ -456,7 +455,12 @@
             document.getElementById('stat-total').innerText = total;
         }
 
-        window.addEventListener('DOMContentLoaded', initMyPicks);
+        // Guarantees execution once DOM is ready or if already loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMyPicks);
+        } else {
+            initMyPicks();
+        }
     </script>
 </body>
 </html>
