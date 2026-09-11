@@ -319,7 +319,7 @@
 
     <div class="week-controls">
         <button class="week-btn" onclick="changeWeek(-1)">&lt; PREV</button>
-        <span class="week-display" id="week-display">WEEK 01</span>
+        <span class="week-display" id="week-display">WEEK --</span>
         <button class="week-btn" onclick="changeWeek(1)">NEXT &gt;</button>
     </div>
 
@@ -332,6 +332,17 @@
         let allUsers = [];
 
         async function initViewGames() {
+            try {
+                // Fetch current week from ESPN API automatically on load
+                const currentRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80`);
+                const currentData = await currentRes.json();
+                if (currentData.week && currentData.week.number) {
+                    currentWeek = currentData.week.number;
+                }
+            } catch (err) {
+                console.error("Failed to detect current week automatically, defaulting to week 1:", err);
+            }
+
             document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
             await loadUsers();
             await renderGamesAndPicks();
