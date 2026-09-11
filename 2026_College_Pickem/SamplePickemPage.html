@@ -465,7 +465,7 @@
 
     <div class="week-controls">
         <button class="week-btn" id="prev-week-btn" onclick="changeWeek(-1)">&lt; PREV</button>
-        <span class="week-display" id="week-display">WEEK 01</span>
+        <span class="week-display" id="week-display">WEEK --</span>
         <button class="week-btn" id="next-week-btn" onclick="changeWeek(1)">NEXT &gt;</button>
     </div>
 
@@ -481,7 +481,7 @@
     </div>
 
     <script>
-        let currentWeek = 1; 
+        let currentWeek = 2; // Default fallback week
         let currentCardIndex = 1;
         let totalCards = 0;
         const savedPicks = {};
@@ -501,6 +501,22 @@
                 <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel"></div><div class="pixel p-face"></div>
                 <div class="pixel p-fill"></div><div class="pixel p-fill"></div><div class="pixel p-dark"></div><div class="pixel p-dark"></div><div class="pixel p-face"></div><div class="pixel p-face"></div>
             </div>`;
+
+        async function initSwiperPage() {
+            try {
+                // Fetch current week automatically from ESPN API on page load
+                const currentRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80`);
+                const currentData = await currentRes.json();
+                if (currentData.week && currentData.week.number) {
+                    currentWeek = currentData.week.number;
+                }
+            } catch (err) {
+                console.error("Failed to detect current week, using fallback:", err);
+            }
+
+            document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
+            await loadWeekGames();
+        }
 
         function isGameStartedOrLocked(kickoffStr) {
             if (!kickoffStr) return false;
@@ -993,7 +1009,7 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', loadWeekGames);
+        window.addEventListener('DOMContentLoaded', initSwiperPage);
     </script>
 </body>
 </html>
