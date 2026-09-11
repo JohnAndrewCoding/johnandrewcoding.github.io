@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro View Games</title>
+    <title>My Picks Summary</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
-    <!-- SUPABASE CLIENT INTEGRATION -->
+    <!-- SUPABASE INTEGRATION -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
@@ -39,15 +39,12 @@
             padding: 0;
         }
 
-        html, body {
+        body {
             width: 100%;
             background-color: var(--bg-canvas);
             color: #ffffff;
             font-family: Arial, sans-serif;
             min-height: 100vh;
-        }
-
-        body {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -98,6 +95,30 @@
             margin-bottom: 0.5rem;
         }
 
+        .summary-bar {
+            width: 100%;
+            max-width: 480px;
+            background: #000000;
+            border: 3px solid #475569;
+            padding: 0.6rem;
+            display: flex;
+            justify-content: space-around;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .stat-val {
+            font-size: 0.85rem;
+        }
+
         .week-controls {
             display: flex;
             justify-content: space-between;
@@ -105,7 +126,6 @@
             max-width: 480px;
             margin-bottom: 0.75rem;
             font-family: var(--pixel-font);
-            font-size: 0.75rem;
         }
 
         .week-btn {
@@ -119,179 +139,107 @@
             box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
         }
 
-        @media (hover: hover) {
-            .week-btn:hover {
-                border-color: var(--retro-yellow);
-                color: var(--retro-yellow);
-            }
-        }
-
         .week-display {
             color: var(--retro-yellow);
             align-self: center;
+            font-size: 0.75rem;
             text-shadow: 2px 2px 0px #000;
         }
 
-        .games-container {
+        .picks-scroll-list {
             width: 100%;
             max-width: 480px;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.75rem;
+            max-height: calc(100vh - 230px);
+            overflow-y: auto;
+            padding-right: 0.25rem;
         }
 
-        .game-card {
+        .picks-scroll-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .picks-scroll-list::-webkit-scrollbar-track {
+            background: #000000;
+        }
+        .picks-scroll-list::-webkit-scrollbar-thumb {
+            background: var(--retro-yellow);
+        }
+
+        .pick-card {
             background-color: var(--bg-card);
-            border: 4px solid #000000;
-            box-shadow: 4px 4px 0px #000000;
+            border: 3px solid #000000;
+            box-shadow: 3px 3px 0px #000000;
             padding: 0.75rem;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.5rem;
+            font-family: var(--pixel-font);
         }
 
-        .scoreboard-header {
+        .pick-card.missing {
+            border-color: var(--retro-red);
+        }
+
+        .card-top {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            font-size: 0.5rem;
+            color: #94a3b8;
+            border-bottom: 1px dashed #334155;
+            padding-bottom: 0.3rem;
+        }
+
+        .matchup-title {
+            font-size: 0.75rem;
+            color: #ffffff;
+            margin: 0.2rem 0;
+        }
+
+        .pick-status-box {
             background: #000000;
             border: 2px solid #334155;
-            padding: 0.4rem;
-            font-family: var(--pixel-font);
-            font-size: 0.5rem;
-        }
-
-        .card-number-badge {
-            color: var(--retro-yellow);
-            font-size: 0.55rem;
-        }
-
-        .status-badge {
-            color: var(--retro-blue);
-        }
-
-        .status-badge.live {
-            color: var(--retro-red);
-            animation: pulse 1s infinite alternate;
-        }
-
-        .status-badge.final {
-            color: #94a3b8;
-        }
-
-        @keyframes pulse {
-            from { opacity: 1; }
-            to { opacity: 0.4; }
-        }
-
-        .lock-indicator {
-            color: var(--retro-yellow);
-        }
-
-        .scoreboard-led {
-            background-color: #000000;
-            border: 3px solid #475569;
-            padding: 0.6rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            font-family: var(--pixel-font);
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-            user-select: none;
-        }
-
-        .team-score-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.75rem;
-            padding: 0.3rem 0.4rem;
-            border-radius: 2px;
-        }
-
-        .team-score-row.user-selected {
-            background-color: rgba(250, 204, 21, 0.2);
-            border: 1px solid var(--retro-yellow);
-        }
-
-        .team-meta {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .team-color-box {
-            width: 10px;
-            height: 10px;
-            border: 1px solid #ffffff;
-        }
-
-        .team-code {
-            color: #ffffff;
-        }
-
-        .score-num {
-            color: var(--retro-yellow);
-            font-size: 1rem;
-            text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);
-        }
-
-        .score-num.winner {
-            color: var(--retro-green);
-        }
-
-        .picks-panel {
-            background: #000000;
-            border: 2px dashed #475569;
             padding: 0.5rem;
-            font-family: var(--pixel-font);
-            font-size: 0.55rem;
-        }
-
-        .picks-panel-title {
-            color: #94a3b8;
-            margin-bottom: 0.4rem;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 0.25rem;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .picks-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-
-        .pick-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.2rem 0;
+            font-size: 0.65rem;
+            transition: border-color 0.2s, background-color 0.2s;
         }
 
-        .user-name {
-            color: #ffffff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 140px;
+        .pick-status-box.clickable {
+            cursor: pointer;
+            border-color: var(--retro-blue);
         }
 
-        .user-pick-tag {
-            padding: 0.15rem 0.3rem;
-            border: 1px solid #ffffff;
-            font-size: 0.5rem;
+        .pick-status-box.clickable:hover {
+            background-color: #0f172a;
         }
 
-        .pick-status-done {
+        .pick-label {
+            color: #94a3b8;
+        }
+
+        .pick-choice {
             color: var(--retro-green);
         }
 
-        .pick-status-pending {
-            color: #64748b;
+        .pick-choice.none {
+            color: var(--retro-red);
+            animation: blink 1.5s infinite;
+        }
+
+        .tap-hint {
+            font-size: 0.45rem;
+            color: var(--retro-blue);
+            text-align: right;
+            margin-top: -0.2rem;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
         .empty-slate {
@@ -310,12 +258,27 @@
     <div class="top-nav">
         <a href="index.html" class="nav-link-btn">&lt; HOME</a>
         <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS</a>
-        <a href="Leaderboard.html" class="nav-link-btn">STANDINGS &gt;</a>
+        <a href="ViewGames.html" class="nav-link-btn">LIVE GAMES &gt;</a>
     </div>
 
     <header>
-        <h1 class="title">LIVE MATCHUPS</h1>
+        <h1 class="title">MY PICKS SHEET</h1>
     </header>
+
+    <div class="summary-bar">
+        <div class="stat-item">
+            <span style="color: #94a3b8;">MADE</span>
+            <span class="stat-val" id="stat-made" style="color: var(--retro-green);">0</span>
+        </div>
+        <div class="stat-item">
+            <span style="color: #94a3b8;">MISSING</span>
+            <span class="stat-val" id="stat-missing" style="color: var(--retro-red);">0</span>
+        </div>
+        <div class="stat-item">
+            <span style="color: #94a3b8;">TOTAL</span>
+            <span class="stat-val" id="stat-total" style="color: var(--retro-yellow);">0</span>
+        </div>
+    </div>
 
     <div class="week-controls">
         <button class="week-btn" onclick="changeWeek(-1)">&lt; PREV</button>
@@ -323,15 +286,14 @@
         <button class="week-btn" onclick="changeWeek(1)">NEXT &gt;</button>
     </div>
 
-    <div class="games-container" id="games-container">
-        <div class="empty-slate">LOADING SCOREBOARDS...</div>
+    <div class="picks-scroll-list" id="picks-container">
+        <div class="empty-slate">LOADING PICKS...</div>
     </div>
 
     <script>
         let currentWeek = 1;
-        let allUsers = [];
 
-        async function initViewGames() {
+        async function initMyPicks() {
             try {
                 // Fetch current week from ESPN API automatically on load
                 const currentRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80`);
@@ -344,115 +306,70 @@
             }
 
             document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
-            await loadUsers();
-            await renderGamesAndPicks();
-        }
-
-        async function loadUsers() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('profiles')
-                    .select('device_uid, coach_name, player_name');
-
-                if (error) throw error;
-                
-                allUsers = (data || []).map(p => ({
-                    device_uid: p.device_uid,
-                    user_name: p.coach_name || p.player_name || 'ANALYST (' + p.device_uid.slice(0, 4) + ')'
-                }));
-            } catch (err) {
-                console.error("Failed to load user roster:", err);
-            }
+            await fetchUserPicks();
         }
 
         async function changeWeek(dir) {
             currentWeek += dir;
             if (currentWeek < 1) currentWeek = 1;
             document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
-            document.getElementById('games-container').innerHTML = `<div class="empty-slate">LOADING SCOREBOARDS...</div>`;
-            await renderGamesAndPicks();
+            document.getElementById('picks-container').innerHTML = `<div class="empty-slate">LOADING PICKS...</div>`;
+            await fetchUserPicks();
         }
 
-        async function renderGamesAndPicks() {
-            const container = document.getElementById('games-container');
+        async function fetchUserPicks() {
+            const container = document.getElementById('picks-container');
             
             try {
-                // 1. Fetch weekly slates sorted explicitly by ID
-                const { data: slateData, error: slateErr } = await supabaseClient
+                const { data: slateData } = await supabaseClient
                     .from('weekly_slates')
-                    .select('id, espn_game_id')
-                    .eq('week_number', parseInt(currentWeek));
+                    .select('espn_game_id')
+                    .eq('week_number', currentWeek);
 
-                if (slateErr) throw slateErr;
+                const allowedIds = new Set((slateData || []).map(s => String(s.espn_game_id)));
 
-                if (!slateData || slateData.length === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO GAMES SCHEDULED FOR WEEK ${currentWeek}</div>`;
+                if (allowedIds.size === 0) {
+                    container.innerHTML = `<div class="empty-slate">NO GAMES FOR WEEK ${currentWeek}</div>`;
+                    updateStats(0, 0, 0);
                     return;
                 }
 
-                // Sort numerically by ID to enforce exact card ordering
-                slateData.sort((a, b) => a.id - b.id);
-
-                // 2. Fetch picks for current week
-                const { data: picksData, error: picksErr } = await supabaseClient
+                const { data: userPicks } = await supabaseClient
                     .from('picks')
-                    .select('device_uid, card_id, chosen_team, espn_game_id')
-                    .eq('week_number', parseInt(currentWeek));
+                    .select('card_id, chosen_team')
+                    .eq('device_uid', deviceUID)
+                    .eq('week_number', currentWeek);
 
-                if (picksErr) throw picksErr;
+                const picksMap = {};
+                (userPicks || []).forEach(p => {
+                    picksMap[p.card_id] = p.chosen_team;
+                });
 
-                // 3. Fetch ESPN Scoreboard
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${currentWeek}`);
                 const espnData = await res.json();
 
                 if (!espnData.events || espnData.events.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO ESPN DATA AVAILABLE</div>`;
+                    updateStats(0, 0, 0);
                     return;
                 }
 
-                const eventMap = new Map();
-                (espnData.events || []).forEach(e => eventMap.set(String(e.id), e));
+                const filteredEvents = espnData.events.filter(e => allowedIds.has(String(e.id)));
 
-                // Align slate rows with ESPN events
-                const slateGames = slateData
-                    .map((row, idx) => ({
-                        slateRow: row,
-                        cardIndex: idx + 1,
-                        cardIdStr: `card-${idx + 1}`,
-                        gameEvent: eventMap.get(String(row.espn_game_id))
-                    }))
-                    .filter(item => Boolean(item.gameEvent));
-
-                if (slateGames.length === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS FOUND FOR THIS SLATE</div>`;
+                if (filteredEvents.length === 0) {
+                    container.innerHTML = `<div class="empty-slate">NO MATCHUPS CONFIGURED</div>`;
+                    updateStats(0, 0, 0);
                     return;
                 }
 
-                container.innerHTML = ''; 
+                container.innerHTML = '';
                 const now = new Date();
 
-                slateGames.forEach(({ slateRow, cardIndex, cardIdStr, gameEvent }) => {
-                    const espnGameId = String(slateRow.espn_game_id);
+                let totalMade = 0;
+                let totalMissing = 0;
 
-                    // Filter user picks matching this game card
-                    const cardPicks = (picksData || []).filter(p => {
-                        const pCardId = String(p.card_id || '');
-                        const pGameId = String(p.espn_game_id || '');
-
-                        return pCardId === cardIdStr ||
-                               pCardId === String(cardIndex) ||
-                               pCardId === String(slateRow.id) ||
-                               pGameId === espnGameId ||
-                               pCardId === espnGameId;
-                    }).map(p => {
-                        const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
-                        return {
-                            device_uid: p.device_uid,
-                            user_name: foundUser ? foundUser.user_name : 'PLAYER (' + p.device_uid.slice(0, 4) + ')',
-                            chosen_team: p.chosen_team
-                        };
-                    });
-
+                filteredEvents.forEach((gameEvent, index) => {
+                    const cardId = String(gameEvent.id);
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
                     const isLocked = now >= gameDate;
@@ -463,108 +380,91 @@
                     const homeName = home.team.abbreviation || home.team.shortDisplayName;
                     const awayName = away.team.abbreviation || away.team.shortDisplayName;
 
-                    const homeScore = home.score || '0';
-                    const awayScore = away.score || '0';
+                    let userChoice = picksMap[cardId];
+                    let hasPicked = Boolean(userChoice);
 
-                    const statusState = gameEvent.status.type.state; 
-                    const statusDetail = gameEvent.status.type.shortDetail.toUpperCase();
-
-                    let statusClass = 'status-badge';
-                    if (statusState === 'in') statusClass += ' live';
-                    if (statusState === 'post') statusClass += ' final';
-
-                    const displayUsersMap = new Map();
-                    allUsers.forEach(u => displayUsersMap.set(u.device_uid, u.user_name));
-                    cardPicks.forEach(p => {
-                        if (!displayUsersMap.has(p.device_uid)) {
-                            displayUsersMap.set(p.device_uid, p.user_name);
-                        }
-                    });
-
-                    // Determine current device's pick
-                    const myPickObj = cardPicks.find(p => p.device_uid === deviceUID);
-                    const myPick = myPickObj ? myPickObj.chosen_team : null;
-
-                    let picksListHTML = '';
-
-                    displayUsersMap.forEach((userName, uid) => {
-                        const userPick = cardPicks.find(p => p.device_uid === uid);
-                        
-                        if (isLocked) {
-                            const teamTag = userPick 
-                                ? `<span class="user-pick-tag" style="border-color: var(--retro-yellow); color: var(--retro-yellow);">${userPick.chosen_team}</span>`
-                                : `<span class="user-pick-tag" style="border-color: #64748b; color: #64748b;">NO PICK</span>`;
-
-                            picksListHTML += `
-                                <div class="pick-row">
-                                    <span class="user-name">${userName}</span>
-                                    ${teamTag}
-                                </div>`;
-                        } else {
-                            const statusTag = userPick 
-                                ? `<span class="pick-status-done">${userPick.chosen_team} ✓</span>`
-                                : `<span class="pick-status-pending">WAITING...</span>`;
-
-                            picksListHTML += `
-                                <div class="pick-row">
-                                    <span class="user-name">${userName}</span>
-                                    ${statusTag}
-                                </div>`;
-                        }
-                    });
-
-                    const totalDisplayUsers = displayUsersMap.size;
-                    const isAwaySelected = myPick === awayName;
-                    const isHomeSelected = myPick === homeName;
+                    if (hasPicked) {
+                        totalMade++;
+                    } else {
+                        totalMissing++;
+                    }
 
                     const card = document.createElement('div');
-                    card.className = 'game-card';
+                    card.className = `pick-card ${!hasPicked ? 'missing' : ''}`;
+                    card.id = `card-wrapper-${cardId}`;
 
                     card.innerHTML = `
-                        <div class="scoreboard-header">
-                            <span class="card-number-badge">GAME #${cardIndex}</span>
-                            <span class="${statusClass}">${statusDetail}</span>
-                            <span class="lock-indicator">${isLocked ? '🔒 LOCKED' : '🔓 OPEN'}</span>
+                        <div class="card-top">
+                            <span>MATCHUP #${index + 1}</span>
+                            <span>${isLocked ? '🔒 LOCKED' : '🔓 OPEN'}</span>
                         </div>
 
-                        <div class="scoreboard-led" id="led-card-${cardIndex}">
-                            <div class="team-score-row ${isAwaySelected ? 'user-selected' : ''}">
-                                <div class="team-meta">
-                                    <div class="team-color-box" style="background-color: #${away.team.color || '1e3a8a'};"></div>
-                                    <span class="team-code">${awayName} ${isAwaySelected ? '★ (YOUR PICK)' : ''}</span>
-                                </div>
-                                <span class="score-num ${parseInt(awayScore) > parseInt(homeScore) && statusState === 'post' ? 'winner' : ''}">${awayScore}</span>
-                            </div>
-                            <div class="team-score-row ${isHomeSelected ? 'user-selected' : ''}">
-                                <div class="team-meta">
-                                    <div class="team-color-box" style="background-color: #${home.team.color || 'dc2626'};"></div>
-                                    <span class="team-code">${homeName} ${isHomeSelected ? '★ (YOUR PICK)' : ''}</span>
-                                </div>
-                                <span class="score-num ${parseInt(homeScore) > parseInt(awayScore) && statusState === 'post' ? 'winner' : ''}">${homeScore}</span>
-                            </div>
+                        <div class="matchup-title">
+                            ${awayName} vs ${homeName}
                         </div>
 
-                        <div class="picks-panel">
-                            <div class="picks-panel-title">
-                                <span>LEAGUE PICKS</span>
-                                <span>${cardPicks.length}/${totalDisplayUsers}</span>
-                            </div>
-                            <div class="picks-grid">
-                                ${picksListHTML || '<div style="color:#64748b; text-align:center;">NO LEAGUE USERS</div>'}
-                            </div>
+                        <div class="pick-status-box ${!isLocked ? 'clickable' : ''}" id="status-box-${cardId}">
+                            <span class="pick-label">YOUR SELECTION:</span>
+                            <span class="pick-choice ${!hasPicked ? 'none' : ''}" id="choice-text-${cardId}">
+                                ${hasPicked ? userChoice : '⚠ NO PICK MADE'}
+                            </span>
                         </div>
+                        ${!isLocked ? `<div class="tap-hint">TAP TO TOGGLE PICK</div>` : ''}
                     `;
 
                     container.appendChild(card);
+
+                    // Allow pick toggling if game is unlocked
+                    if (!isLocked) {
+                        const statusBox = card.querySelector(`#status-box-${cardId}`);
+                        statusBox.addEventListener('click', async () => {
+                            let nextChoice = awayName;
+                            if (userChoice === awayName) {
+                                nextChoice = homeName;
+                            }
+
+                            const choiceText = document.getElementById(`choice-text-${cardId}`);
+                            const isFirstPick = !userChoice;
+                            
+                            userChoice = nextChoice;
+                            choiceText.innerText = nextChoice;
+                            choiceText.classList.remove('none');
+                            card.classList.remove('missing');
+
+                            if (isFirstPick) {
+                                totalMade++;
+                                totalMissing--;
+                                updateStats(totalMade, totalMissing, filteredEvents.length);
+                            }
+
+                            // Save pick to Supabase database
+                            await supabaseClient
+                                .from('picks')
+                                .upsert({
+                                    device_uid: deviceUID,
+                                    week_number: currentWeek,
+                                    card_id: cardId,
+                                    chosen_team: nextChoice
+                                }, { onConflict: 'device_uid,week_number,card_id' });
+                        });
+                    }
                 });
 
+                updateStats(totalMade, totalMissing, filteredEvents.length);
+
             } catch (err) {
-                console.error("Error loading games page:", err);
-                container.innerHTML = `<div class="empty-slate">ERROR LOADING GAME DATA</div>`;
+                console.error("Error loading user picks sheet:", err);
+                container.innerHTML = `<div class="empty-slate">ERROR LOADING PICKS</div>`;
             }
         }
 
-        window.addEventListener('DOMContentLoaded', initViewGames);
+        function updateStats(made, missing, total) {
+            document.getElementById('stat-made').innerText = made;
+            document.getElementById('stat-missing').innerText = missing;
+            document.getElementById('stat-total').innerText = total;
+        }
+
+        window.addEventListener('DOMContentLoaded', initMyPicks);
     </script>
 </body>
 </html>
