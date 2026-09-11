@@ -176,6 +176,7 @@
             flex-direction: column;
             gap: 0.5rem;
             font-family: var(--pixel-font);
+            transition: border-color 0.2s;
         }
 
         .pick-card.missing {
@@ -215,6 +216,7 @@
 
         .pick-status-box.clickable:hover {
             background-color: #0f172a;
+            border-color: var(--retro-yellow);
         }
 
         .pick-label {
@@ -295,14 +297,14 @@
 
         async function initMyPicks() {
             try {
-                // Fetch current week from ESPN API automatically on load
+                // Auto-detect current active week from ESPN API
                 const currentRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80`);
                 const currentData = await currentRes.json();
                 if (currentData.week && currentData.week.number) {
                     currentWeek = currentData.week.number;
                 }
             } catch (err) {
-                console.error("Failed to detect current week automatically, defaulting to week 1:", err);
+                console.error("Failed to detect current week automatically:", err);
             }
 
             document.getElementById('week-display').innerText = `WEEK ${String(currentWeek).padStart(2, '0')}`;
@@ -414,10 +416,11 @@
 
                     container.appendChild(card);
 
-                    // Allow pick toggling if game is unlocked
+                    // Setup tap-to-toggle logic for unlocked games
                     if (!isLocked) {
                         const statusBox = card.querySelector(`#status-box-${cardId}`);
                         statusBox.addEventListener('click', async () => {
+                            // Cycle logic: Away Team on 1st tap if empty, then toggle between Away & Home
                             let nextChoice = awayName;
                             if (userChoice === awayName) {
                                 nextChoice = homeName;
@@ -437,15 +440,19 @@
                                 updateStats(totalMade, totalMissing, filteredEvents.length);
                             }
 
-                            // Save pick to Supabase database
-                            await supabaseClient
-                                .from('picks')
-                                .upsert({
-                                    device_uid: deviceUID,
-                                    week_number: currentWeek,
-                                    card_id: cardId,
-                                    chosen_team: nextChoice
-                                }, { onConflict: 'device_uid,week_number,card_id' });
+                            // Save pick directly to Supabase
+                            try {
+                                await supabaseClient
+                                    .from('picks')
+                                    .upsert({
+                                        device_uid: deviceUID,
+                                        week_number: currentWeek,
+                                        card_id: cardId,
+                                        chosen_team: nextChoice
+                                    }, { onConflict: 'device_uid,week_number,card_id' });
+                            } catch (err) {
+                                console.error("Error saving pick:", err);
+                            }
                         });
                     }
                 });
