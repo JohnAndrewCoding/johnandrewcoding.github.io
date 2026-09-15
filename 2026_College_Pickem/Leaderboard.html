@@ -520,38 +520,163 @@
         }
 
         // Generate Dynamic Ticker News
-        async function generateAnalystTicker() {
-            const tickerEl = document.getElementById('analyst-news-ticker');
-            if (!tickerEl) return;
+      // Performance-Based Past Result Analyst News Ticker
+async function generateAnalystTicker() {
+    const tickerEl = document.getElementById('analyst-news-ticker');
+    if (!tickerEl) return;
 
-            try {
-                const headlines = [];
+    try {
+        const headlines = [];
 
-                globalProfiles.forEach(user => {
-                    const userName = (user.coach_name || user.player_name || 'ANALYST').toUpperCase();
-                    const userPicks = (globalPicks || []).filter(p => p.device_uid === user.device_uid);
+        // Templates for Past Results
+        const wrongRoasts = [
+            (w, name, team) => `📺 WEEK ${w}: ${name} SWORE ${team} WAS A LOCK AND GOT UTTERLY EMBARRASSED!`,
+            (w, name, team) => `🤡 WEEK ${w}: "PRAY FOR ${name}," WHO INSISTED ${team} COULDN'T LOSE!`,
+            (w, name, team) => `🚨 RECAP: ${name}'S WEEK ${w} FAITH IN ${team} BACKFIRED IN HISTORIC FASHION!`,
+            (w, name, team) => `📉 WEEK ${w}: ${name} BOUGHT THE ${team} HYPE AND IT COST THEM DEARLY!`
+        ];
 
-                    if (userPicks.length > 0) {
-                        const lastPick = userPicks[userPicks.length - 1];
-                        const team = lastPick.chosen_team;
+        const rightFlexes = [
+            (w, name, team) => `🔥 WEEK ${w}: ${name} PREDICTED A ${team} VICTORY AND NAILED IT!`,
+            (w, name, team) => `🎓 WEEK ${w}: ${name} LOOKED LIKE A GENIUS CALLING THE ${team} WIN!`,
+            (w, name, team) => `📈 RECAP: ${name} MASTERCLASS IN WEEK ${w} TAKING ${team} TO THE BANK!`
+        ];
 
-                        if (team) {
-                            headlines.push(`📢 ${userName}: "IF YOU DON'T PICK ${team}, YOU DON'T KNOW BALL!"`);
-                            headlines.push(`👀 SOURCES SAY ${userName} IS BETTING THEIR ENTIRE REPUTATION ON ${team}.`);
-                        }
-                    } else {
-                        headlines.push(`😴 ${userName} HASN'T SUBMITTED PICKS YET. FANS ARE LOSING PATIENCE!`);
+        const loneWolfFlexes = [
+            (w, name, team) => `👑 WEEK ${w} HERO: ${name} WAS THE ONLY PERSON TO BELIEVE IN ${team} AND CRUSHED!`,
+            (w, name, team) => `🐐 WEEK ${w}: NOBODY BELIEVED IN ${team} EXCEPT ${name}. ABSOLUTE LEGEND!`
+        ];
+
+        const fanRoasts = [
+            (name) => `📞 CALLER FROM TIFTON: "SOMEONE TAKE AWAY ${name}'S ANALYST CARD IMMEDIATELY!"`,
+            (name) => `💬 FAN POLL: 92% OF VIEWERS AGREE THAT ${name} CANNOT READ A STAT SHEET.`,
+            (name) => `📰 SPORTS MAILBAG: 'IS ${name} THE MOST FRAUDULENT ANALYST ON TELEVISION?'`,
+            (name) => `📻 CALLER FROM ATLANTA: "${name} COST ME MY PARLAY AND MY SANITY!"`
+        ];
+
+        const leagueNews = [
+            `🚨 BREAKING: LEAGUE STANDINGS UNDER FIRE AS MID-TIER CLOWNS ACCUSE TOP DOG OF GETTING LUCKY!`,
+            `📊 ANALYST DESK ALERT: STAT FRAUDS EXPOSED AFTER DISASTROUS SLATE RESULTS!`,
+            `🔥 SOURCES: ANONYMOUS COACH ACCUSES STANDINGS LEADER OF GUESSING AT RANDOM.`,
+            `🏈 LEAGUE HEADLINES: DRAMA MOUNTS ON LIVE AIR AT THE LEAGUE ANALYST DESK!`
+        ];
+
+        // Map all completed games across weeks for evaluation
+        const evaluatedPicks = [];
+
+        Object.keys(globalGamesCache).forEach(weekNum => {
+            const events = globalGamesCache[weekNum] || [];
+
+            events.forEach(event => {
+                if (event.status.type.state === 'post') {
+                    const comp = event.competitions[0];
+                    const home = comp.competitors.find(c => c.homeAway === 'home');
+                    const away = comp.competitors.find(c => c.homeAway === 'away');
+
+                    const homeScore = parseInt(home.score || '0');
+                    const awayScore = parseInt(away.score || '0');
+
+                    let winnerObj = null;
+                    if (homeScore > awayScore) winnerObj = home;
+                    else if (awayScore > homeScore) winnerObj = away;
+
+                    if (winnerObj) {
+                        const winnerNames = new Set([
+                            (winnerObj.team.abbreviation || '').toUpperCase(),
+                            (winnerObj.team.shortDisplayName || '').toUpperCase(),
+                            (winnerObj.team.name || '').toUpperCase(),
+                            (winnerObj.team.displayName || '').toUpperCase()
+                        ]);
+
+                        const gameId = String(event.id);
+
+                        // Find all user picks for this completed game
+                        const gamePicks = globalPicks.filter(p => {
+                            const lookupKey = `${p.week_number}_${p.card_id}`;
+                            const mappedId = globalSlateMap[lookupKey] || String(p.card_id);
+                            return p.week_number === parseInt(weekNum) && mappedId === gameId && p.chosen_team;
+                        });
+
+                        // Check pick correctness
+                        gamePicks.forEach(p => {
+                            const chosen = (p.chosen_team || '').trim().toUpperCase();
+                            const isCorrect = winnerNames.has(chosen);
+                            
+                            // Check if this pick was a "Lone Wolf" pick
+                            const pickedSameTeam = gamePicks.filter(gp => (gp.chosen_team || '').trim().toUpperCase() === chosen);
+                            const isLoneWolf = isCorrect && (pickedSameTeam.length === 1) && (gamePicks.length > 2);
+
+                            const foundUser = globalProfiles.find(u => u.device_uid === p.device_uid);
+                            const userName = foundUser ? (foundUser.coach_name || foundUser.player_name || 'ANALYST').toUpperCase() : 'ANALYST';
+
+                            evaluatedPicks.push({
+                                week: p.week_number,
+                                userName,
+                                team: p.chosen_team,
+                                isCorrect,
+                                isLoneWolf
+                            });
+                        });
                     }
-                });
+                }
+            });
+        });
 
-                headlines.push(`🚨 BREAKING: LEAGUE STANDINGS UNDER FIRE AS ANALYSTS ACCUSE LEADER OF GETTING LUCKY!`);
-                headlines.push(`🔥 "STAT FRAUDS ARE EVERYWHERE THIS WEEK," DECLARES ANONYMOUS COACH.`);
+        // Build headlines from actual evaluated past picks
+        if (evaluatedPicks.length > 0) {
+            // Group by user so everyone gets spotlight/roast time
+            const userPicksGroup = {};
+            evaluatedPicks.forEach(ep => {
+                if (!userPicksGroup[ep.userName]) userPicksGroup[ep.userName] = [];
+                userPicksGroup[ep.userName].push(ep);
+            });
 
-                tickerEl.innerText = headlines.join('   ---   ');
-            } catch (err) {
-                console.error("Failed to generate analyst ticker:", err);
-            }
+            Object.keys(userPicksGroup).forEach(userName => {
+                const userPicks = userPicksGroup[userName];
+                
+                // Prioritize Lone Wolf picks first if any
+                const lonePicks = userPicks.filter(p => p.isLoneWolf);
+                const wrongPicks = userPicks.filter(p => !p.isCorrect);
+                const rightPicks = userPicks.filter(p => p.isCorrect);
+
+                if (lonePicks.length > 0) {
+                    const pick = lonePicks[Math.floor(Math.random() * lonePicks.length)];
+                    const tmpl = loneWolfFlexes[Math.floor(Math.random() * loneWolfFlexes.length)];
+                    headlines.push(tmpl(pick.week, userName, pick.team));
+                } else if (wrongPicks.length > 0 && Math.random() < 0.7) {
+                    // Roast wrong picks 70% of the time for humor
+                    const pick = wrongPicks[Math.floor(Math.random() * wrongPicks.length)];
+                    const tmpl = wrongRoasts[Math.floor(Math.random() * wrongRoasts.length)];
+                    headlines.push(tmpl(pick.week, userName, pick.team));
+                } else if (rightPicks.length > 0) {
+                    const pick = rightPicks[Math.floor(Math.random() * rightPicks.length)];
+                    const tmpl = rightFlexes[Math.floor(Math.random() * rightFlexes.length)];
+                    headlines.push(tmpl(pick.week, userName, pick.team));
+                }
+
+                // Add random fan call-in roast for flavor
+                if (Math.random() < 0.4) {
+                    const roastTmpl = fanRoasts[Math.floor(Math.random() * fanRoasts.length)];
+                    headlines.push(roastTmpl(userName));
+                }
+            });
         }
+
+        // Add general league drama
+        headlines.push(...leagueNews);
+
+        // Shuffle headlines array for fresh ticker order on every load
+        for (let i = headlines.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [headlines[i], headlines[j]] = [headlines[j], headlines[i]];
+        }
+
+        tickerEl.innerText = headlines.join('   ---   ');
+
+    } catch (err) {
+        console.error("Failed to generate analyst ticker:", err);
+    }
+}
 
         async function loadLeaderboard() {
             const container = document.getElementById('leaderboard-container');
