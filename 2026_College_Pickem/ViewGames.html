@@ -327,7 +327,7 @@
         <div class="empty-slate">LOADING SCOREBOARDS...</div>
     </div>
 
-    <script>
+<script>
         let currentWeek = 1;
         let allUsers = [];
 
@@ -455,7 +455,10 @@
 
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
-                    const isLocked = now >= gameDate;
+                    const statusState = gameEvent.status.type.state; 
+
+                    // Lock game if kickoff time has passed OR ESPN status is live ('in') or finished ('post')
+                    const isLocked = now >= gameDate || statusState !== 'pre';
 
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
@@ -466,7 +469,6 @@
                     const homeScore = home.score || '0';
                     const awayScore = away.score || '0';
 
-                    const statusState = gameEvent.status.type.state; 
                     const statusDetail = gameEvent.status.type.shortDetail.toUpperCase();
 
                     let statusClass = 'status-badge';
@@ -491,6 +493,7 @@
                         const userPick = cardPicks.find(p => p.device_uid === uid);
                         
                         if (isLocked) {
+                            // REVEAL PICK AFTER KICKOFF
                             const teamTag = userPick 
                                 ? `<span class="user-pick-tag" style="border-color: var(--retro-yellow); color: var(--retro-yellow);">${userPick.chosen_team}</span>`
                                 : `<span class="user-pick-tag" style="border-color: #64748b; color: #64748b;">NO PICK</span>`;
@@ -501,8 +504,9 @@
                                     ${teamTag}
                                 </div>`;
                         } else {
+                            // BEFORE KICKOFF: HIDE SELECTION, SHOW STATUS ONLY
                             const statusTag = userPick 
-                                ? `<span class="pick-status-done">${userPick.chosen_team} ✓</span>`
+                                ? `<span class="pick-status-done">PICKED ✓</span>`
                                 : `<span class="pick-status-pending">WAITING...</span>`;
 
                             picksListHTML += `
