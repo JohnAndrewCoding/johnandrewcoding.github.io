@@ -336,7 +336,7 @@
                     return;
                 }
 
-                // Create a lookup table for ordered slates
+                // Create lookup table for ordered slates
                 const gameList = slateData.map((s, idx) => ({
                     espnGameId: String(s.espn_game_id),
                     cardKey: `card-${idx + 1}`,
@@ -346,15 +346,15 @@
                 // 2. Fetch user picks for this week
                 const { data: userPicks } = await supabaseClient
                     .from('picks')
-                    .select('card_id, espn_game_id, chosen_team')
+                    .select('id, card_id, espn_game_id, chosen_team')
                     .eq('device_uid', deviceUID)
                     .eq('week_number', currentWeek);
 
-                // Map picks by both card_id and espn_game_id so legacy entries match
+                // Map picks by card_id, espn_game_id, AND store row ID
                 const picksMap = {};
                 (userPicks || []).forEach(p => {
-                    if (p.card_id) picksMap[String(p.card_id)] = p.chosen_team;
-                    if (p.espn_game_id) picksMap[String(p.espn_game_id)] = p.chosen_team;
+                    if (p.card_id) picksMap[String(p.card_id)] = p;
+                    if (p.espn_game_id) picksMap[String(p.espn_game_id)] = p;
                 });
 
                 // 3. Fetch ESPN Scores/Matchups
@@ -389,7 +389,9 @@
                     const awayName = away.team.abbreviation || away.team.shortDisplayName;
 
                     // Match pick by card_id ("card-X") OR raw espn_game_id
-                    let userChoice = picksMap[game.cardKey] || picksMap[game.espnGameId] || '';
+                    const existingPickObj = picksMap[game.cardKey] || picksMap[game.espnGameId];
+                    let userChoice = existingPickObj ? existingPickObj.chosen_team : '';
+                    let existingRowId = existingPickObj ? existingPickObj.id : null;
                     let hasPicked = Boolean(userChoice);
 
                     if (hasPicked) {
@@ -446,19 +448,30 @@
                                 updateStats(totalMade, totalMissing, gameList.length);
                             }
 
-                            // Save pick to Supabase including both card_id and espn_game_id
+                            // Save pick directly to Supabase using explicit update/insert logic
                             try {
-                                const { error } = await supabaseClient
-                                    .from('picks')
-                                    .upsert({
-                                        device_uid: deviceUID,
-                                        week_number: parseInt(currentWeek, 10),
-                                        card_id: game.cardKey,
-                                        espn_game_id: game.espnGameId,
-                                        chosen_team: nextChoice
-                                    }, { onConflict: 'device_uid,week_number,card_id' });
+                                const payload = {
+                                    device_uid: deviceUID,
+                                    week_number: parseInt(currentWeek, 10),
+                                    card_id: game.cardKey,
+                                    espn_game_id: game.espnGameId,
+                                    chosen_team: nextChoice
+                                };
 
-                                if (error) console.error("Error saving pick:", error);
+                                if (existingRowId) {
+                                    payload.id = existingRowId;
+                                }
+
+                                const { data: savedData, error } = await supabaseClient
+                                    .from('picks')
+                                    .upsert(payload)
+                                    .select();
+
+                                if (error) {
+                                    console.error("Supabase Save Error Details:", error);
+                                } else if (savedData && savedData[0]) {
+                                    existingRowId = savedData[0].id;
+                                }
                             } catch (err) {
                                 console.error("Error saving pick:", err);
                             }
