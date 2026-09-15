@@ -833,34 +833,33 @@ async function generateAnalystTicker() {
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
                 // 7. Find Conference Kings
-                const confLeaders = {}; 
+               // 7. Find Conference Kings (ONLY awarded if a user is uniquely leading with no ties)
+                const confLeaders = {}; // confName -> uid
                 ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
-                    let bestPct = -1;
-                    let bestUid = null;
+                    let bestPct = -1.0;
+                    let topCandidates = [];
 
                     Object.keys(globalUserConfStats).forEach(uid => {
                         const cStat = globalUserConfStats[uid][conf];
                         if (cStat) {
                             const cTotal = cStat.wins + cStat.losses;
                             if (cTotal >= 2) {
-                                const cPct = (cStat.wins / cTotal) * 100;
+                                const cPct = (cStat.wins / cTotal) * 100.0;
                                 if (cPct > bestPct) {
                                     bestPct = cPct;
-                                    bestUid = uid;
+                                    topCandidates = [uid]; // Reset with new sole leader
+                                } else if (cPct === bestPct) {
+                                    topCandidates.push(uid); // Add to tie list
                                 }
                             }
                         }
                     });
 
-                    if (bestUid && bestPct >= 50.0) {
-                        confLeaders[conf] = bestUid;
+                    // ONLY award title if there is EXACTLY ONE candidate (no ties) and >= 50% win rate
+                    if (topCandidates.length === 1 && bestPct >= 50.0) {
+                        confLeaders[conf] = topCandidates[0];
                     }
                 });
-
-                if (userScores.length === 0) {
-                    container.innerHTML = `<div class="empty-slate">NO LEAGUE PLAYERS FOUND</div>`;
-                    return;
-                }
 
                 // 8. Render Leaderboard Cards
                 container.innerHTML = '';
