@@ -500,40 +500,45 @@
             try {
                 if (!chosenTeam) {
                     // Remove pick from database if reset to '--'
-                    await supabaseClient
+                    const { error: delErr } = await supabaseClient
                         .from('picks')
                         .delete()
                         .eq('device_uid', uid)
                         .eq('week_number', currentWeek)
                         .eq('card_id', cardKey);
 
+                    if (delErr) console.error("Delete error:", delErr);
                     selectEl.className = 'pick-select no-pick';
                 } else {
-                    // Check if pick record exists before performing insert/update
-                    const { data: existingPick } = await supabaseClient
-                        .from('picks')
-                        .select('id')
-                        .eq('device_uid', uid)
-                        .eq('week_number', currentWeek)
-                        .eq('card_id', cardKey)
-                        .maybeSingle();
+                    // Try formatted string card_id first; fallback to parsed integer if DB type is integer
+                    const cardValue = isNaN(cardKey) ? cardKey : parseInt(cardKey, 10);
 
-                    if (existingPick) {
-                        // Update existing record
-                        await supabaseClient
+                    const { error: upsertErr } = await supabaseClient
+                        .from('picks')
+                        .upsert({
+                            device_uid: uid,
+                            week_number: parseInt(currentWeek, 10),
+                            card_id: cardValue,
+                            chosen_team: chosenTeam
+                        }, { onConflict: 'device_uid,week_number,card_id' });
+
+                    if (upsertErr) {
+                        console.warn("Primary upsert failed, attempting numeric card_id fallback:", upsertErr);
+                        // Fallback attempt stripping "card-" in case card_id in SQL is integer
+                        const numericCardId = parseInt(String(cardKey).replace(/\D/g, ''), 10) || 1;
+                        const { error: fallbackErr } = await supabaseClient
                             .from('picks')
-                            .update({ chosen_team: chosenTeam })
-                            .eq('id', existingPick.id);
-                    } else {
-                        // Insert new record
-                        await supabaseClient
-                            .from('picks')
-                            .insert({
+                            .upsert({
                                 device_uid: uid,
-                                week_number: currentWeek,
-                                card_id: cardKey,
+                                week_number: parseInt(currentWeek, 10),
+                                card_id: numericCardId,
                                 chosen_team: chosenTeam
                             });
+
+                        if (fallbackErr) {
+                            console.error("Fallback upsert error:", fallbackErr);
+                            throw fallbackErr;
+                        }
                     }
 
                     selectEl.className = 'pick-select has-pick';
