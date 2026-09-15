@@ -214,7 +214,7 @@
         .matchup-card.dragging .teams-wrapper,
         .matchup-card.dragging .team-btn,
         .matchup-card.dragging .team-display-block,
-        .matchup-card.dragging .venue-link {
+        .matchup-card.dragging .stats-btn {
             pointer-events: none;
         }
 
@@ -226,19 +226,22 @@
             line-height: 1.4;
         }
 
-        .venue-link {
-            color: #64748b;
-            text-decoration: underline;
-            text-decoration-style: dotted;
+        .stats-btn {
+            background: #000000;
+            color: var(--retro-yellow);
+            border: 1px solid var(--retro-yellow);
+            padding: 0.2rem 0.4rem;
+            font-family: var(--pixel-font);
+            font-size: 0.45rem;
             cursor: pointer;
+            margin-top: 0.25rem;
             display: inline-block;
-            transition: color 0.2s ease;
+            box-shadow: 1px 1px 0px #000;
         }
 
-        @media (hover: hover) {
-            .venue-link:hover {
-                color: var(--retro-blue);
-            }
+        .stats-btn:hover {
+            background: var(--retro-yellow);
+            color: #000000;
         }
 
         .teams-wrapper {
@@ -444,6 +447,103 @@
             transform: translateY(0px);
         }
 
+        /* MODAL STYLES FOR MATCHUP SUMMARY */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background-color: var(--bg-card);
+            border: 4px solid var(--retro-yellow);
+            box-shadow: 6px 6px 0px #000000;
+            width: 100%;
+            max-width: 420px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            font-family: var(--pixel-font);
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px dashed #475569;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-title {
+            font-size: 0.75rem;
+            color: var(--retro-yellow);
+        }
+
+        .close-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 0.2rem 0.5rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+        }
+
+        .stat-box {
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.6rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.55rem;
+            line-height: 1.5;
+        }
+
+        .stat-title {
+            color: var(--retro-blue);
+            margin-bottom: 0.4rem;
+            text-decoration: underline;
+        }
+
+        .win-bar-container {
+            width: 100%;
+            height: 16px;
+            background: #334155;
+            border: 2px solid #000;
+            display: flex;
+            margin: 0.4rem 0;
+        }
+
+        .win-bar-away {
+            height: 100%;
+            background: var(--retro-blue);
+            transition: width 0.3s ease;
+        }
+
+        .win-bar-home {
+            height: 100%;
+            background: var(--retro-red);
+            transition: width 0.3s ease;
+        }
+
         @media (max-width: 600px) {
             .vs-divider { display: none; }
             .mobile-hint { display: block; }
@@ -480,6 +580,19 @@
         &lt; SWIPE LEFT FOR HOME | SWIPE RIGHT FOR AWAY &gt;
     </div>
 
+    <!-- MATCHUP SUMMARY MODAL -->
+    <div class="modal-overlay" id="summary-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-matchup-title">MATCHUP BREAKDOWN</span>
+                <button class="close-btn" onclick="closeSummaryModal()">X</button>
+            </div>
+            <div id="modal-summary-content">
+                <div class="stat-box" style="text-align:center;">LOADING MATCHUP STATS...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentWeek = 2; // Default fallback week
         let currentCardIndex = 1;
@@ -504,7 +617,6 @@
 
         async function initSwiperPage() {
             try {
-                // Fetch current week automatically from ESPN API on page load
                 const currentRes = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80`);
                 const currentData = await currentRes.json();
                 if (currentData.week && currentData.week.number) {
@@ -595,8 +707,6 @@
                     return;
                 }
 
-                // Filter 1: Must be in weekly slate
-                // Filter 2: Must NOT have started yet (+ 5 min buffer)
                 gamesData = data.events.filter(gameEvent => {
                     const isAllowed = allowedIds.has(String(gameEvent.id));
                     const isStarted = isGameStartedOrLocked(gameEvent.date);
@@ -649,14 +759,6 @@
                                           " @ " + 
                                           kickoffDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
-                    const venue = competition.venue || {};
-                    const stadiumName = venue.fullName ? venue.fullName.toUpperCase() : "UNKNOWN STADIUM";
-                    const stadiumLoc = (venue.address && venue.address.city && venue.address.state) 
-                        ? `${venue.address.city}, ${venue.address.state}`.toUpperCase() 
-                        : "LOCATION N/A";
-
-                    const gamecastUrl = `https://www.espn.com/college-football/game/_/gameId/${gameEvent.id}`;
-
                     const currentWeekPicks = savedPicks[`week-${currentWeek}`] || {};
                     const existingPick = currentWeekPicks[gameId] || currentWeekPicks[domCardId] || null;
 
@@ -692,11 +794,9 @@
                     card.innerHTML = `
                         <span class="matchup-number">
                             ${formattedTime}<br>
-                            <a href="${gamecastUrl}" target="_blank" rel="noopener noreferrer" class="venue-link" onclick="event.stopPropagation();">
-                                <small style="font-size: 0.45rem; line-height: 1.4;">
-                                    ${stadiumName}<br>${stadiumLoc}
-                                </small>
-                            </a>
+                            <button class="stats-btn" onclick="event.stopPropagation(); openSummaryModal('${gameId}', '${away.code}', '${home.code}')">
+                                📊 MATCHUP STATS
+                            </button>
                         </span>
                         <div class="teams-wrapper">
                             <div class="team-display-block">
@@ -735,6 +835,86 @@
                 console.error("Failed to map ESPN payload structure:", error);
                 progressDisplay.innerText = "API CONNECTION ERROR";
             }
+        }
+
+        // Summary Modal Logic
+        async function openSummaryModal(espnGameId, awayCode, homeCode) {
+            const modal = document.getElementById('summary-modal');
+            const titleEl = document.getElementById('modal-matchup-title');
+            const contentEl = document.getElementById('modal-summary-content');
+
+            titleEl.innerText = `${awayCode} @ ${homeCode}`;
+            contentEl.innerHTML = `<div class="stat-box" style="text-align:center;">LOADING MATCHUP STATS...</div>`;
+            modal.classList.add('active');
+
+            try {
+                const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${espnGameId}`);
+                const data = await res.json();
+
+                let html = '';
+
+                // 1. Win Probability Predictor
+                if (data.predictor && data.predictor.homeChance) {
+                    const homeChance = Math.round(data.predictor.homeChance * 100);
+                    const awayChance = 100 - homeChance;
+
+                    html += `
+                        <div class="stat-box">
+                            <div class="stat-title">ESPN WIN PREDICTOR</div>
+                            <div style="display:flex; justify-content:space-between;">
+                                <span style="color:var(--retro-blue);">${awayCode}: ${awayChance}%</span>
+                                <span style="color:var(--retro-red);">${homeCode}: ${homeChance}%</span>
+                            </div>
+                            <div class="win-bar-container">
+                                <div class="win-bar-away" style="width:${awayChance}%;"></div>
+                                <div class="win-bar-home" style="width:${homeChance}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 2. Game Odds & Over/Under
+                if (data.pickcenter && data.pickcenter.length > 0) {
+                    const odds = data.pickcenter[0];
+                    html += `
+                        <div class="stat-box">
+                            <div class="stat-title">VEGAS LINE & O/U</div>
+                            <div>SPREAD: <span style="color:var(--retro-yellow);">${odds.details || 'N/A'}</span></div>
+                            <div>OVER/UNDER: <span style="color:var(--retro-yellow);">${odds.overUnder || 'N/A'}</span></div>
+                        </div>
+                    `;
+                }
+
+                // 3. Team Leaders
+                if (data.leaders && data.leaders.length > 0) {
+                    html += `<div class="stat-box"><div class="stat-title">KEY STAT LEADERS</div>`;
+                    data.leaders.forEach(category => {
+                        const catName = category.displayName.toUpperCase();
+                        if (category.leaders && category.leaders[0]) {
+                            const l = category.leaders[0];
+                            const athlete = l.athlete ? l.athlete.displayName : 'N/A';
+                            const value = l.displayValue || '';
+                            html += `<div style="margin-bottom:0.3rem;"><strong style="color:var(--retro-yellow);">${catName}:</strong> ${athlete} (${value})</div>`;
+                        }
+                    });
+                    html += `</div>`;
+                }
+
+                // Fallback if stats unavailable
+                if (!html) {
+                    html = `<div class="stat-box" style="text-align:center; color:#94a3b8;">NO ADVANCED STATS AVAILABLE FOR THIS GAME YET.</div>`;
+                }
+
+                contentEl.innerHTML = html;
+
+            } catch (err) {
+                console.error("Failed to load summary:", err);
+                contentEl.innerHTML = `<div class="stat-box" style="text-align:center; color:var(--retro-red);">ERROR LOADING MATCHUP STATS.</div>`;
+            }
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('summary-modal').classList.remove('active');
         }
 
         function changeWeek(direction) {
