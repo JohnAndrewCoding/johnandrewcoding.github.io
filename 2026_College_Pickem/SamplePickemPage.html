@@ -840,33 +840,53 @@
         // Summary Modal Logic
       // Summary Modal Logic (Safe from undefined properties)
         // Summary Modal Logic (Tailored specifically for Straight-Up Pick'em)
+// Upgraded Matchup Scouting Modal incorporating High-Value Metrics
         async function openSummaryModal(espnGameId, awayCode, homeCode) {
             const modal = document.getElementById('summary-modal');
             const titleEl = document.getElementById('modal-matchup-title');
             const contentEl = document.getElementById('modal-summary-content');
 
-            titleEl.innerText = `${awayCode} @ ${homeCode}`;
-            contentEl.innerHTML = `<div class="stat-box" style="text-align:center;">GENERATING SCOUTING REPORT...</div>`;
+            titleEl.innerText = `${awayCode} @ ${homeCode} SCOUTING REPORT`;
+            contentEl.innerHTML = `<div class="stat-box" style="text-align:center;">GENERATING ADVANCED METRICS...</div>`;
             modal.classList.add('active');
 
             try {
-                // Fetch full ESPN game summary payload
+                // 1. Fetch ESPN summary data
                 const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${espnGameId}`);
                 const data = await res.json();
 
+                // 2. Fetch league pick popularity for this game from Supabase
+                const { data: poolPicks } = await supabaseClient
+                    .from('picks')
+                    .select('chosen_team')
+                    .eq('week_number', currentWeek)
+                    .or(`card_id.eq.card-${currentCardIndex},card_id.eq.${espnGameId},espn_game_id.eq.${espnGameId}`);
+
+                let totalPoolPicks = 0;
+                let homePoolCount = 0;
+                let awayPoolCount = 0;
+
+                (poolPicks || []).forEach(p => {
+                    const chosen = (p.chosen_team || '').trim().toUpperCase();
+                    if (chosen === awayCode.toUpperCase()) { awayPoolCount++; totalPoolPicks++; }
+                    else if (chosen === homeCode.toUpperCase()) { homePoolCount++; totalPoolPicks++; }
+                });
+
+                const awayPopPct = totalPoolPicks > 0 ? Math.round((awayPoolCount / totalPoolPicks) * 100) : 50;
+                const homePopPct = totalPoolPicks > 0 ? Math.round((homePoolCount / totalPoolPicks) * 100) : 50;
+
                 let html = '';
 
-                // 1. STRAIGHT-UP WIN PREDICTOR (CRITICAL FOR PICK'EM)
+                // METRIC 1: MARKET WIN PROBABILITY (PRIMARY GROUND TRUTH)
                 if (data.predictor && data.predictor.homeChance !== undefined) {
                     const homeChance = Math.round(data.predictor.homeChance * 100);
                     const awayChance = 100 - homeChance;
-
                     const favoriteCode = homeChance >= 50 ? homeCode : awayCode;
                     const favoriteChance = Math.max(homeChance, awayChance);
 
                     html += `
                         <div class="stat-box">
-                            <div class="stat-title">🔮 STRAIGHT-UP WIN PROBABILITY</div>
+                            <div class="stat-title">🎯 MARKET IMPLIED WIN PROBABILITY</div>
                             <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom: 0.3rem;">
                                 <span style="color:var(--retro-blue);">${awayCode}: ${awayChance}%</span>
                                 <span style="color:var(--retro-red);">${homeCode}: ${homeChance}%</span>
@@ -876,40 +896,61 @@
                                 <div class="win-bar-home" style="width:${homeChance}%;"></div>
                             </div>
                             <div style="text-align:center; color:var(--retro-yellow); margin-top:0.4rem; font-size:0.5rem;">
-                                MODEL FAVORS: <strong>${favoriteCode} (${favoriteChance}% CHANCE)</strong>
+                                BASELINE FAVORITE: <strong>${favoriteCode} (${favoriteChance}%)</strong>
                             </div>
                         </div>
                     `;
                 }
 
-                // 2. TEAM RECORDS & SEASON FORM
-                if (data.header && data.header.competitions && data.header.competitions[0]) {
-                    const comp = data.header.competitions[0];
-                    const home = comp.competitors.find(c => c.homeAway === 'home');
-                    const away = comp.competitors.find(c => c.homeAway === 'away');
-
-                    const homeRecord = home && home.record ? home.record[0].summary : 'N/A';
-                    const awayRecord = away && away.record ? away.record[0].summary : 'N/A';
-
-                    html += `
-                        <div class="stat-box">
-                            <div class="stat-title">📊 SEASON RECORDS & FORM</div>
-                            <div style="display:flex; justify-content:space-between;">
-                                <span>${awayCode} RECORD: <strong style="color:#fff;">${awayRecord}</strong></span>
-                                <span>${homeCode} RECORD: <strong style="color:#fff;">${homeRecord}</strong></span>
-                            </div>
+                // METRIC 2: POOL PICK POPULARITY (LEVERAGE METRIC)
+                html += `
+                    <div class="stat-box">
+                        <div class="stat-title">📊 LEAGUE PICK POPULARITY (${totalPoolPicks} PICKS)</div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem;">
+                            <span style="color:var(--retro-blue);">${awayCode}: ${awayPopPct}%</span>
+                            <span style="color:var(--retro-red);">${homeCode}: ${homePopPct}%</span>
                         </div>
-                    `;
+                        <div class="win-bar-container" style="height:10px;">
+                            <div class="win-bar-away" style="width:${awayPopPct}%; background:var(--retro-blue);"></div>
+                            <div class="win-bar-home" style="width:${homePopPct}%; background:var(--retro-red);"></div>
+                        </div>
+                        <div style="font-size:0.48rem; color:#94a3b8; margin-top:0.3rem; text-align:center;">
+                            ${homePopPct >= 70 || awayPopPct >= 70 ? '⚠️ HIGH PUBLIC CHALK GAME' : '⚖️ BALANCED POOL SPLIT'}
+                        </div>
+                    </div>
+                `;
+
+                // METRIC 3: ADVANCED SITUATIONAL DATA (THIRD DOWN, TURNOVERS, REDZONE)
+                if (data.boxscore && data.boxscore.teams) {
+                    let teamStatsHTML = '';
+                    data.boxscore.teams.forEach(t => {
+                        const code = t.team.abbreviation;
+                        const stats = t.statistics || [];
+                        const thirdDown = stats.find(s => s.name === 'thirdDownEff')?.displayValue || 'N/A';
+                        const turnovers = stats.find(s => s.name === 'turnovers')?.displayValue || '0';
+                        const yardsPerPlay = stats.find(s => s.name === 'yardsPerPlay')?.displayValue || 'N/A';
+
+                        teamStatsHTML += `
+                            <div style="margin-bottom:0.3rem;">
+                                <strong style="color:var(--retro-yellow);">${code}:</strong> 
+                                YDS/PLAY: <strong>${yardsPerPlay}</strong> | 3RD-DOWN: <strong>${thirdDown}</strong> | TO: <strong>${turnovers}</strong>
+                            </div>
+                        `;
+                    });
+
+                    if (teamStatsHTML) {
+                        html += `<div class="stat-box"><div class="stat-title">⚡ EFFICIENCY & SITUATIONAL METRICS</div>${teamStatsHTML}</div>`;
+                    }
                 }
 
-                // 3. GAME ENVIRONMENT & LOCATION ADVANTAGE
+                // METRIC 4: GAME ENVIRONMENT & VENUE ADVANTAGE
                 if (data.gameInfo) {
                     const gi = data.gameInfo;
                     const venueName = gi.venue ? gi.venue.fullName.toUpperCase() : 'STADIUM N/A';
                     const city = (gi.venue && gi.venue.address && gi.venue.address.city) ? gi.venue.address.city.toUpperCase() : '';
                     const state = (gi.venue && gi.venue.address && gi.venue.address.state) ? gi.venue.address.state.toUpperCase() : '';
                     
-                    let weatherText = 'DOME / INDOORS';
+                    let weatherText = 'INDOORS / DOME';
                     if (gi.weather) {
                         const temp = gi.weather.temperature ? `${gi.weather.temperature}°F` : '';
                         const desc = gi.weather.displayValue || '';
@@ -925,11 +966,11 @@
                     `;
                 }
 
-                // 4. KEY MATCHUP PLAYERS & PLAYMAKERS
+                // METRIC 5: KEY PLAYMAKERS TO WATCH
                 if (data.leaders && data.leaders.length > 0) {
                     let leadersHTML = '';
                     data.leaders.forEach(category => {
-                        const catName = category && (category.displayName || category.name || 'STAT LEADER');
+                        const catName = category && (category.displayName || category.name || 'LEADER');
                         if (category && category.leaders && category.leaders[0]) {
                             const l = category.leaders[0];
                             const athlete = (l.athlete && l.athlete.displayName) ? l.athlete.displayName : 'N/A';
@@ -944,13 +985,8 @@
                     });
 
                     if (leadersHTML) {
-                        html += `<div class="stat-box"><div class="stat-title">⭐ KEY PLAYMAKERS TO WATCH</div>${leadersHTML}</div>`;
+                        html += `<div class="stat-box"><div class="stat-title">⭐ KEY PLAYMAKERS</div>${leadersHTML}</div>`;
                     }
-                }
-
-                // Fallback if payload empty
-                if (!html) {
-                    html = `<div class="stat-box" style="text-align:center; color:#94a3b8;">NO SCOUTING DATA AVAILABLE FOR THIS GAME YET.</div>`;
                 }
 
                 contentEl.innerHTML = html;
