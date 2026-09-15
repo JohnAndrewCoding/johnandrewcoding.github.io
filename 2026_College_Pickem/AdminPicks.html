@@ -377,7 +377,7 @@
                 // Fetch picks for this week
                 const { data: pickData } = await supabaseClient
                     .from('picks')
-                    .select('device_uid, week_number, card_id, chosen_team')
+                    .select('device_uid, week_number, card_id, chosen_team, espn_game_id')
                     .eq('week_number', currentWeek);
                 picks = pickData || [];
 
@@ -486,7 +486,7 @@
                     `;
 
                     // Trigger database override save on change
-                    select.onchange = (e) => saveOverridePick(user.device_uid, g.cardKey, e.target.value, select);
+                    select.onchange = (e) => saveOverridePick(user.device_uid, g.cardKey, g.gameId, e.target.value, select);
 
                     td.appendChild(select);
                     tr.appendChild(td);
@@ -496,7 +496,7 @@
             });
         }
 
-        async function saveOverridePick(uid, cardKey, chosenTeam, selectEl) {
+        async function saveOverridePick(uid, cardKey, gameId, chosenTeam, selectEl) {
             try {
                 if (!chosenTeam) {
                     // Remove pick from database if reset to '--'
@@ -510,35 +510,19 @@
                     if (delErr) console.error("Delete error:", delErr);
                     selectEl.className = 'pick-select no-pick';
                 } else {
-                    // Try formatted string card_id first; fallback to parsed integer if DB type is integer
-                    const cardValue = isNaN(cardKey) ? cardKey : parseInt(cardKey, 10);
-
                     const { error: upsertErr } = await supabaseClient
                         .from('picks')
                         .upsert({
                             device_uid: uid,
                             week_number: parseInt(currentWeek, 10),
-                            card_id: cardValue,
+                            card_id: cardKey,
+                            espn_game_id: gameId,
                             chosen_team: chosenTeam
                         }, { onConflict: 'device_uid,week_number,card_id' });
 
                     if (upsertErr) {
-                        console.warn("Primary upsert failed, attempting numeric card_id fallback:", upsertErr);
-                        // Fallback attempt stripping "card-" in case card_id in SQL is integer
-                        const numericCardId = parseInt(String(cardKey).replace(/\D/g, ''), 10) || 1;
-                        const { error: fallbackErr } = await supabaseClient
-                            .from('picks')
-                            .upsert({
-                                device_uid: uid,
-                                week_number: parseInt(currentWeek, 10),
-                                card_id: numericCardId,
-                                chosen_team: chosenTeam
-                            });
-
-                        if (fallbackErr) {
-                            console.error("Fallback upsert error:", fallbackErr);
-                            throw fallbackErr;
-                        }
+                        console.error("Upsert error:", upsertErr);
+                        throw upsertErr;
                     }
 
                     selectEl.className = 'pick-select has-pick';
