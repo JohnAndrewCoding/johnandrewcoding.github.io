@@ -308,7 +308,7 @@
 <body>
 
     <div class="top-nav">
-        <a href="ViewPicks.html" class="nav-link-btn">&lt; VIEWP ICKS</a>
+        <a href="ViewPicks.html" class="nav-link-btn">&lt; VIEW PICKS</a>
         <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS</a>
         <a href="Leaderboard.html" class="nav-link-btn">STANDINGS &gt;</a>
     </div>
@@ -327,7 +327,7 @@
         <div class="empty-slate">LOADING SCOREBOARDS...</div>
     </div>
 
-<script>
+    <script>
         let currentWeek = 1;
         let allUsers = [];
 
@@ -434,25 +434,6 @@
                 slateGames.forEach(({ slateRow, cardIndex, cardIdStr, gameEvent }) => {
                     const espnGameId = String(slateRow.espn_game_id);
 
-                    // Filter user picks matching this game card
-                    const cardPicks = (picksData || []).filter(p => {
-                        const pCardId = String(p.card_id || '');
-                        const pGameId = String(p.espn_game_id || '');
-
-                        return pCardId === cardIdStr ||
-                               pCardId === String(cardIndex) ||
-                               pCardId === String(slateRow.id) ||
-                               pGameId === espnGameId ||
-                               pCardId === espnGameId;
-                    }).map(p => {
-                        const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
-                        return {
-                            device_uid: p.device_uid,
-                            user_name: foundUser ? foundUser.user_name : 'PLAYER (' + p.device_uid.slice(0, 4) + ')',
-                            chosen_team: p.chosen_team
-                        };
-                    });
-
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
                     const statusState = gameEvent.status.type.state; 
@@ -474,6 +455,30 @@
                     let statusClass = 'status-badge';
                     if (statusState === 'in') statusClass += ' live';
                     if (statusState === 'post') statusClass += ' final';
+
+                    // Filter user picks PRIORITIZING espn_game_id first, then card_id if team matches
+                    const cardPicks = (picksData || []).filter(p => {
+                        const pGameId = String(p.espn_game_id || '');
+                        const pCardId = String(p.card_id || '');
+                        const chosen = p.chosen_team;
+
+                        // Match directly by espn_game_id FIRST
+                        if (pGameId === espnGameId) return true;
+
+                        // Fallback match by card_id ONLY if chosen team actually belongs to this game
+                        if (pCardId === cardIdStr || pCardId === String(cardIndex)) {
+                            return chosen === awayName || chosen === homeName;
+                        }
+
+                        return false;
+                    }).map(p => {
+                        const foundUser = allUsers.find(u => u.device_uid === p.device_uid);
+                        return {
+                            device_uid: p.device_uid,
+                            user_name: foundUser ? foundUser.user_name : 'PLAYER (' + p.device_uid.slice(0, 4) + ')',
+                            chosen_team: p.chosen_team
+                        };
+                    });
 
                     const displayUsersMap = new Map();
                     allUsers.forEach(u => displayUsersMap.set(u.device_uid, u.user_name));
