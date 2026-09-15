@@ -162,7 +162,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 130px;
+            max-width: 120px;
         }
 
         .rep-tier-badge {
@@ -425,15 +425,15 @@
         let globalProfiles = [];
         let globalSlates = [];
         let globalPicks = [];
-        let globalGamesCache = {}; // week_number -> raw ESPN event data
+        let globalGamesCache = {}; 
         let globalSlateMap = {};
-        let globalGameConferenceMap = {}; // game_id -> conference abbreviation (e.g. SEC, BIG10, ACC)
-        let globalUserConfStats = {}; // uid -> { conf -> { wins, losses } }
+        let globalGameConferenceMap = {}; 
+        let globalUserConfStats = {}; 
 
         let activeUserUid = null;
         let activeModalWeek = 1;
 
-        // Smooth Rep Score Color Scale: Dark Red (0%) -> Yellow (50%) -> Bright Green (75%+)
+        // Dynamic Color Scale: Red -> Yellow -> Green
         function getRepScoreColor(pct) {
             const p = Math.max(0.0, Math.min(100.0, parseFloat(pct) || 0));
             if (p < 50.0) {
@@ -449,11 +449,11 @@
                 const b = Math.round(21 + (128 - 21) * ratio);
                 return `rgb(${r}, ${g}, ${b})`;
             } else {
-                return `#4ade80`; // Bright Green
+                return `#4ade80`;
             }
         }
 
-        // TV Analyst Roast Titles based on Leaderboard Rank & Performance
+        // TV Analyst Roasts
         function getAnalystRoastBadge(rank, totalUsers, winPct, totalGames) {
             if (totalGames === 0) {
                 return { title: "BENCHWARMER", color: "#64748b", borderColor: "#475569" };
@@ -508,7 +508,7 @@
                 if (pickErr) throw pickErr;
                 globalPicks = picks || [];
 
-                // 4. Map Slate games to card IDs
+                // 4. Map Slate games
                 const weekRowCounters = {};
                 globalSlates.forEach(s => {
                     const w = s.week_number;
@@ -522,7 +522,7 @@
                     globalSlateMap[`${w}_${gameId}`] = gameId;
                 });
 
-                // 5. Fetch ESPN results and detect game conferences
+                // 5. Fetch ESPN data & Conferences
                 const weeks = [...new Set(globalSlates.map(s => s.week_number))];
                 const completedGames = new Map();
                 globalGameConferenceMap = {};
@@ -535,8 +535,6 @@
 
                         (espnData.events || []).forEach(event => {
                             const eventId = String(event.id);
-                            
-                            // Detect conference code
                             const comp = event.competitions[0];
                             let confName = 'OTHER';
 
@@ -551,7 +549,6 @@
                                 else if (cId === '9') confName = 'PAC12';
                             }
 
-                            // Normalize major conference names
                             if (confName.includes('SEC')) confName = 'SEC';
                             else if (confName.includes('BIG TEN') || confName.includes('B1G') || confName.includes('BIG10')) confName = 'BIG10';
                             else if (confName.includes('ACC')) confName = 'ACC';
@@ -560,7 +557,6 @@
 
                             globalGameConferenceMap[eventId] = confName;
 
-                            // Handle winner evaluation
                             if (event.status.type.state === 'post') {
                                 const home = comp.competitors.find(c => c.homeAway === 'home');
                                 const away = comp.competitors.find(c => c.homeAway === 'away');
@@ -588,7 +584,7 @@
                     }
                 }
 
-                // 6. Calculate Overall and Conference Win/Loss records per user
+                // 6. Calculate Records
                 globalUserConfStats = {};
 
                 const userScores = globalProfiles.map(p => {
@@ -640,8 +636,8 @@
 
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
-                // 7. Determine Conference Leaders (Best Win % with at least 2 games)
-                const confLeaders = {}; // confName -> { uid, winPct }
+                // 7. Find Conference Kings (One Leader per Conference)
+                const confLeaders = {}; 
                 ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
                     let bestPct = -1;
                     let bestUid = null;
@@ -670,7 +666,7 @@
                     return;
                 }
 
-                // 8. Render Standings Cards
+                // 8. Render Leaderboard Cards
                 container.innerHTML = '';
                 
                 const totalUsersCount = userScores.length;
@@ -678,7 +674,7 @@
 
                 userScores.forEach((user, idx) => {
                     if (idx > 0 && user.winPct === userScores[idx - 1].winPct) {
-                        // Same rank for tie
+                        // Tie rank
                     } else {
                         currentRank = idx + 1;
                     }
@@ -686,7 +682,7 @@
                     const badge = getAnalystRoastBadge(currentRank, totalUsersCount, user.winPct, user.totalGames);
                     const repColor = getRepScoreColor(user.winPct);
 
-                    // Check if this user holds any conference master badges
+                    // Check top conference badge
                     let confBadgeHTML = '';
                     Object.keys(confLeaders).forEach(conf => {
                         if (confLeaders[conf] === user.device_uid) {
@@ -728,7 +724,7 @@
             activeModalWeek = 1;
             document.getElementById('modal-user-name').innerText = userName.toUpperCase();
             
-            // Render Conference Breakdown Bar inside Modal
+            // Render Conference Stats Bar inside Modal
             const confContainer = document.getElementById('modal-conf-stats');
             confContainer.innerHTML = '';
 
