@@ -173,6 +173,16 @@
             text-transform: uppercase;
         }
 
+        .conf-badge {
+            font-size: 0.4rem;
+            padding: 0.12rem 0.25rem;
+            background: #000000;
+            border: 1px solid var(--retro-yellow);
+            color: var(--retro-yellow);
+            border-radius: 2px;
+            font-weight: bold;
+        }
+
         .user-record {
             font-size: 0.55rem;
             color: #94a3b8;
@@ -190,8 +200,8 @@
 
         .rep-value {
             font-size: 0.85rem;
-            color: var(--retro-green);
-            text-shadow: 0 0 5px rgba(74, 222, 128, 0.4);
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
         }
 
         .empty-slate {
@@ -246,7 +256,7 @@
             align-items: center;
             border-bottom: 2px dashed #475569;
             padding-bottom: 0.75rem;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
 
         .modal-title {
@@ -266,6 +276,25 @@
             cursor: pointer;
             font-family: var(--pixel-font);
             font-size: 0.6rem;
+        }
+
+        .modal-conf-stats {
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: space-around;
+            font-size: 0.45rem;
+        }
+
+        .conf-stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
         }
 
         .modal-week-controls {
@@ -298,7 +327,7 @@
             flex-direction: column;
             gap: 0.5rem;
             overflow-y: auto;
-            max-height: 50vh;
+            max-height: 45vh;
             padding-right: 0.25rem;
         }
 
@@ -376,6 +405,10 @@
                 <button class="close-btn" onclick="closeModal()">X</button>
             </div>
 
+            <div class="modal-conf-stats" id="modal-conf-stats">
+                <!-- Conference breakdown stats render here -->
+            </div>
+
             <div class="modal-week-controls">
                 <button class="modal-week-btn" onclick="changeModalWeek(-1)">&lt; PREV</button>
                 <span class="modal-week-display" id="modal-week-display">WEEK 01</span>
@@ -394,9 +427,31 @@
         let globalPicks = [];
         let globalGamesCache = {}; // week_number -> raw ESPN event data
         let globalSlateMap = {};
+        let globalGameConferenceMap = {}; // game_id -> conference abbreviation (e.g. SEC, BIG10, ACC)
+        let globalUserConfStats = {}; // uid -> { conf -> { wins, losses } }
 
         let activeUserUid = null;
         let activeModalWeek = 1;
+
+        // Smooth Rep Score Color Scale: Dark Red (0%) -> Yellow (50%) -> Bright Green (75%+)
+        function getRepScoreColor(pct) {
+            const p = Math.max(0.0, Math.min(100.0, parseFloat(pct) || 0));
+            if (p < 50.0) {
+                const ratio = p / 50.0;
+                const r = Math.round(153 + (250 - 153) * ratio);
+                const g = Math.round(27 + (204 - 27) * ratio);
+                const b = Math.round(27 + (21 - 27) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (p < 75.0) {
+                const ratio = (p - 50.0) / 25.0;
+                const r = Math.round(250 + (74 - 250) * ratio);
+                const g = Math.round(204 + (222 - 204) * ratio);
+                const b = Math.round(21 + (128 - 21) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                return `#4ade80`; // Bright Green
+            }
+        }
 
         // TV Analyst Roast Titles based on Leaderboard Rank & Performance
         function getAnalystRoastBadge(rank, totalUsers, winPct, totalGames) {
@@ -404,22 +459,18 @@
                 return { title: "BENCHWARMER", color: "#64748b", borderColor: "#475569" };
             }
 
-            // #1 Champion Title
             if (rank === 1) {
                 return { title: "THE PROPHET 👑", color: "#facc15", borderColor: "#facc15" };
             }
 
-            // Runner-Up Roast
             if (rank === 2) {
                 return { title: "FIRST LOSER 🥈", color: "#38bdf8", borderColor: "#38bdf8" };
             }
 
-            // Last Place Roast
             if (rank === totalUsers && totalUsers > 2) {
                 return { title: "DOORMAT 🤡", color: "#ef4444", borderColor: "#ef4444" };
             }
 
-            // Performance-Based Analysts Roasts for ranks 3+
             if (winPct >= 65.0) {
                 return { title: "LUCKY GUESSER 🍀", color: "#4ade80", borderColor: "#4ade80" };
             } else if (winPct >= 55.0) {
@@ -471,9 +522,10 @@
                     globalSlateMap[`${w}_${gameId}`] = gameId;
                 });
 
-                // 5. Fetch ESPN results for active weeks
+                // 5. Fetch ESPN results and detect game conferences
                 const weeks = [...new Set(globalSlates.map(s => s.week_number))];
                 const completedGames = new Map();
+                globalGameConferenceMap = {};
 
                 for (const week of weeks) {
                     try {
@@ -482,8 +534,34 @@
                         globalGamesCache[week] = espnData.events || [];
 
                         (espnData.events || []).forEach(event => {
+                            const eventId = String(event.id);
+                            
+                            // Detect conference code
+                            const comp = event.competitions[0];
+                            let confName = 'OTHER';
+
+                            if (comp.groups && comp.groups.shortName) {
+                                confName = comp.groups.shortName.toUpperCase();
+                            } else if (comp.competitors && comp.competitors[0] && comp.competitors[0].team.conferenceId) {
+                                const cId = String(comp.competitors[0].team.conferenceId);
+                                if (cId === '8') confName = 'SEC';
+                                else if (cId === '4') confName = 'BIG10';
+                                else if (cId === '1') confName = 'ACC';
+                                else if (cId === '12') confName = 'BIG12';
+                                else if (cId === '9') confName = 'PAC12';
+                            }
+
+                            // Normalize major conference names
+                            if (confName.includes('SEC')) confName = 'SEC';
+                            else if (confName.includes('BIG TEN') || confName.includes('B1G') || confName.includes('BIG10')) confName = 'BIG10';
+                            else if (confName.includes('ACC')) confName = 'ACC';
+                            else if (confName.includes('BIG 12') || confName.includes('BIG12')) confName = 'BIG12';
+                            else if (confName.includes('PAC')) confName = 'PAC12';
+
+                            globalGameConferenceMap[eventId] = confName;
+
+                            // Handle winner evaluation
                             if (event.status.type.state === 'post') {
-                                const comp = event.competitions[0];
                                 const home = comp.competitors.find(c => c.homeAway === 'home');
                                 const away = comp.competitors.find(c => c.homeAway === 'away');
 
@@ -501,7 +579,7 @@
                                         (winner.team.name || '').toUpperCase(),
                                         (winner.team.displayName || '').toUpperCase()
                                     ]);
-                                    completedGames.set(String(event.id), winnerNames);
+                                    completedGames.set(eventId, winnerNames);
                                 }
                             }
                         });
@@ -510,7 +588,9 @@
                     }
                 }
 
-                // 6. Calculate Win/Loss records per user
+                // 6. Calculate Overall and Conference Win/Loss records per user
+                globalUserConfStats = {};
+
                 const userScores = globalProfiles.map(p => {
                     const uid = p.device_uid;
                     const userName = p.coach_name || p.player_name || 'ANALYST (' + uid.slice(0, 4) + ')';
@@ -520,9 +600,16 @@
                     let wins = 0;
                     let losses = 0;
 
+                    globalUserConfStats[uid] = {};
+
                     userPicks.forEach(pick => {
                         const lookupKey = `${pick.week_number}_${pick.card_id}`;
                         const gameId = globalSlateMap[lookupKey] || String(pick.card_id);
+                        const conf = globalGameConferenceMap[gameId] || 'OTHER';
+
+                        if (!globalUserConfStats[uid][conf]) {
+                            globalUserConfStats[uid][conf] = { wins: 0, losses: 0 };
+                        }
 
                         if (completedGames.has(gameId)) {
                             const winningNames = completedGames.get(gameId);
@@ -530,8 +617,10 @@
 
                             if (winningNames.has(chosen)) {
                                 wins++;
+                                globalUserConfStats[uid][conf].wins += 1;
                             } else {
                                 losses++;
+                                globalUserConfStats[uid][conf].losses += 1;
                             }
                         }
                     });
@@ -551,12 +640,37 @@
 
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
+                // 7. Determine Conference Leaders (Best Win % with at least 2 games)
+                const confLeaders = {}; // confName -> { uid, winPct }
+                ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
+                    let bestPct = -1;
+                    let bestUid = null;
+
+                    Object.keys(globalUserConfStats).forEach(uid => {
+                        const cStat = globalUserConfStats[uid][conf];
+                        if (cStat) {
+                            const cTotal = cStat.wins + cStat.losses;
+                            if (cTotal >= 2) {
+                                const cPct = (cStat.wins / cTotal) * 100;
+                                if (cPct > bestPct) {
+                                    bestPct = cPct;
+                                    bestUid = uid;
+                                }
+                            }
+                        }
+                    });
+
+                    if (bestUid && bestPct >= 50.0) {
+                        confLeaders[conf] = bestUid;
+                    }
+                });
+
                 if (userScores.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO LEAGUE PLAYERS FOUND</div>`;
                     return;
                 }
 
-                // 7. Render Standings Cards with Roasts and Tied Rank Handling
+                // 8. Render Standings Cards
                 container.innerHTML = '';
                 
                 const totalUsersCount = userScores.length;
@@ -570,6 +684,15 @@
                     }
 
                     const badge = getAnalystRoastBadge(currentRank, totalUsersCount, user.winPct, user.totalGames);
+                    const repColor = getRepScoreColor(user.winPct);
+
+                    // Check if this user holds any conference master badges
+                    let confBadgeHTML = '';
+                    Object.keys(confLeaders).forEach(conf => {
+                        if (confLeaders[conf] === user.device_uid) {
+                            confBadgeHTML += `<span class="conf-badge">${conf} KING 👑</span>`;
+                        }
+                    });
 
                     const card = document.createElement('div');
                     card.className = `leaderboard-card ${currentRank === 1 ? 'rank-1' : ''}`;
@@ -581,12 +704,13 @@
                             <div class="user-name-row">
                                 <span class="user-name">${user.userName}</span>
                                 <span class="rep-tier-badge" style="color: ${badge.color}; border-color: ${badge.borderColor};">${badge.title}</span>
+                                ${confBadgeHTML}
                             </div>
                             <span class="user-record">REC: ${user.wins}-${user.losses}</span>
                         </div>
                         <div class="rep-score-box">
                             <div class="rep-label">REP SCORE</div>
-                            <div class="rep-value">${user.winPct}%</div>
+                            <div class="rep-value" style="color: ${repColor};">${user.winPct}%</div>
                         </div>
                     `;
 
@@ -603,6 +727,30 @@
             activeUserUid = uid;
             activeModalWeek = 1;
             document.getElementById('modal-user-name').innerText = userName.toUpperCase();
+            
+            // Render Conference Breakdown Bar inside Modal
+            const confContainer = document.getElementById('modal-conf-stats');
+            confContainer.innerHTML = '';
+
+            const userConfs = globalUserConfStats[uid] || {};
+            const keys = Object.keys(userConfs);
+
+            if (keys.length === 0) {
+                confContainer.innerHTML = `<div style="color:#64748b; margin:0 auto;">NO CONFERENCE DATA</div>`;
+            } else {
+                keys.forEach(c => {
+                    const st = userConfs[c];
+                    const tot = st.wins + st.losses;
+                    const pct = tot > 0 ? Math.round((st.wins / tot) * 100) : 0;
+                    confContainer.innerHTML += `
+                        <div class="conf-stat-item">
+                            <span style="color:var(--retro-yellow);">${c}</span>
+                            <span style="color:#fff;">${st.wins}-${st.losses} (${pct}%)</span>
+                        </div>
+                    `;
+                });
+            }
+
             document.getElementById('user-modal').classList.add('active');
             renderModalWeek();
         }
@@ -665,9 +813,7 @@
                 const gameDate = new Date(gameEvent.date);
                 const state = gameEvent.status.type.state;
 
-                // Game is locked if kickoff time passed or in-progress/completed
                 const isGameLocked = now >= gameDate || state !== 'pre';
-                // Show pick if it's the current device user's own card, or if the game has locked
                 const canRevealPick = isSelf || isGameLocked;
 
                 let statusClass = '';
