@@ -133,13 +133,13 @@
 
         .leaderboard-card.rank-1 {
             border-color: var(--retro-yellow);
-            background: linear-gradient(135deg, #1e293b 80%, #422006);
+            background: linear-gradient(135deg, #1e293b 75%, #422006);
         }
 
         .rank-badge {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--retro-yellow);
-            width: 35px;
+            width: 45px;
         }
 
         .user-details {
@@ -153,6 +153,7 @@
             display: flex;
             align-items: center;
             gap: 0.4rem;
+            flex-wrap: wrap;
         }
 
         .user-name {
@@ -165,7 +166,7 @@
         }
 
         .rep-tier-badge {
-            font-size: 0.45rem;
+            font-size: 0.42rem;
             padding: 0.15rem 0.3rem;
             border: 1px solid;
             border-radius: 2px;
@@ -349,10 +350,6 @@
         .result-badge.pending {
             color: var(--retro-yellow);
         }
-
-        .result-badge.hidden-pick {
-            color: var(--retro-blue);
-        }
     </style>
 </head>
 <body>
@@ -401,21 +398,36 @@
         let activeUserUid = null;
         let activeModalWeek = 1;
 
-        // Reputation Tier Helper Function
-        function getReputationBadge(pct, totalGames) {
+        // TV Analyst Roast Titles based on Leaderboard Rank & Performance
+        function getAnalystRoastBadge(rank, totalUsers, winPct, totalGames) {
             if (totalGames === 0) {
-                return { title: "ROOKIE", color: "#94a3b8", borderColor: "#64748b" };
+                return { title: "BENCHWARMER", color: "#64748b", borderColor: "#475569" };
             }
-            if (pct >= 70.0) {
-                return { title: "GOAT", color: "#facc15", borderColor: "#facc15" };
-            } else if (pct >= 62.0) {
-                return { title: "SHARK", color: "#38bdf8", borderColor: "#38bdf8" };
-            } else if (pct >= 52.0) {
-                return { title: "BALLER", color: "#4ade80", borderColor: "#4ade80" };
-            } else if (pct >= 42.0) {
-                return { title: "GRINDER", color: "#c084fc", borderColor: "#c084fc" };
+
+            // #1 Champion Title
+            if (rank === 1) {
+                return { title: "THE PROPHET 👑", color: "#facc15", borderColor: "#facc15" };
+            }
+
+            // Runner-Up Roast
+            if (rank === 2) {
+                return { title: "FIRST LOSER 🥈", color: "#38bdf8", borderColor: "#38bdf8" };
+            }
+
+            // Last Place Roast
+            if (rank === totalUsers && totalUsers > 2) {
+                return { title: "DOORMAT 🤡", color: "#ef4444", borderColor: "#ef4444" };
+            }
+
+            // Performance-Based Analysts Roasts for ranks 3+
+            if (winPct >= 65.0) {
+                return { title: "LUCKY GUESSER 🍀", color: "#4ade80", borderColor: "#4ade80" };
+            } else if (winPct >= 55.0) {
+                return { title: "STAT FRAUD 📊", color: "#38bdf8", borderColor: "#38bdf8" };
+            } else if (winPct >= 45.0) {
+                return { title: "MID CLOWN 🎪", color: "#c084fc", borderColor: "#c084fc" };
             } else {
-                return { title: "UNDERDOG", color: "#ef4444", borderColor: "#ef4444" };
+                return { title: "TV FRAUD 📺💀", color: "#ef4444", borderColor: "#ef4444" };
             }
         }
 
@@ -544,10 +556,12 @@
                     return;
                 }
 
-                // 7. Render Standings Cards handling ties and reputation badges
+                // 7. Render Standings Cards with Roasts and Tied Rank Handling
                 container.innerHTML = '';
                 
+                const totalUsersCount = userScores.length;
                 let currentRank = 1;
+
                 userScores.forEach((user, idx) => {
                     if (idx > 0 && user.winPct === userScores[idx - 1].winPct) {
                         // Same rank for tie
@@ -555,7 +569,7 @@
                         currentRank = idx + 1;
                     }
 
-                    const badge = getReputationBadge(user.winPct, user.totalGames);
+                    const badge = getAnalystRoastBadge(currentRank, totalUsersCount, user.winPct, user.totalGames);
 
                     const card = document.createElement('div');
                     card.className = `leaderboard-card ${currentRank === 1 ? 'rank-1' : ''}`;
