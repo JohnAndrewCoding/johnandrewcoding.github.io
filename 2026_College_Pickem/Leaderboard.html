@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>College Pickem 2026 Leaderboard</title>
+    <title>Retro Leaderboard</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -82,6 +82,35 @@
                 border-color: var(--retro-yellow);
                 color: var(--retro-yellow);
             }
+        }
+
+        /* RETRO NEWS TICKER STYLES */
+        .news-ticker-container {
+            width: 100%;
+            max-width: 480px;
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .ticker-title {
+            color: var(--retro-yellow);
+            white-space: nowrap;
+            background: var(--bg-card);
+            padding: 0.15rem 0.35rem;
+            border: 1px solid var(--retro-yellow);
+            font-size: 0.5rem;
+        }
+
+        #analyst-news-ticker {
+            color: #ffffff;
         }
 
         header {
@@ -389,6 +418,14 @@
         <a href="ViewGames.html" class="nav-link-btn">LIVE GAMES &gt;</a>
     </div>
 
+    <!-- DYNAMIC ANALYST TICKER -->
+    <div class="news-ticker-container">
+        <div class="ticker-title">BREAKING NEWS:</div>
+        <marquee id="analyst-news-ticker" behavior="scroll" direction="left" scrollamount="5">
+            FETCHING ANALYST HOT TAKES...
+        </marquee>
+    </div>
+
     <header>
         <h1 class="title">STANDINGS</h1>
     </header>
@@ -479,6 +516,40 @@
                 return { title: "MID CLOWN 🎪", color: "#c084fc", borderColor: "#c084fc" };
             } else {
                 return { title: "TV FRAUD 📺💀", color: "#ef4444", borderColor: "#ef4444" };
+            }
+        }
+
+        // Generate Dynamic Ticker News
+        async function generateAnalystTicker() {
+            const tickerEl = document.getElementById('analyst-news-ticker');
+            if (!tickerEl) return;
+
+            try {
+                const headlines = [];
+
+                globalProfiles.forEach(user => {
+                    const userName = (user.coach_name || user.player_name || 'ANALYST').toUpperCase();
+                    const userPicks = (globalPicks || []).filter(p => p.device_uid === user.device_uid);
+
+                    if (userPicks.length > 0) {
+                        const lastPick = userPicks[userPicks.length - 1];
+                        const team = lastPick.chosen_team;
+
+                        if (team) {
+                            headlines.push(`📢 ${userName}: "IF YOU DON'T PICK ${team}, YOU DON'T KNOW BALL!"`);
+                            headlines.push(`👀 SOURCES SAY ${userName} IS BETTING THEIR ENTIRE REPUTATION ON ${team}.`);
+                        }
+                    } else {
+                        headlines.push(`😴 ${userName} HASN'T SUBMITTED PICKS YET. FANS ARE LOSING PATIENCE!`);
+                    }
+                });
+
+                headlines.push(`🚨 BREAKING: LEAGUE STANDINGS UNDER FIRE AS ANALYSTS ACCUSE LEADER OF GETTING LUCKY!`);
+                headlines.push(`🔥 "STAT FRAUDS ARE EVERYWHERE THIS WEEK," DECLARES ANONYMOUS COACH.`);
+
+                tickerEl.innerText = headlines.join('   ---   ');
+            } catch (err) {
+                console.error("Failed to generate analyst ticker:", err);
             }
         }
 
@@ -636,7 +707,7 @@
 
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
-                // 7. Find Conference Kings (One Leader per Conference)
+                // 7. Find Conference Kings
                 const confLeaders = {}; 
                 ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
                     let bestPct = -1;
@@ -682,7 +753,6 @@
                     const badge = getAnalystRoastBadge(currentRank, totalUsersCount, user.winPct, user.totalGames);
                     const repColor = getRepScoreColor(user.winPct);
 
-                    // Check top conference badge
                     let confBadgeHTML = '';
                     Object.keys(confLeaders).forEach(conf => {
                         if (confLeaders[conf] === user.device_uid) {
@@ -713,6 +783,9 @@
                     container.appendChild(card);
                 });
 
+                // Generate Ticker Headlines
+                generateAnalystTicker();
+
             } catch (err) {
                 console.error("Error generating leaderboard:", err);
                 container.innerHTML = `<div class="empty-slate">ERROR LOADING LEADERBOARD</div>`;
@@ -724,7 +797,6 @@
             activeModalWeek = 1;
             document.getElementById('modal-user-name').innerText = userName.toUpperCase();
             
-            // Render Conference Stats Bar inside Modal
             const confContainer = document.getElementById('modal-conf-stats');
             confContainer.innerHTML = '';
 
