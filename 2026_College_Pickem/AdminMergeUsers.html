@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Account Merger</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <!-- SUPABASE CLIENT INTEGRATION -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const deviceUID = localStorage.getItem('my_device_uid');
+        if (!deviceUID) {
+            window.location.href = "index.html";
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-canvas: #0f172a;       
+            --bg-card: #1e293b;         
+            --retro-yellow: #facc15;    
+            --retro-blue: #38bdf8;      
+            --retro-green: #4ade80;     
+            --retro-red: #ef4444;
+            --pixel-font: 'Press Start 2P', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            background-color: var(--bg-canvas);
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 0.75rem;
+            gap: 0.5rem;
+        }
+
+        .nav-link-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 0.5rem;
+            text-decoration: none;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            text-align: center;
+            flex: 1;
+        }
+
+        .nav-link-btn:hover {
+            border-color: var(--retro-yellow);
+            color: var(--retro-yellow);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .title {
+            font-family: var(--pixel-font);
+            font-size: 1.1rem;
+            color: var(--retro-yellow);
+            text-shadow: 3px 3px 0px #000;
+        }
+
+        .merge-card {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--bg-card);
+            border: 4px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            padding: 1.5rem;
+            font-family: var(--pixel-font);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.6rem;
+            color: var(--retro-blue);
+        }
+
+        select, input {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            padding: 0.6rem;
+            border: 2px solid #334155;
+            outline: none;
+            width: 100%;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--retro-yellow);
+        }
+
+        .arrow-divider {
+            text-align: center;
+            color: var(--retro-yellow);
+            font-size: 0.9rem;
+        }
+
+        .merge-btn {
+            background: var(--retro-red);
+            color: #ffffff;
+            border: 3px solid #000000;
+            padding: 0.8rem;
+            font-family: var(--pixel-font);
+            font-size: 0.7rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000000;
+            margin-top: 0.5rem;
+        }
+
+        .merge-btn:hover {
+            background: #dc2626;
+        }
+
+        .merge-btn:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.75rem;
+            font-size: 0.55rem;
+            color: var(--retro-yellow);
+            min-height: 50px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="index.html" class="nav-link-btn">&lt; HOME</a>
+        <a href="Leaderboard.html" class="nav-link-btn">STANDINGS</a>
+        <a href="AdminPicks.html" class="nav-link-btn">ADMIN OVERRIDE &gt;</a>
+    </div>
+
+    <header>
+        <h1 class="title">ACCOUNT MERGER</h1>
+    </header>
+
+    <div class="merge-card">
+        <div class="form-group">
+            <label for="source-user">1. SELECT OLD / SECONDARY ACCOUNT (TO REMOVE):</label>
+            <select id="source-user" onchange="updatePreview()">
+                <option value="">LOADING USERS...</option>
+            </select>
+        </div>
+
+        <div class="arrow-divider">⬇ MERGE INTO ⬇</div>
+
+        <div class="form-group">
+            <label for="target-user">2. SELECT RECENT / PRIMARY ACCOUNT (TO KEEP):</label>
+            <select id="target-user" onchange="updatePreview()">
+                <option value="">LOADING USERS...</option>
+            </select>
+        </div>
+
+        <div class="status-box" id="status-box">
+            SELECT TWO ACCOUNTS TO PREVIEW THE MERGE OPERATION.
+        </div>
+
+        <button class="merge-btn" id="merge-btn" onclick="executeAccountMerge()" disabled>
+            MERGE ACCOUNTS
+        </button>
+    </div>
+
+    <script>
+        let profiles = [];
+
+        async function initMergerPage() {
+            await loadProfiles();
+        }
+
+        async function loadProfiles() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('device_uid, coach_name, player_name')
+                    .order('coach_name', { ascending: true });
+
+                if (error) throw error;
+                profiles = data || [];
+
+                const sourceSelect = document.getElementById('source-user');
+                const targetSelect = document.getElementById('target-user');
+
+                sourceSelect.innerHTML = '<option value="">-- SELECT OLD DEVICE --</option>';
+                targetSelect.innerHTML = '<option value="">-- SELECT TARGET DEVICE --</option>';
+
+                profiles.forEach(p => {
+                    const name = p.coach_name || p.player_name || 'ANALYST';
+                    const shortUid = p.device_uid.slice(0, 8);
+                    const optionText = `${name.toUpperCase()} (${shortUid}...)`;
+
+                    sourceSelect.innerHTML += `<option value="${p.device_uid}">${optionText}</option>`;
+                    targetSelect.innerHTML += `<option value="${p.device_uid}">${optionText}</option>`;
+                });
+
+            } catch (err) {
+                console.error("Error loading profiles:", err);
+                document.getElementById('status-box').innerText = "ERROR LOADING PROFILES FROM SUPABASE.";
+            }
+        }
+
+        function updatePreview() {
+            const sourceUid = document.getElementById('source-user').value;
+            const targetUid = document.getElementById('target-user').value;
+            const mergeBtn = document.getElementById('merge-btn');
+            const statusBox = document.getElementById('status-box');
+
+            if (!sourceUid || !targetUid) {
+                statusBox.innerText = "SELECT TWO ACCOUNTS TO PREVIEW MERGE.";
+                mergeBtn.disabled = true;
+                return;
+            }
+
+            if (sourceUid === targetUid) {
+                statusBox.innerText = "⚠ ERROR: SOURCE AND TARGET ACCOUNTS CANNOT BE THE SAME DEVICE.";
+                mergeBtn.disabled = true;
+                return;
+            }
+
+            const sourceProf = profiles.find(p => p.device_uid === sourceUid);
+            const targetProf = profiles.find(p => p.device_uid === targetUid);
+
+            const sourceName = sourceProf.coach_name || sourceProf.player_name || 'ANALYST';
+            const targetName = targetProf.coach_name || targetProf.player_name || 'ANALYST';
+
+            statusBox.innerHTML = `
+                READY TO MERGE:<br><br>
+                • OLD ACCOUNT: <span style="color: var(--retro-red);">${sourceName}</span> (${sourceUid.slice(0, 10)}...)<br>
+                • KEEP ACCOUNT: <span style="color: var(--retro-green);">${targetName}</span> (${targetUid.slice(0, 10)}...)<br><br>
+                ALL PICKS WILL BE CONSOLIDATED TO THE TARGET DEVICE.
+            `;
+
+            mergeBtn.disabled = false;
+        }
+
+        async function executeAccountMerge() {
+            const sourceUid = document.getElementById('source-user').value;
+            const targetUid = document.getElementById('target-user').value;
+            const mergeBtn = document.getElementById('merge-btn');
+            const statusBox = document.getElementById('status-box');
+
+            if (!confirm("Are you sure you want to merge these two accounts? This will delete the old device profile record.")) {
+                return;
+            }
+
+            mergeBtn.disabled = true;
+            statusBox.innerText = "PROCESSING MERGE OPERATIONS...";
+
+            try {
+                // 1. Fetch picks from source device
+                const { data: sourcePicks, error: fetchErr } = await supabaseClient
+                    .from('picks')
+                    .select('*')
+                    .eq('device_uid', sourceUid);
+
+                if (fetchErr) throw fetchErr;
+
+                // 2. Fetch picks from target device
+                const { data: targetPicks, error: targetFetchErr } = await supabaseClient
+                    .from('picks')
+                    .select('week_number, card_id')
+                    .eq('device_uid', targetUid);
+
+                if (targetFetchErr) throw targetFetchErr;
+
+                const targetPickSet = new Set((targetPicks || []).map(p => `${p.week_number}_${p.card_id}`));
+
+                // 3. Migrate source picks to target UID (skipping duplicates)
+                let migratedCount = 0;
+                for (const pick of (sourcePicks || [])) {
+                    const pickKey = `${pick.week_number}_${pick.card_id}`;
+
+                    if (!targetPickSet.has(pickKey)) {
+                        // Transfer pick to target device UID
+                        const { error: updateErr } = await supabaseClient
+                            .from('picks')
+                            .update({ device_uid: targetUid })
+                            .eq('id', pick.id);
+
+                        if (updateErr) console.error("Error migrating pick ID:", pick.id, updateErr);
+                        else migratedCount++;
+                    } else {
+                        // Delete conflicting duplicate pick from source device
+                        await supabaseClient.from('picks').delete().eq('id', pick.id);
+                    }
+                }
+
+                // 4. Remove source device profile
+                const { error: delProfErr } = await supabaseClient
+                    .from('profiles')
+                    .delete()
+                    .eq('device_uid', sourceUid);
+
+                if (delProfErr) console.error("Error deleting source profile:", delProfErr);
+
+                statusBox.innerHTML = `
+                    <span style="color: var(--retro-green);">✔ MERGE COMPLETE!</span><br><br>
+                    • Migrated ${migratedCount} pick(s) to target device.<br>
+                    • Cleaned up old device profile record.
+                `;
+
+                // Reload profiles list
+                await loadProfiles();
+
+            } catch (err) {
+                console.error("Account merge error:", err);
+                statusBox.innerText = "FAILED TO MERGE ACCOUNTS. CHECK CONSOLE LOGS.";
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', initMergerPage);
+    </script>
+</body>
+</html>
