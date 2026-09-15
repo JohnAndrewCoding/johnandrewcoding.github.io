@@ -258,7 +258,7 @@
 <body>
 
     <div class="top-nav">
-        <a href="index.html" class="nav-link-btn">&lt; STANDINGS</a>
+        <a href="Leaderboard.html" class="nav-link-btn">&lt; STANDINGS</a>
         <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS</a>
         <a href="ViewGames.html" class="nav-link-btn">LIVE GAMES &gt;</a>
     </div>
@@ -292,7 +292,7 @@
         <div class="empty-slate">LOADING PICKS...</div>
     </div>
 
-<script>
+    <script>
         let currentWeek = 1;
 
         async function initMyPicks() {
@@ -323,12 +323,14 @@
             const container = document.getElementById('picks-container');
             
             try {
-                // 1. Fetch configured games for this week in order
-                const { data: slateData } = await supabaseClient
+                // 1. Fetch configured games for this week ordered explicitly by ID
+                const { data: slateData, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, week_number, espn_game_id')
-                    .eq('week_number', currentWeek)
+                    .eq('week_number', parseInt(currentWeek, 10))
                     .order('id', { ascending: true });
+
+                if (slateErr) throw slateErr;
 
                 if (!slateData || slateData.length === 0) {
                     container.innerHTML = `<div class="empty-slate">NO GAMES FOR WEEK ${currentWeek}</div>`;
@@ -336,21 +338,24 @@
                     return;
                 }
 
-                // Create lookup table for ordered slates
+                // Create ordered list of slate items
                 const gameList = slateData.map((s, idx) => ({
+                    slateId: s.id,
                     espnGameId: String(s.espn_game_id),
                     cardKey: `card-${idx + 1}`,
                     index: idx + 1
                 }));
 
                 // 2. Fetch user picks for this week
-                const { data: userPicks } = await supabaseClient
+                const { data: userPicks, error: pickErr } = await supabaseClient
                     .from('picks')
                     .select('id, card_id, espn_game_id, chosen_team')
                     .eq('device_uid', deviceUID)
-                    .eq('week_number', currentWeek);
+                    .eq('week_number', parseInt(currentWeek, 10));
 
-                // Map picks by card_id, espn_game_id, AND store row ID
+                if (pickErr) throw pickErr;
+
+                // Index user picks comprehensively by cardKey, espn_game_id, AND slate card index
                 const picksMap = {};
                 (userPicks || []).forEach(p => {
                     if (p.card_id) picksMap[String(p.card_id)] = p;
@@ -372,15 +377,18 @@
                 let totalMade = 0;
                 let totalMissing = 0;
 
-                // 4. Build pick cards aligned strictly by slate order
+                // 4. Render Pick Cards mapped 1:1 with Weekly Slate order
                 gameList.forEach((game) => {
                     const gameEvent = espnEventsMap[game.espnGameId];
 
-                    if (!gameEvent) return; // Skip if game not found in ESPN payload
+                    if (!gameEvent) return; // Skip if ESPN payload is missing this event
 
                     const competition = gameEvent.competitions[0];
                     const gameDate = new Date(gameEvent.date);
-                    const isLocked = now >= gameDate;
+                    const statusState = gameEvent.status.type.state;
+                    
+                    // Game locks if kickoff passed OR game is live/post
+                    const isLocked = now >= gameDate || statusState !== 'pre';
 
                     const home = competition.competitors.find(c => c.homeAway === 'home');
                     const away = competition.competitors.find(c => c.homeAway === 'away');
@@ -388,7 +396,7 @@
                     const homeName = home.team.abbreviation || home.team.shortDisplayName;
                     const awayName = away.team.abbreviation || away.team.shortDisplayName;
 
-                    // Match pick by card_id ("card-X") OR raw espn_game_id
+                    // Comprehensive lookup check
                     const existingPickObj = picksMap[game.cardKey] || picksMap[game.espnGameId];
                     let userChoice = existingPickObj ? existingPickObj.chosen_team : '';
                     let existingRowId = existingPickObj ? existingPickObj.id : null;
@@ -425,7 +433,7 @@
 
                     container.appendChild(card);
 
-                    // Setup tap-to-toggle logic for unlocked games
+                    // 5. Interactive tap-to-toggle handler for open games
                     if (!isLocked) {
                         const statusBox = card.querySelector(`#status-box-${game.cardKey}`);
                         statusBox.addEventListener('click', async () => {
@@ -448,7 +456,7 @@
                                 updateStats(totalMade, totalMissing, gameList.length);
                             }
 
-                            // Save pick directly to Supabase using explicit update/insert logic
+                            // Explicitly upsert pick payload to Supabase
                             try {
                                 const payload = {
                                     device_uid: deviceUID,
@@ -468,9 +476,11 @@
                                     .select();
 
                                 if (error) {
-                                    console.error("Supabase Save Error Details:", error);
+                                    console.error("Supabase Save Error:", error);
                                 } else if (savedData && savedData[0]) {
                                     existingRowId = savedData[0].id;
+                                    picksMap[game.cardKey] = savedData[0];
+                                    picksMap[game.espnGameId] = savedData[0];
                                 }
                             } catch (err) {
                                 console.error("Error saving pick:", err);
