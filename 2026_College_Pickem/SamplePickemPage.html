@@ -838,6 +838,7 @@
         }
 
         // Summary Modal Logic
+      // Summary Modal Logic (Safe from undefined properties)
         async function openSummaryModal(espnGameId, awayCode, homeCode) {
             const modal = document.getElementById('summary-modal');
             const titleEl = document.getElementById('modal-matchup-title');
@@ -854,7 +855,7 @@
                 let html = '';
 
                 // 1. Win Probability Predictor
-                if (data.predictor && data.predictor.homeChance) {
+                if (data.predictor && data.predictor.homeChance !== undefined) {
                     const homeChance = Math.round(data.predictor.homeChance * 100);
                     const awayChance = 100 - homeChance;
 
@@ -885,19 +886,22 @@
                     `;
                 }
 
-                // 3. Team Leaders
+                // 3. Team Leaders (Safely guarded against undefined names/titles)
                 if (data.leaders && data.leaders.length > 0) {
-                    html += `<div class="stat-box"><div class="stat-title">KEY STAT LEADERS</div>`;
+                    let leadersHTML = '';
                     data.leaders.forEach(category => {
-                        const catName = category.displayName.toUpperCase();
-                        if (category.leaders && category.leaders[0]) {
+                        const catName = category && (category.displayName || category.name || 'STAT LEADER');
+                        if (category && category.leaders && category.leaders[0]) {
                             const l = category.leaders[0];
-                            const athlete = l.athlete ? l.athlete.displayName : 'N/A';
+                            const athlete = (l.athlete && l.athlete.displayName) ? l.athlete.displayName : 'N/A';
                             const value = l.displayValue || '';
-                            html += `<div style="margin-bottom:0.3rem;"><strong style="color:var(--retro-yellow);">${catName}:</strong> ${athlete} (${value})</div>`;
+                            leadersHTML += `<div style="margin-bottom:0.3rem;"><strong style="color:var(--retro-yellow);">${catName.toUpperCase()}:</strong> ${athlete} (${value})</div>`;
                         }
                     });
-                    html += `</div>`;
+
+                    if (leadersHTML) {
+                        html += `<div class="stat-box"><div class="stat-title">KEY STAT LEADERS</div>${leadersHTML}</div>`;
+                    }
                 }
 
                 // Fallback if stats unavailable
@@ -912,7 +916,6 @@
                 contentEl.innerHTML = `<div class="stat-box" style="text-align:center; color:var(--retro-red);">ERROR LOADING MATCHUP STATS.</div>`;
             }
         }
-
         function closeSummaryModal() {
             document.getElementById('summary-modal').classList.remove('active');
         }
