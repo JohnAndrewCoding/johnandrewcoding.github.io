@@ -477,7 +477,7 @@
                 const ratio = p / 50.0;
                 const r = Math.round(153 + (250 - 153) * ratio);
                 const g = Math.round(27 + (204 - 27) * ratio);
-                const b = Math.round(27 + (21 - 27) * ratio);
+                const b = Math.round(21 + (128 - 21) * ratio);
                 return `rgb(${r}, ${g}, ${b})`;
             } else if (p < 75.0) {
                 const ratio = (p - 50.0) / 25.0;
@@ -519,164 +519,163 @@
             }
         }
 
-        // Generate Dynamic Ticker News
-      // Performance-Based Past Result Analyst News Ticker
-async function generateAnalystTicker() {
-    const tickerEl = document.getElementById('analyst-news-ticker');
-    if (!tickerEl) return;
+        // Performance-Based Past Result Analyst News Ticker
+        async function generateAnalystTicker() {
+            const tickerEl = document.getElementById('analyst-news-ticker');
+            if (!tickerEl) return;
 
-    try {
-        const headlines = [];
+            try {
+                const headlines = [];
 
-        // Templates for Past Results
-        const wrongRoasts = [
-            (w, name, team) => `📺 WEEK ${w}: ${name} SWORE ${team} WAS A LOCK AND GOT UTTERLY EMBARRASSED!`,
-            (w, name, team) => `🤡 WEEK ${w}: "PRAY FOR ${name}," WHO INSISTED ${team} COULDN'T LOSE!`,
-            (w, name, team) => `🚨 RECAP: ${name}'S WEEK ${w} FAITH IN ${team} BACKFIRED IN HISTORIC FASHION!`,
-            (w, name, team) => `📉 WEEK ${w}: ${name} BOUGHT THE ${team} HYPE AND IT COST THEM DEARLY!`
-        ];
+                // Templates for Past Results
+                const wrongRoasts = [
+                    (w, name, team) => `📺 WEEK ${w}: ${name} SWORE ${team} WAS A LOCK AND GOT UTTERLY EMBARRASSED!`,
+                    (w, name, team) => `🤡 WEEK ${w}: "PRAY FOR ${name}," WHO INSISTED ${team} COULDN'T LOSE!`,
+                    (w, name, team) => `🚨 RECAP: ${name}'S WEEK ${w} FAITH IN ${team} BACKFIRED IN HISTORIC FASHION!`,
+                    (w, name, team) => `📉 WEEK ${w}: ${name} BOUGHT THE ${team} HYPE AND IT COST THEM DEARLY!`
+                ];
 
-        const rightFlexes = [
-            (w, name, team) => `🔥 WEEK ${w}: ${name} PREDICTED A ${team} VICTORY AND NAILED IT!`,
-            (w, name, team) => `🎓 WEEK ${w}: ${name} LOOKED LIKE A GENIUS CALLING THE ${team} WIN!`,
-            (w, name, team) => `📈 RECAP: ${name} MASTERCLASS IN WEEK ${w} TAKING ${team} TO THE BANK!`
-        ];
+                const rightFlexes = [
+                    (w, name, team) => `🔥 WEEK ${w}: ${name} PREDICTED A ${team} VICTORY AND NAILED IT!`,
+                    (w, name, team) => `🎓 WEEK ${w}: ${name} LOOKED LIKE A GENIUS CALLING THE ${team} WIN!`,
+                    (w, name, team) => `📈 RECAP: ${name} MASTERCLASS IN WEEK ${w} TAKING ${team} TO THE BANK!`
+                ];
 
-        const loneWolfFlexes = [
-            (w, name, team) => `👑 WEEK ${w} HERO: ${name} WAS THE ONLY PERSON TO BELIEVE IN ${team} AND CRUSHED!`,
-            (w, name, team) => `🐐 WEEK ${w}: NOBODY BELIEVED IN ${team} EXCEPT ${name}. ABSOLUTE LEGEND!`
-        ];
+                const loneWolfFlexes = [
+                    (w, name, team) => `👑 WEEK ${w} HERO: ${name} WAS THE ONLY PERSON TO BELIEVE IN ${team} AND CRUSHED!`,
+                    (w, name, team) => `🐐 WEEK ${w}: NOBODY BELIEVED IN ${team} EXCEPT ${name}. ABSOLUTE LEGEND!`
+                ];
 
-        const fanRoasts = [
-            (name) => `📞 CALLER FROM TIFTON: "SOMEONE TAKE AWAY ${name}'S ANALYST CARD IMMEDIATELY!"`,
-            (name) => `💬 FAN POLL: 92% OF VIEWERS AGREE THAT ${name} CANNOT READ A STAT SHEET.`,
-            (name) => `📰 SPORTS MAILBAG: 'IS ${name} THE MOST FRAUDULENT ANALYST ON TELEVISION?'`,
-            (name) => `📻 CALLER FROM ATLANTA: "${name} COST ME MY PARLAY AND MY SANITY!"`
-        ];
+                const fanRoasts = [
+                    (name) => `📞 CALLER FROM TIFTON: "SOMEONE TAKE AWAY ${name}'S ANALYST CARD IMMEDIATELY!"`,
+                    (name) => `💬 FAN POLL: 92% OF VIEWERS AGREE THAT ${name} CANNOT READ A STAT SHEET.`,
+                    (name) => `📰 SPORTS MAILBAG: 'IS ${name} THE MOST FRAUDULENT ANALYST ON TELEVISION?'`,
+                    (name) => `📻 CALLER FROM ATLANTA: "${name} COST ME MY PARLAY AND MY SANITY!"`
+                ];
 
-        const leagueNews = [
-            `🚨 BREAKING: LEAGUE STANDINGS UNDER FIRE AS MID-TIER CLOWNS ACCUSE TOP DOG OF GETTING LUCKY!`,
-            `📊 ANALYST DESK ALERT: STAT FRAUDS EXPOSED AFTER DISASTROUS SLATE RESULTS!`,
-            `🔥 SOURCES: ANONYMOUS COACH ACCUSES STANDINGS LEADER OF GUESSING AT RANDOM.`,
-            `🏈 LEAGUE HEADLINES: DRAMA MOUNTS ON LIVE AIR AT THE LEAGUE ANALYST DESK!`
-        ];
+                const leagueNews = [
+                    `🚨 BREAKING: LEAGUE STANDINGS UNDER FIRE AS MID-TIER CLOWNS ACCUSE TOP DOG OF GETTING LUCKY!`,
+                    `📊 ANALYST DESK ALERT: STAT FRAUDS EXPOSED AFTER DISASTROUS SLATE RESULTS!`,
+                    `🔥 SOURCES: ANONYMOUS COACH ACCUSES STANDINGS LEADER OF GUESSING AT RANDOM.`,
+                    `🏈 LEAGUE HEADLINES: DRAMA MOUNTS ON LIVE AIR AT THE LEAGUE ANALYST DESK!`
+                ];
 
-        // Map all completed games across weeks for evaluation
-        const evaluatedPicks = [];
+                // Map all completed games across weeks for evaluation
+                const evaluatedPicks = [];
 
-        Object.keys(globalGamesCache).forEach(weekNum => {
-            const events = globalGamesCache[weekNum] || [];
+                Object.keys(globalGamesCache).forEach(weekNum => {
+                    const events = globalGamesCache[weekNum] || [];
 
-            events.forEach(event => {
-                if (event.status.type.state === 'post') {
-                    const comp = event.competitions[0];
-                    const home = comp.competitors.find(c => c.homeAway === 'home');
-                    const away = comp.competitors.find(c => c.homeAway === 'away');
+                    events.forEach(event => {
+                        if (event.status.type.state === 'post') {
+                            const comp = event.competitions[0];
+                            const home = comp.competitors.find(c => c.homeAway === 'home');
+                            const away = comp.competitors.find(c => c.homeAway === 'away');
 
-                    const homeScore = parseInt(home.score || '0');
-                    const awayScore = parseInt(away.score || '0');
+                            const homeScore = parseInt(home.score || '0');
+                            const awayScore = parseInt(away.score || '0');
 
-                    let winnerObj = null;
-                    if (homeScore > awayScore) winnerObj = home;
-                    else if (awayScore > homeScore) winnerObj = away;
+                            let winnerObj = null;
+                            if (homeScore > awayScore) winnerObj = home;
+                            else if (awayScore > homeScore) winnerObj = away;
 
-                    if (winnerObj) {
-                        const winnerNames = new Set([
-                            (winnerObj.team.abbreviation || '').toUpperCase(),
-                            (winnerObj.team.shortDisplayName || '').toUpperCase(),
-                            (winnerObj.team.name || '').toUpperCase(),
-                            (winnerObj.team.displayName || '').toUpperCase()
-                        ]);
+                            if (winnerObj) {
+                                const winnerNames = new Set([
+                                    (winnerObj.team.abbreviation || '').toUpperCase(),
+                                    (winnerObj.team.shortDisplayName || '').toUpperCase(),
+                                    (winnerObj.team.name || '').toUpperCase(),
+                                    (winnerObj.team.displayName || '').toUpperCase()
+                                ]);
 
-                        const gameId = String(event.id);
+                                const gameId = String(event.id);
 
-                        // Find all user picks for this completed game
-                        const gamePicks = globalPicks.filter(p => {
-                            const lookupKey = `${p.week_number}_${p.card_id}`;
-                            const mappedId = globalSlateMap[lookupKey] || String(p.card_id);
-                            return p.week_number === parseInt(weekNum) && mappedId === gameId && p.chosen_team;
-                        });
+                                // Find all user picks for this completed game
+                                const gamePicks = globalPicks.filter(p => {
+                                    const lookupKey = `${p.week_number}_${p.card_id}`;
+                                    const mappedId = globalSlateMap[lookupKey] || String(p.card_id);
+                                    return p.week_number === parseInt(weekNum) && mappedId === gameId && p.chosen_team;
+                                });
 
-                        // Check pick correctness
-                        gamePicks.forEach(p => {
-                            const chosen = (p.chosen_team || '').trim().toUpperCase();
-                            const isCorrect = winnerNames.has(chosen);
-                            
-                            // Check if this pick was a "Lone Wolf" pick
-                            const pickedSameTeam = gamePicks.filter(gp => (gp.chosen_team || '').trim().toUpperCase() === chosen);
-                            const isLoneWolf = isCorrect && (pickedSameTeam.length === 1) && (gamePicks.length > 2);
+                                // Check pick correctness
+                                gamePicks.forEach(p => {
+                                    const chosen = (p.chosen_team || '').trim().toUpperCase();
+                                    const isCorrect = winnerNames.has(chosen);
+                                    
+                                    // Check if this pick was a "Lone Wolf" pick
+                                    const pickedSameTeam = gamePicks.filter(gp => (gp.chosen_team || '').trim().toUpperCase() === chosen);
+                                    const isLoneWolf = isCorrect && (pickedSameTeam.length === 1) && (gamePicks.length > 2);
 
-                            const foundUser = globalProfiles.find(u => u.device_uid === p.device_uid);
-                            const userName = foundUser ? (foundUser.coach_name || foundUser.player_name || 'ANALYST').toUpperCase() : 'ANALYST';
+                                    const foundUser = globalProfiles.find(u => u.device_uid === p.device_uid);
+                                    const userName = foundUser ? (foundUser.coach_name || foundUser.player_name || 'ANALYST').toUpperCase() : 'ANALYST';
 
-                            evaluatedPicks.push({
-                                week: p.week_number,
-                                userName,
-                                team: p.chosen_team,
-                                isCorrect,
-                                isLoneWolf
-                            });
-                        });
-                    }
+                                    evaluatedPicks.push({
+                                        week: p.week_number,
+                                        userName,
+                                        team: p.chosen_team,
+                                        isCorrect,
+                                        isLoneWolf
+                                    });
+                                });
+                            }
+                        }
+                    });
+                });
+
+                // Build headlines from actual evaluated past picks
+                if (evaluatedPicks.length > 0) {
+                    // Group by user so everyone gets spotlight/roast time
+                    const userPicksGroup = {};
+                    evaluatedPicks.forEach(ep => {
+                        if (!userPicksGroup[ep.userName]) userPicksGroup[ep.userName] = [];
+                        userPicksGroup[ep.userName].push(ep);
+                    });
+
+                    Object.keys(userPicksGroup).forEach(userName => {
+                        const userPicks = userPicksGroup[userName];
+                        
+                        // Prioritize Lone Wolf picks first if any
+                        const lonePicks = userPicks.filter(p => p.isLoneWolf);
+                        const wrongPicks = userPicks.filter(p => !p.isCorrect);
+                        const rightPicks = userPicks.filter(p => p.isCorrect);
+
+                        if (lonePicks.length > 0) {
+                            const pick = lonePicks[Math.floor(Math.random() * lonePicks.length)];
+                            const tmpl = loneWolfFlexes[Math.floor(Math.random() * loneWolfFlexes.length)];
+                            headlines.push(tmpl(pick.week, userName, pick.team));
+                        } else if (wrongPicks.length > 0 && Math.random() < 0.7) {
+                            // Roast wrong picks 70% of the time for humor
+                            const pick = wrongPicks[Math.floor(Math.random() * wrongPicks.length)];
+                            const tmpl = wrongRoasts[Math.floor(Math.random() * wrongRoasts.length)];
+                            headlines.push(tmpl(pick.week, userName, pick.team));
+                        } else if (rightPicks.length > 0) {
+                            const pick = rightPicks[Math.floor(Math.random() * rightPicks.length)];
+                            const tmpl = rightFlexes[Math.floor(Math.random() * rightFlexes.length)];
+                            headlines.push(tmpl(pick.week, userName, pick.team));
+                        }
+
+                        // Add random fan call-in roast for flavor
+                        if (Math.random() < 0.4) {
+                            const roastTmpl = fanRoasts[Math.floor(Math.random() * fanRoasts.length)];
+                            headlines.push(roastTmpl(userName));
+                        }
+                    });
                 }
-            });
-        });
 
-        // Build headlines from actual evaluated past picks
-        if (evaluatedPicks.length > 0) {
-            // Group by user so everyone gets spotlight/roast time
-            const userPicksGroup = {};
-            evaluatedPicks.forEach(ep => {
-                if (!userPicksGroup[ep.userName]) userPicksGroup[ep.userName] = [];
-                userPicksGroup[ep.userName].push(ep);
-            });
+                // Add general league drama
+                headlines.push(...leagueNews);
 
-            Object.keys(userPicksGroup).forEach(userName => {
-                const userPicks = userPicksGroup[userName];
-                
-                // Prioritize Lone Wolf picks first if any
-                const lonePicks = userPicks.filter(p => p.isLoneWolf);
-                const wrongPicks = userPicks.filter(p => !p.isCorrect);
-                const rightPicks = userPicks.filter(p => p.isCorrect);
-
-                if (lonePicks.length > 0) {
-                    const pick = lonePicks[Math.floor(Math.random() * lonePicks.length)];
-                    const tmpl = loneWolfFlexes[Math.floor(Math.random() * loneWolfFlexes.length)];
-                    headlines.push(tmpl(pick.week, userName, pick.team));
-                } else if (wrongPicks.length > 0 && Math.random() < 0.7) {
-                    // Roast wrong picks 70% of the time for humor
-                    const pick = wrongPicks[Math.floor(Math.random() * wrongPicks.length)];
-                    const tmpl = wrongRoasts[Math.floor(Math.random() * wrongRoasts.length)];
-                    headlines.push(tmpl(pick.week, userName, pick.team));
-                } else if (rightPicks.length > 0) {
-                    const pick = rightPicks[Math.floor(Math.random() * rightPicks.length)];
-                    const tmpl = rightFlexes[Math.floor(Math.random() * rightFlexes.length)];
-                    headlines.push(tmpl(pick.week, userName, pick.team));
+                // Shuffle headlines array for fresh ticker order on every load
+                for (let i = headlines.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [headlines[i], headlines[j]] = [headlines[j], headlines[i]];
                 }
 
-                // Add random fan call-in roast for flavor
-                if (Math.random() < 0.4) {
-                    const roastTmpl = fanRoasts[Math.floor(Math.random() * fanRoasts.length)];
-                    headlines.push(roastTmpl(userName));
-                }
-            });
+                tickerEl.innerText = headlines.join('   ---   ');
+
+            } catch (err) {
+                console.error("Failed to generate analyst ticker:", err);
+            }
         }
-
-        // Add general league drama
-        headlines.push(...leagueNews);
-
-        // Shuffle headlines array for fresh ticker order on every load
-        for (let i = headlines.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [headlines[i], headlines[j]] = [headlines[j], headlines[i]];
-        }
-
-        tickerEl.innerText = headlines.join('   ---   ');
-
-    } catch (err) {
-        console.error("Failed to generate analyst ticker:", err);
-    }
-}
 
         async function loadLeaderboard() {
             const container = document.getElementById('leaderboard-container');
@@ -721,6 +720,7 @@ async function generateAnalystTicker() {
                 // 5. Fetch ESPN data & Conferences
                 const weeks = [...new Set(globalSlates.map(s => s.week_number))];
                 const completedGames = new Map();
+                const gameInfoMap = new Map(); // Store dates and state for lock check
                 globalGameConferenceMap = {};
 
                 for (const week of weeks) {
@@ -733,6 +733,11 @@ async function generateAnalystTicker() {
                             const eventId = String(event.id);
                             const comp = event.competitions[0];
                             let confName = 'OTHER';
+
+                            gameInfoMap.set(eventId, {
+                                date: new Date(event.date),
+                                state: event.status.type.state
+                            });
 
                             if (comp.groups && comp.groups.shortName) {
                                 confName = comp.groups.shortName.toUpperCase();
@@ -780,8 +785,9 @@ async function generateAnalystTicker() {
                     }
                 }
 
-                // 6. Calculate Records
+                // 6. Calculate Records (Including NO PICK + Locked Game = Loss)
                 globalUserConfStats = {};
+                const now = new Date();
 
                 const userScores = globalProfiles.map(p => {
                     const uid = p.device_uid;
@@ -794,27 +800,55 @@ async function generateAnalystTicker() {
 
                     globalUserConfStats[uid] = {};
 
-                    userPicks.forEach(pick => {
-                        const lookupKey = `${pick.week_number}_${pick.card_id}`;
-                        const gameId = globalSlateMap[lookupKey] || String(pick.card_id);
-                        const conf = globalGameConferenceMap[gameId] || 'OTHER';
+                    // Group slates by week to easily look up card IDs
+                    const weekSlateGroups = {};
+                    globalSlates.forEach(s => {
+                        if (!weekSlateGroups[s.week_number]) weekSlateGroups[s.week_number] = [];
+                        weekSlateGroups[s.week_number].push(s);
+                    });
 
-                        if (!globalUserConfStats[uid][conf]) {
-                            globalUserConfStats[uid][conf] = { wins: 0, losses: 0 };
-                        }
+                    // Evaluate all slates on the calendar
+                    Object.keys(weekSlateGroups).forEach(weekStr => {
+                        const wNum = parseInt(weekStr);
+                        const slatesForWeek = weekSlateGroups[wNum];
 
-                        if (completedGames.has(gameId)) {
-                            const winningNames = completedGames.get(gameId);
-                            const chosen = (pick.chosen_team || '').trim().toUpperCase();
+                        slatesForWeek.forEach((slate, idx) => {
+                            const gameId = String(slate.espn_game_id);
+                            const cardKey = `card-${idx + 1}`;
+                            const conf = globalGameConferenceMap[gameId] || 'OTHER';
 
-                            if (winningNames.has(chosen)) {
-                                wins++;
-                                globalUserConfStats[uid][conf].wins += 1;
-                            } else {
-                                losses++;
-                                globalUserConfStats[uid][conf].losses += 1;
+                            if (!globalUserConfStats[uid][conf]) {
+                                globalUserConfStats[uid][conf] = { wins: 0, losses: 0 };
                             }
-                        }
+
+                            // Match user pick by card_id or gameId
+                            const pick = userPicks.find(p => p.week_number === wNum && (String(p.card_id) === cardKey || String(p.card_id) === gameId));
+                            const gameInfo = gameInfoMap.get(gameId);
+
+                            const isGameLocked = gameInfo && (now >= gameInfo.date || gameInfo.state !== 'pre');
+
+                            if (pick && pick.chosen_team) {
+                                // User made a pick
+                                if (completedGames.has(gameId)) {
+                                    const winningNames = completedGames.get(gameId);
+                                    const chosen = (pick.chosen_team || '').trim().toUpperCase();
+
+                                    if (winningNames.has(chosen)) {
+                                        wins++;
+                                        globalUserConfStats[uid][conf].wins += 1;
+                                    } else {
+                                        losses++;
+                                        globalUserConfStats[uid][conf].losses += 1;
+                                    }
+                                }
+                            } else {
+                                // NO PICK: If game is locked, it's counted as a loss
+                                if (isGameLocked) {
+                                    losses++;
+                                    globalUserConfStats[uid][conf].losses += 1;
+                                }
+                            }
+                        });
                     });
 
                     const totalGames = wins + losses;
@@ -832,8 +866,7 @@ async function generateAnalystTicker() {
 
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
-                // 7. Find Conference Kings
-               // 7. Find Conference Kings (ONLY awarded if a user is uniquely leading with no ties)
+                // 7. Find Conference Kings (ONLY awarded if a user is uniquely leading with no ties)
                 const confLeaders = {}; // confName -> uid
                 ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
                     let bestPct = -1.0;
@@ -982,7 +1015,8 @@ async function generateAnalystTicker() {
                 const cardKey = `card-${idx + 1}`;
 
                 const userPick = weekPicks.find(p => String(p.card_id) === cardKey || String(p.card_id) === gameId);
-                const chosenTeam = userPick ? userPick.chosen_team : 'NO PICK';
+                const hasPick = userPick && userPick.chosen_team;
+                const chosenTeam = hasPick ? userPick.chosen_team : 'NO PICK';
 
                 if (!gameEvent) {
                     container.innerHTML += `
@@ -1013,9 +1047,14 @@ async function generateAnalystTicker() {
                 let displayPick = '';
 
                 if (!canRevealPick) {
-                    displayPick = userPick ? '🔒 [HIDDEN]' : 'NO PICK';
-                    resultText = userPick ? 'PICKED ✓' : 'WAITING';
+                    displayPick = hasPick ? '🔒 [HIDDEN]' : 'NO PICK';
+                    resultText = hasPick ? 'PICKED ✓' : 'WAITING';
                     statusClass = 'pending';
+                } else if (!hasPick && isGameLocked) {
+                    // Game is locked and user failed to pick -> Loss
+                    displayPick = 'NO PICK';
+                    statusClass = 'incorrect';
+                    resultText = '✗ WRONG';
                 } else if (state === 'post') {
                     displayPick = chosenTeam;
                     const homeInt = parseInt(homeScore);
@@ -1028,7 +1067,7 @@ async function generateAnalystTicker() {
                     const chosenUpper = (chosenTeam || '').trim().toUpperCase();
                     const winUpper = (winningTeam || '').trim().toUpperCase();
 
-                    if (userPick && chosenUpper === winUpper) {
+                    if (hasPick && chosenUpper === winUpper) {
                         statusClass = 'correct';
                         resultText = '✓ CORRECT';
                     } else {
