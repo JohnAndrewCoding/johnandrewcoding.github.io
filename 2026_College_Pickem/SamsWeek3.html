@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sam's Week 3 Picks</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- SUPABASE CLIENT INTEGRATION -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const deviceUID = localStorage.getItem('my_device_uid') || 'sam_device_default';
+    </script>
+
+    <style>
+        :root {
+            --bg-canvas: #0f172a;
+            --bg-card: #1e293b;
+            --retro-yellow: #facc15;
+            --retro-blue: #38bdf8;
+            --retro-green: #4ade80;
+            --retro-red: #ef4444;
+            --pixel-font: 'Press Start 2P', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            background-color: var(--bg-canvas);
+            color: #ffffff;
+            font-family: var(--pixel-font);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .title {
+            font-size: 1.1rem;
+            color: var(--retro-yellow);
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 0.55rem;
+            color: var(--retro-blue);
+        }
+
+        .games-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .matchup-card {
+            background-color: var(--bg-card);
+            border: 4px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .team-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #334155;
+            padding: 0.75rem;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .team-btn.selected {
+            border-color: var(--retro-yellow);
+            background: #422006;
+            color: var(--retro-yellow);
+            box-shadow: 0 0 8px var(--retro-yellow);
+        }
+
+        .vs-label {
+            text-align: center;
+            font-size: 0.5rem;
+            color: #64748b;
+        }
+
+        .submit-btn {
+            width: 100%;
+            max-width: 480px;
+            background: var(--retro-green);
+            color: #000000;
+            border: 4px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            padding: 0.8rem;
+            font-family: var(--pixel-font);
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .status-msg {
+            margin-top: 1rem;
+            font-size: 0.6rem;
+            text-align: center;
+            color: var(--retro-yellow);
+        }
+
+        .loading-state {
+            text-align: center;
+            font-size: 0.65rem;
+            color: #64748b;
+            padding: 2rem 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 class="title">SAM'S WEEK 3</h1>
+        <div class="subtitle">TAP A TEAM TO SELECT YOUR PICKS</div>
+    </header>
+
+    <div class="games-container" id="games-container">
+        <div class="loading-state">LOADING WEEK 3 SLATE...</div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitPicks()">SUBMIT PICKS</button>
+    <div class="status-msg" id="status-msg"></div>
+
+    <script>
+        const selectedPicks = {}; // espn_game_id -> full team name
+
+        async function loadWeek3Slate() {
+            const container = document.getElementById('games-container');
+
+            try {
+                // 1. Fetch Week 3 Slate IDs
+                const { data: slates, error: slateErr } = await supabaseClient
+                    .from('weekly_slates')
+                    .select('espn_game_id')
+                    .eq('week_number', 3);
+
+                if (slateErr) throw slateErr;
+
+                if (!slates || slates.length === 0) {
+                    container.innerHTML = `<div class="loading-state">NO WEEK 3 GAMES FOUND</div>`;
+                    return;
+                }
+
+                // 2. Fetch Existing User Picks
+                const { data: savedPicks } = await supabaseClient
+                    .from('sams_week_3')
+                    .select('espn_game_id, chosen_team')
+                    .eq('device_uid', deviceUID);
+
+                if (savedPicks) {
+                    savedPicks.forEach(p => {
+                        selectedPicks[p.espn_game_id] = p.chosen_team;
+                    });
+                }
+
+                // 3. Fetch Game Details from ESPN API
+                const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=3');
+                const espnData = await res.json();
+                const events = espnData.events || [];
+
+                const gameMap = new Map();
+                events.forEach(e => gameMap.set(String(e.id), e));
+
+                container.innerHTML = '';
+
+                slates.forEach((slate, idx) => {
+                    const gameId = String(slate.espn_game_id);
+                    const gameEvent = gameMap.get(gameId);
+
+                    if (!gameEvent) return;
+
+                    const comp = gameEvent.competitions[0];
+                    const home = comp.competitors.find(c => c.homeAway === 'home');
+                    const away = comp.competitors.find(c => c.homeAway === 'away');
+
+                    const awayFullName = away.team.displayName;
+                    const homeFullName = home.team.displayName;
+
+                    const currentSelection = selectedPicks[gameId] || null;
+
+                    const card = document.createElement('div');
+                    card.className = 'matchup-card';
+                    card.innerHTML = `
+                        <button class="team-btn ${currentSelection === awayFullName ? 'selected' : ''}" 
+                                onclick="selectTeam('${gameId}', '${escapeString(awayFullName)}', this)">
+                            ${awayFullName}
+                        </button>
+                        <div class="vs-label">@</div>
+                        <button class="team-btn ${currentSelection === homeFullName ? 'selected' : ''}" 
+                                onclick="selectTeam('${gameId}', '${escapeString(homeFullName)}', this)">
+                            ${homeFullName}
+                        </button>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error('Error loading Week 3 slate:', err);
+                container.innerHTML = `<div class="loading-state">ERROR LOADING SLATE</div>`;
+            }
+        }
+
+        function escapeString(str) {
+            return str.replace(/'/g, "\\'");
+        }
+
+        function selectTeam(gameId, teamFullName, btnElement) {
+            const card = btnElement.parentElement;
+            const buttons = card.querySelectorAll('.team-btn');
+            
+            buttons.forEach(b => b.classList.remove('selected'));
+            btnElement.classList.add('selected');
+
+            selectedPicks[gameId] = teamFullName;
+        }
+
+        async function submitPicks() {
+            const statusEl = document.getElementById('status-msg');
+            const submitBtn = document.getElementById('submit-btn');
+
+            const gameIds = Object.keys(selectedPicks);
+            if (gameIds.length === 0) {
+                statusEl.innerText = "PLEASE SELECT AT LEAST ONE PICK!";
+                return;
+            }
+
+            submitBtn.disabled = true;
+            statusEl.innerText = "SAVING PICKS...";
+
+            try {
+                const rowsToUpsert = gameIds.map(gameId => ({
+                    device_uid: deviceUID,
+                    espn_game_id: gameId,
+                    chosen_team: selectedPicks[gameId]
+                }));
+
+                const { error } = await supabaseClient
+                    .from('sams_week_3')
+                    .upsert(rowsToUpsert, { onConflict: 'device_uid, espn_game_id' });
+
+                if (error) throw error;
+
+                statusEl.innerText = "PICKS SAVED SUCCESSFULLY!";
+                statusEl.style.color = "var(--retro-green)";
+            } catch (err) {
+                console.error('Error saving picks:', err);
+                statusEl.innerText = "FAILED TO SAVE PICKS. TRY AGAIN.";
+                statusEl.style.color = "var(--retro-red)";
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadWeek3Slate);
+    </script>
+</body>
+</html>
