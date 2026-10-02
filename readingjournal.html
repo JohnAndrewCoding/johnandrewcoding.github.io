@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reading Tracker</title>
+    <style>
+        /* Simple Dark Academic Theme */
+        body { background: #121412; color: #e6dfd3; font-family: serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        h1, h2 { color: #c5a059; border-bottom: 1px dashed #3a3222; padding-bottom: 5px; }
+        .section { background: #1c1f1b; border: 1px solid #3a3222; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .flex { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        input, select, button { background: #121412; color: #e6dfd3; border: 1px solid #3a3222; padding: 5px; font-family: serif; }
+        button { background: #2d4236; cursor: pointer; }
+        button:hover { background: #c5a059; color: #121412; }
+        .book-card { border-left: 3px solid #c5a059; padding-left: 10px; margin-bottom: 15px; background: #171a16; padding: 10px; }
+        .progress-bg { background: #121412; height: 8px; width: 100%; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+        .progress-bar { background: #c5a059; height: 100%; width: 0%; }
+        .btn-complete { background: #c5a059; color: #121412; font-weight: bold; width: 100%; padding: 8px; margin-top: 5px; }
+    </style>
+    <!-- Loads Supabase -->
+    <script src="https://jsdelivr.net"></script>
+</head>
+<body>
+
+    <h1>📚 Athenaeum Tracker</h1>
+
+    <!-- 1. TBR SHELVES PROGRESS -->
+    <div class="section">
+        <h2>Custom TBR Shelves</h2>
+        <div id="tbr-shelves-list">Loading shelves...</div>
+        <hr style="border-color: #3a3222; margin: 15px 0;">
+        <form id="tbr-form" class="flex">
+            <input type="text" id="tbr-name" placeholder="New Shelf Name (e.g. Autumn)" required>
+            <button type="submit">+ Create Shelf</button>
+        </form>
+    </div>
+
+    <!-- 2. ADD A NEW BOOK -->
+    <div class="section">
+        <h2>Log a Book</h2>
+        <form id="book-form">
+            <div class="flex">
+                <input type="text" id="book-title" placeholder="Book Title" required>
+                <input type="text" id="book-author" placeholder="Author" required>
+                <input type="number" id="book-pages" placeholder="Total Pages" min="0">
+                <select id="book-status">
+                    <option value="TBR">TBR (To Read)</option>
+                    <option value="Reading">Reading</option>
+                    <option value="Completed">Already Read</option>
+                </select>
+            </div>
+            <p style="font-size: 0.9rem; color: #b5ad9e;">Optional: Link to shelves (Hold Ctrl/Cmd to select multiple):</p>
+            <select id="book-tbr-select" multiple style="width: 100%; height: 60px; margin-bottom: 10px;"></select>
+            <button type="submit" style="width: 100%;">Add to Library</button>
+        </form>
+    </div>
+
+    <!-- 3. BOOKSHELF LISTING -->
+    <div class="section">
+        <h2>Your Library Books</h2>
+        <div id="bookshelf">Loading books...</div>
+    </div>
+
+    <script>
+        // !!! REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDS !!!
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let books = [];
+        let shelves = [];
+
+        async function loadData() {
+            // Get shelves
+            let { data: shelfData } = await _supabase.from('tbr_lists').select('*').order('name');
+            shelves = shelfData || [];
+
+            // Get books + linked shelf IDs
+            let { data: bookData } = await _supabase.from('books').select('*, book_tbr_junction(tbr_id)').order('created_at', {ascending: false});
+            books = (bookData || []).map(b => ({
+                ...b,
+                tbr_ids: b.book_tbr_junction ? b.book_tbr_junction.map(j => j.tbr_id) : []
+            }));
+
+            renderUI();
+        }
+
+        function renderUI() {
+            // Render Multi-select options in form
+            const select = document.getElementById('book-tbr-select');
+            select.innerHTML = shelves.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+            // Render TBR Shelves progress bars
+            const shelvesDiv = document.getElementById('tbr-shelves-list');
+            if(shelves.length === 0) shelvesDiv.innerHTML = "No shelves created yet.";
+            else {
+                shelvesDiv.innerHTML = shelves.map(s => {
+                    const linked = books.filter(b => b.tbr_ids.includes(s.id));
+                    let total = 0, read = 0;
+                    linked.forEach(b => {
+                        total += b.total_pages;
+                        read += (b.total_pages - b.pages_left);
+                    });
+                    const pct = total > 0 ? Math.round((read / total) * 100) : 0;
+                    return `<div>
+                        <strong>${s.name}</strong> (${pct}%) — ${linked.length} books
+                        <div class="progress-bg"><div class="progress-bar" style="width:${pct}%"></div></div>
+                    </div><br>`;
+                }).join('');
+            }
+
+            // Render Bookshelf cards
+            const shelfDiv = document.getElementById('bookshelf');
+            if(books.length === 0) shelfDiv.innerHTML = "No books entered yet.";
+            else {
+                shelfDiv.innerHTML = books.map(b => {
+                    // Find shelf names linked to this book
+                    const taggedNames = b.tbr_ids.map(id => shelves.find(s => s.id === id)?.name).filter(Boolean).join(', ');
+                    const isFinished = b.status === 'Completed';
+                    const revealCompleteBtn = (b.pages_left === 0 && !isFinished);
+
+                    return `<div class="book-card">
+                        <h3>${b.title} <span style="font-size:1rem; font-weight:normal; color:#b5ad9e">by ${b.author}</span></h3>
+                        <p style="font-size:0.9rem; color:#c5a059;">Status: <strong>${b.status}</strong> ${taggedNames ? `| Shelves: \${taggedNames}` : ''}</p>
+                        <p style="font-size:0.9rem;">Total Pages: ${b.total_pages || 'Not set yet'}</p>
+                        
+                        ${!isFinished ? `
+                            <div style="margin-top:5px;">
+                                <label>Pages Left: </label>
+                                <input type="number" value="\({b.pages_left}" min="0" max="\){b.total_pages}" style="width:70px;" 
+                                    onchange="updatePages('b.id', {b.total_pages}, this.value)">
+                            </div>
+                        ` : '<p style="color:#2d4236; font-weight:bold;">✨ Finished</p>'}
+
+                        ${revealCompleteBtn ? `
+                            <button class="btn-complete" onclick="markComplete('\${b.id}')">✨ Mark as Completed ✨</button>
+                        ` : ''}
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        // Action: Update pages remaining
+        async function updatePages(id, total, val) {
+            let left = parseInt(val) || 0;
+            let statusUpdate = {};
+            if (left < total && left > 0) statusUpdate.status = 'Reading';
+            
+            await _supabase.from('books').update({ pages_left: left, ...statusUpdate }).eq('id', id);
+            loadData();
+        }
+
+        // Action: Turn on Completed status button trigger
+        async function markComplete(id) {
+            await _supabase.from('books').update({ status: 'Completed', pages_left: 0 }).eq('id', id);
+            loadData();
+        }
+
+        // Action: Create a new custom TBR tracker grouping list
+        document.getElementById('tbr-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('tbr-name').value;
+            await _supabase.from('tbr_lists').insert([{ name }]);
+            document.getElementById('tbr-name').value = '';
+            loadData();
+        });
+
+        // Action: Submit a book configuration card setup layout
+        document.getElementById('book-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('book-title').value;
+            const author = document.getElementById('book-author').value;
+            const status = document.getElementById('book-status').value;
+            const total = parseInt(document.getElementById('book-pages').value) || 0;
+            const left = status === 'Completed' ? 0 : total;
+
+            const { data: newBk } = await _supabase.from('books').insert([{ title, author, status, total_pages: total, pages_left: left }]).select().single();
+
+            // Link to selected custom items maps junctions
+            const selectOptions = document.getElementById('book-tbr-select').selectedOptions;
+            if(selectOptions.length > 0 && newBk) {
+                const junctions = Array.from(selectOptions).map(o => ({ book_id: newBk.id, tbr_id: o.value }));
+                await _supabase.from('book_tbr_junction').insert(junctions);
+            }
+
+            document.getElementById('book-form').reset();
+            loadData();
+        });
+
+        // Initial launch
+        loadData();
+    </script>
+</body>
+</html>
