@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CFB Logo Studio Editor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #0a0d14;
+      --panel-bg: #141b2d;
+      --card-bg: #111726;
+      --accent: #ffcc00;
+      --primary: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-sub: #94a3b8;
+      --border: #232e48;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      padding: 24px;
+      padding-bottom: 80px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    h1 {
+      font-family: 'Chakra Petch', sans-serif;
+      color: var(--accent);
+      font-size: 1.8rem;
+    }
+
+    .top-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-tabs {
+      display: flex;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      padding: 8px 14px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    input[type="text"] {
+      background: #000;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      width: 220px;
+    }
+
+    button.btn-export {
+      background: var(--success);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Team Card Layout */
+    .team-card {
+      background: var(--panel-bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+      transition: border-color 0.2s;
+    }
+
+    .team-card.status-ready { border-color: var(--success); }
+    .team-card.status-later { border-color: var(--warning); }
+
+    .team-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .team-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.5rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      font-weight: 800;
+      background: var(--border);
+      color: var(--text-sub);
+    }
+
+    .status-badge.ready { background: var(--success); color: #000; }
+    .status-badge.later { background: var(--warning); color: #000; }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-status {
+      border: 1px solid var(--border);
+      background: #000;
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-status.btn-ready:hover, .btn-status.btn-ready.active {
+      background: var(--success);
+      color: #000;
+      border-color: var(--success);
+    }
+
+    .btn-status.btn-later:hover, .btn-status.btn-later.active {
+      background: var(--warning);
+      color: #000;
+      border-color: var(--warning);
+    }
+
+    /* Era Cards Grid */
+    .eras-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    .era-slot {
+      background: var(--card-bg);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .era-slot:hover {
+      border-color: var(--accent);
+      background: #182238;
+      transform: translateY(-2px);
+    }
+
+    .era-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.9rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .era-logo-box {
+      width: 70px;
+      height: 70px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+    }
+
+    .era-logo-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .change-hint {
+      font-size: 0.7rem;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* Logo Selector Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal-content {
+      background: var(--panel-bg);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      max-width: 650px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .modal-header {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.3rem;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 12px;
+    }
+
+    .modal-logo-card {
+      background: #000;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .modal-logo-card:hover {
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+
+    .modal-logo-card img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    .modal-logo-card span {
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      text-align: center;
+      word-break: break-all;
+    }
+  </style>
+
+  <!-- Load current team database -->
+  <script src="team_database.js"></script>
+</head>
+<body>
+
+  <header>
+    <h1>CFB Logo Studio Editor</h1>
+
+    <div class="top-controls">
+      <div class="filter-tabs">
+        <button class="tab-btn active" onclick="setFilter('all', this)">All</button>
+        <button class="tab-btn" onclick="setFilter('pending', this)">Pending</button>
+        <button class="tab-btn" onclick="setFilter('ready', this)">Ready</button>
+        <button class="tab-btn" onclick="setFilter('later', this)">View Later</button>
+      </div>
+
+      <input type="text" id="search-input" placeholder="Search team..." oninput="renderCards()">
+      <button class="btn-export" onclick="exportDatabase()">⬇️ Export Updated team_database.js</button>
+    </div>
+  </header>
+
+  <div id="cards-container"></div>
+
+  <!-- Modal Selector -->
+  <div class="modal-overlay" id="logo-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modal-title">Select Logo for Era</span>
+        <button class="btn-status" onclick="closeModal()">Close ✕</button>
+      </div>
+      <div class="modal-grid" id="modal-grid"></div>
+    </div>
+  </div>
+
+  <script>
+    const eras = [1960, 1970, 1980, 1990, 2000, 2010, 2020];
+    let currentFilter = 'all';
+    let teamStatuses = {}; // Tracks 'ready' or 'later' status per team
+    let eraSelections = {}; // Tracks user's era assignments per team
+
+    let activeModalTarget = null; // { teamKey, eraYear }
+
+    function initAssignments() {
+      if (typeof teamDatabase === 'undefined') return;
+
+      Object.keys(teamDatabase).forEach(teamKey => {
+        const team = teamDatabase[teamKey];
+        eraSelections[teamKey] = {};
+        teamStatuses[teamKey] = 'pending';
+
+        // Map current initial logo file for each decade
+        eras.forEach(year => {
+          let match = team.logos ? team.logos.find(l => year >= l.start && year <= l.end) : null;
+          if (!match && team.logos && team.logos.length > 0) {
+            match = year < team.logos[0].start ? team.logos[0] : team.logos[team.logos.length - 1];
+          }
+          eraSelections[teamKey][year] = match ? match.file : '';
+        });
+      });
+    }
+
+    function getDisplayName(teamKey, team) {
+      if (team.name) return team.name;
+      if (team.folder) {
+        let clean = team.folder.replace(/^cfb\//i, '');
+        return clean.split('/').pop();
+      }
+      return teamKey;
+    }
+
+    function renderCards() {
+      const container = document.getElementById('cards-container');
+      container.innerHTML = '';
+
+      const searchTxt = document.getElementById('search-input').value.toLowerCase();
+
+      Object.keys(teamDatabase).forEach(teamKey => {
+        const team = teamDatabase[teamKey];
+        const displayName = getDisplayName(teamKey, team);
+        const status = teamStatuses[teamKey] || 'pending';
+
+        // Filter by Tab
+        if (currentFilter !== 'all' && status !== currentFilter) return;
+
+        // Filter by Search Text
+        if (searchTxt && !displayName.toLowerCase().includes(searchTxt) && !teamKey.toLowerCase().includes(searchTxt)) {
+          return;
+        }
+
+        const card = document.createElement('div');
+        card.className = `team-card status-${status}`;
+
+        // Header and Controls
+        let headerHtml = `
+          <div class="team-header">
+            <div class="team-title">
+              <span>${displayName}</span>
+              <span class="status-badge ${status}">${status}</span>
+            </div>
+            <div class="action-buttons">
+              <button class="btn-status btn-ready ${status === 'ready' ? 'active' : ''}" onclick="setStatus('${teamKey}', 'ready')">✓ Ready</button>
+              <button class="btn-status btn-later ${status === 'later' ? 'active' : ''}" onclick="setStatus('${teamKey}', 'later')">⏱ View Later</button>
+            </div>
+          </div>
+        `;
+
+        // Era Cards
+        let erasHtml = '<div class="eras-grid">';
+        eras.forEach(year => {
+          const file = eraSelections[teamKey][year];
+          const logoPath = file ? `./${encodeURIComponent(team.folder)}/${encodeURIComponent(file)}` : '';
+
+          erasHtml += `
+            <div class="era-slot" onclick="openModal('${teamKey}', ${year})">
+              <span class="era-title">${year}s</span>
+              <div class="era-logo-box">
+                ${file ? `<img src="${logoPath}" alt="${year}">` : `<span style="font-size:0.7rem; color:var(--text-sub)">No Logo</span>`}
+              </div>
+              <span class="change-hint">Click to Change</span>
+            </div>
+          `;
+        });
+        erasHtml += '</div>';
+
+        card.innerHTML = headerHtml + erasHtml;
+        container.appendChild(card);
+      });
+    }
+
+    function setStatus(teamKey, status) {
+      teamStatuses[teamKey] = teamStatuses[teamKey] === status ? 'pending' : status;
+      renderCards();
+    }
+
+    function setFilter(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCards();
+    }
+
+    // Modal Operations
+    function openModal(teamKey, year) {
+      activeModalTarget = { teamKey, year };
+      const team = teamDatabase[teamKey];
+      const displayName = getDisplayName(teamKey, team);
+
+      document.getElementById('modal-title').textContent = `${displayName} — Select Logo for ${year}s`;
+
+      const grid = document.getElementById('modal-grid');
+      grid.innerHTML = '';
+
+      if (!team.logos || team.logos.length === 0) {
+        grid.innerHTML = '<p style="color:var(--text-sub)">No logos found in team folder.</p>';
+      } else {
+        team.logos.forEach(logoObj => {
+          const logoPath = `./${encodeURIComponent(team.folder)}/${encodeURIComponent(logoObj.file)}`;
+          const card = document.createElement('div');
+          card.className = 'modal-logo-card';
+          card.onclick = () => selectLogoForEra(logoObj.file);
+
+          card.innerHTML = `
+            <img src="${logoPath}" alt="${logoObj.file}">
+            <span>${logoObj.file}</span>
+          `;
+          grid.appendChild(card);
+        });
+      }
+
+      document.getElementById('logo-modal').classList.add('active');
+    }
+
+    function selectLogoForEra(fileName) {
+      if (!activeModalTarget) return;
+      const { teamKey, year } = activeModalTarget;
+      eraSelections[teamKey][year] = fileName;
+      closeModal();
+      renderCards();
+    }
+
+    function closeModal() {
+      document.getElementById('logo-modal').classList.remove('active');
+      activeModalTarget = null;
+    }
+
+    // Export Database Logic
+    function exportDatabase() {
+      const exportDb = {};
+
+      Object.keys(teamDatabase).forEach(teamKey => {
+        const team = teamDatabase[teamKey];
+        const assignedLogos = [];
+
+        // Build continuous year ranges based on selections
+        let currentFile = null;
+        let startYear = 1960;
+
+        eras.forEach((year, idx) => {
+          const selectedFile = eraSelections[teamKey][year];
+          if (idx === 0) {
+            currentFile = selectedFile;
+            startYear = 1960;
+          } else if (selectedFile !== currentFile) {
+            if (currentFile) {
+              assignedLogos.push({ file: currentFile, start: startYear, end: year - 1 });
+            }
+            currentFile = selectedFile;
+            startYear = year;
+          }
+
+          if (idx === eras.length - 1 && currentFile) {
+            assignedLogos.push({ file: currentFile, start: startYear, end: 2026 });
+          }
+        });
+
+        exportDb[teamKey] = {
+          name: getDisplayName(teamKey, team),
+          folder: team.folder,
+          logos: assignedLogos.length > 0 ? assignedLogos : team.logos
+        };
+      });
+
+      const dataStr = "const teamDatabase = " + JSON.stringify(exportDb, null, 2) + ";";
+      const blob = new Blob([dataStr], { type: "text/javascript" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "team_database.js";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Init
+    initAssignments();
+    renderCards();
+  </script>
+</body>
+</html>
