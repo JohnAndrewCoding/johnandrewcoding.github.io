@@ -9,7 +9,6 @@
   <style>
     /* --- ERA THEME DEFINITIONS --- */
     :root {
-      /* Default: 90s Theme */
       --bg-main: #0a0d14;
       --bg-panel: #141b2d;
       --bg-card: #111726;
@@ -21,89 +20,13 @@
       --font-brand: 'VT323', monospace;
     }
 
-    /* 60s Era Theme: Vintage Sepia Newspaper */
-    body.era-60s {
-      --bg-main: #1a1815;
-      --bg-panel: #2b2722;
-      --bg-card: #221f1b;
-      --border-color: #474037;
-      --accent-main: #d4a359;
-      --accent-glow: #f5e3bc;
-      --text-main: #f0e6d2;
-      --text-sub: #a89f8d;
-    }
-
-    /* 70s Era Theme: Burnt Orange & Mustard Yellow */
-    body.era-70s {
-      --bg-main: #18110a;
-      --bg-panel: #291b0f;
-      --bg-card: #21150b;
-      --border-color: #4a301a;
-      --accent-main: #d96b27;
-      --accent-glow: #e6b800;
-      --text-main: #fff3e6;
-      --text-sub: #c2a68c;
-    }
-
-    /* 80s Era Theme: Synthwave Cyber Grid */
-    body.era-80s {
-      --bg-main: #0d0614;
-      --bg-panel: #1a0b28;
-      --bg-card: #140821;
-      --border-color: #3b135e;
-      --accent-main: #ff007f;
-      --accent-glow: #00f0ff;
-      --text-main: #ffffff;
-      --text-sub: #b388eb;
-    }
-
-    /* 90s Era Theme: Classic SportsCenter Red & Gold */
-    body.era-90s {
-      --bg-main: #0a0d14;
-      --bg-panel: #141b2d;
-      --bg-card: #111726;
-      --border-color: #232e48;
-      --accent-main: #cc0000;
-      --accent-glow: #ffcc00;
-      --text-main: #ffffff;
-      --text-sub: #94a3b8;
-    }
-
-    /* 00s Era Theme: Metallic Chrome & Silver */
-    body.era-00s {
-      --bg-main: #0f141c;
-      --bg-panel: #1c2533;
-      --bg-card: #161e2b;
-      --border-color: #3d4f6e;
-      --accent-main: #3b82f6;
-      --accent-glow: #e2e8f0;
-      --text-main: #ffffff;
-      --text-sub: #94a3b8;
-    }
-
-    /* 10s Era Theme: Clean Flat Tech Navy */
-    body.era-10s {
-      --bg-main: #0f172a;
-      --bg-panel: #1e293b;
-      --bg-card: #1e293b;
-      --border-color: #334155;
-      --accent-main: #2563eb;
-      --accent-glow: #38bdf8;
-      --text-main: #f8fafc;
-      --text-sub: #94a3b8;
-    }
-
-    /* 20s Era Theme: Dark Neon Red */
-    body.era-20s {
-      --bg-main: #050505;
-      --bg-panel: #0d0d0d;
-      --bg-card: #121212;
-      --border-color: #262626;
-      --accent-main: #e11d48;
-      --accent-glow: #fb7185;
-      --text-main: #ffffff;
-      --text-sub: #a3a3a3;
-    }
+    body.era-60s { --bg-main: #1a1815; --bg-panel: #2b2722; --bg-card: #221f1b; --border-color: #474037; --accent-main: #d4a359; --accent-glow: #f5e3bc; --text-main: #f0e6d2; --text-sub: #a89f8d; }
+    body.era-70s { --bg-main: #18110a; --bg-panel: #291b0f; --bg-card: #21150b; --border-color: #4a301a; --accent-main: #d96b27; --accent-glow: #e6b800; --text-main: #fff3e6; --text-sub: #c2a68c; }
+    body.era-80s { --bg-main: #0d0614; --bg-panel: #1a0b28; --bg-card: #140821; --border-color: #3b135e; --accent-main: #ff007f; --accent-glow: #00f0ff; --text-main: #ffffff; --text-sub: #b388eb; }
+    body.era-90s { --bg-main: #0a0d14; --bg-panel: #141b2d; --bg-card: #111726; --border-color: #232e48; --accent-main: #cc0000; --accent-glow: #ffcc00; --text-main: #ffffff; --text-sub: #94a3b8; }
+    body.era-00s { --bg-main: #0f141c; --bg-panel: #1c2533; --bg-card: #161e2b; --border-color: #3d4f6e; --accent-main: #3b82f6; --accent-glow: #e2e8f0; --text-main: #ffffff; --text-sub: #94a3b8; }
+    body.era-10s { --bg-main: #0f172a; --bg-panel: #1e293b; --bg-card: #1e293b; --border-color: #334155; --accent-main: #2563eb; --accent-glow: #38bdf8; --text-main: #f8fafc; --text-sub: #94a3b8; }
+    body.era-20s { --bg-main: #050505; --bg-panel: #0d0d0d; --bg-card: #121212; --border-color: #262626; --accent-main: #e11d48; --accent-glow: #fb7185; --text-main: #ffffff; --text-sub: #a3a3a3; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -115,259 +38,239 @@
       display: flex;
       flex-direction: column;
       transition: background-color 0.4s ease, color 0.4s ease;
+      padding-bottom: 50px;
     }
 
-    /* --- CRT Effect --- */
+    /* --- CRT Overlay --- */
     body::before {
       content: " "; display: block; position: fixed;
       top: 0; left: 0; bottom: 0; right: 0;
       background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
       background-size: 100% 4px;
-      z-index: 99; pointer-events: none; opacity: 0.4;
+      z-index: 99; pointer-events: none; opacity: 0.35;
     }
 
     header {
       background: linear-gradient(180deg, var(--accent-main) 0%, #000 100%);
-      padding: 12px 24px;
+      padding: 12px 16px;
       display: flex; align-items: center; justify-content: space-between;
       border-bottom: 4px solid var(--accent-glow);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-      transition: all 0.4s ease;
     }
 
-    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
     .brand-logo {
-      font-family: var(--font-brand); font-size: 2.8rem;
-      background: #000; color: #fff; padding: 2px 12px;
-      font-style: italic; border-right: 4px solid var(--accent-glow);
+      font-family: var(--font-brand); font-size: 2.2rem;
+      background: #000; color: #fff; padding: 2px 10px;
+      font-style: italic; border-right: 3px solid var(--accent-glow);
     }
     .brand-title {
       font-family: 'Chakra Petch', sans-serif;
-      font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px;
+      font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px;
     }
 
-    /* --- Era Navigation Bar --- */
+    /* --- Controls Bar --- */
     .era-nav-bar {
       background: var(--bg-panel);
       border-bottom: 2px solid var(--border-color);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      position: sticky; top: 0; z-index: 90;
-      transition: background-color 0.4s ease, border-color 0.4s ease;
-    }
-
-    .era-title-label {
-      font-family: 'Chakra Petch', sans-serif;
-      color: var(--accent-glow);
-      font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
-      white-space: nowrap;
-    }
-
-    .era-buttons-container {
-      display: flex;
-      gap: 10px;
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; position: sticky; top: 0; z-index: 90;
       flex-wrap: wrap;
     }
 
+    .era-buttons-container { display: flex; gap: 8px; overflow-x: auto; }
+
     .era-btn {
-      background: #000;
-      border: 2px solid var(--border-color);
-      color: var(--text-main);
-      padding: 8px 18px;
-      border-radius: 6px;
-      font-family: 'Chakra Petch', sans-serif;
-      font-size: 1.1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.25s ease;
+      background: #000; border: 2px solid var(--border-color);
+      color: var(--text-main); padding: 6px 14px; border-radius: 6px;
+      font-family: 'Chakra Petch', sans-serif; font-size: 0.95rem; font-weight: 700;
+      cursor: pointer; transition: all 0.25s ease; white-space: nowrap;
     }
-
-    .era-btn:hover {
-      border-color: var(--accent-glow);
-      color: var(--accent-glow);
-    }
-
+    .era-btn:hover { border-color: var(--accent-glow); color: var(--accent-glow); }
     .era-btn.active {
-      background: var(--accent-main);
-      border-color: var(--accent-glow);
-      color: #fff;
-      box-shadow: 0 0 12px var(--accent-main);
+      background: var(--accent-main); border-color: var(--accent-glow);
+      color: #fff; box-shadow: 0 0 10px var(--accent-main);
     }
 
-    /* --- Scoreboard Container --- */
+    .conf-select-wrapper { display: flex; align-items: center; gap: 8px; }
+    .conf-dropdown {
+      background: #000; border: 2px solid var(--border-color);
+      color: var(--accent-glow); padding: 6px 12px; border-radius: 6px;
+      font-family: 'Chakra Petch', sans-serif; font-weight: 700; font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .conf-dropdown:focus { outline: none; border-color: var(--accent-glow); }
+
+    /* --- ESPN Style Week Selector Bar --- */
+    .week-nav-bar {
+      background: #000; border-bottom: 2px solid var(--border-color);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; gap: 10px; overflow-x: auto;
+    }
+
+    .nav-arrow-btn {
+      background: var(--bg-panel); border: 1px solid var(--border-color);
+      color: var(--accent-glow); font-size: 1.2rem; padding: 4px 12px;
+      border-radius: 4px; cursor: pointer; transition: all 0.2s;
+    }
+    .nav-arrow-btn:hover { background: var(--accent-main); color: #fff; }
+
+    .weeks-scroll-wrapper {
+      display: flex; gap: 6px; overflow-x: auto;
+      scrollbar-width: none; flex: 1;
+    }
+    .weeks-scroll-wrapper::-webkit-scrollbar { display: none; }
+
+    .week-item {
+      padding: 6px 14px; border-radius: 4px; font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.85rem; font-weight: 700; color: var(--text-sub);
+      cursor: pointer; white-space: nowrap; border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .week-item:hover { color: #fff; border-color: var(--border-color); }
+    .week-item.active {
+      background: var(--bg-card); color: var(--accent-glow);
+      border-color: var(--accent-glow); box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+
+    /* --- Retro Conference Banner Card --- */
+    .conf-banner-card {
+      background: var(--bg-panel); border: 2px solid var(--accent-glow);
+      border-radius: 8px; padding: 14px 20px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .conf-banner-logo-box {
+      width: 85px; height: 85px; min-width: 85px;
+      background: #000; border: 2px solid var(--border-color);
+      border-radius: 8px; padding: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .conf-banner-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+    .conf-banner-details { display: flex; flex-direction: column; gap: 4px; }
+    .conf-banner-title {
+      font-family: 'Chakra Petch', sans-serif; font-size: 1.4rem;
+      color: var(--accent-glow); text-transform: uppercase;
+    }
+    .conf-banner-sub { font-size: 0.9rem; color: var(--text-sub); }
+
+    /* --- Main Layout --- */
     main {
-      flex: 1;
-      max-width: 1250px;
-      width: 100%;
-      margin: 20px auto;
-      padding: 0 20px 60px 20px;
+      flex: 1; max-width: 1250px; width: 100%;
+      margin: 16px auto; padding: 0 16px 60px 16px;
     }
 
     .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid var(--border-color);
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 8px;
+      border-bottom: 2px solid var(--border-color); flex-wrap: wrap; gap: 8px;
     }
 
     .section-title {
       font-family: 'Chakra Petch', sans-serif;
-      font-size: 1.8rem;
-      text-transform: uppercase;
-      color: var(--accent-glow);
+      font-size: 1.5rem; text-transform: uppercase; color: var(--accent-glow);
     }
 
-    .game-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+    .week-date-subtitle { font-size: 0.9rem; color: var(--text-sub); font-weight: 600; }
 
-    /* --- Prominent Scorecard Layout --- */
+    .game-grid { display: flex; flex-direction: column; gap: 16px; }
+
+    /* --- Game Scorecard Layout --- */
     .game-card {
-      background: var(--bg-card);
-      border: 2px solid var(--border-color);
-      border-radius: 10px;
-      display: grid;
-      grid-template-columns: 380px 1fr 180px;
-      padding: 20px 24px;
-      gap: 24px;
-      align-items: center;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-      transition: all 0.3s ease;
+      background: var(--bg-card); border: 2px solid var(--border-color);
+      border-radius: 8px; display: grid;
+      grid-template-columns: 1fr 180px 140px;
+      padding: 16px 20px; gap: 16px; align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: all 0.25s ease;
     }
+    .game-card:hover { border-color: var(--accent-glow); }
 
-    .game-card:hover {
-      border-color: var(--accent-glow);
-      transform: translateY(-2px);
-    }
-
-    /* Teams Column (Enlarged Logos) */
-    .teams-col {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
+    .teams-col { display: flex; flex-direction: column; gap: 14px; }
 
     .team-row {
-      display: flex;
-      align-items: center;
-      gap: 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px;
     }
+
+    .team-left-info { display: flex; align-items: center; gap: 14px; }
 
     .team-logo-box {
-      width: 80px;
-      height: 80px;
-      min-width: 80px;
+      width: 65px; height: 65px; min-width: 65px;
       display: flex; align-items: center; justify-content: center;
-      background: #000;
-      border: 2px solid var(--border-color);
-      border-radius: 8px;
-      padding: 6px;
-      box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+      background: #000; border: 2px solid var(--border-color);
+      border-radius: 8px; padding: 6px;
+    }
+    .team-logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+    .team-info { display: flex; flex-direction: column; gap: 2px; }
+    .team-name { font-weight: 800; font-size: 1.15rem; letter-spacing: 0.5px; }
+    .team-record { font-size: 0.85rem; color: var(--text-sub); }
+
+    /* Score Column */
+    .team-score {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.8rem; font-weight: 700;
+      color: var(--text-sub); padding-right: 12px;
+    }
+    .team-score.winner {
+      color: var(--accent-glow);
+      font-size: 2rem;
+      text-shadow: 0 0 8px rgba(255, 204, 0, 0.4);
     }
 
-    .team-logo-box img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
-    }
-
-    .team-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .team-name {
-      font-weight: 800;
-      font-size: 1.3rem;
-      letter-spacing: 0.5px;
-    }
-
-    .team-record {
-      font-size: 0.9rem;
-      color: var(--text-sub);
-    }
-
-    /* Center Info Column */
     .info-col {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: flex; flex-direction: column; gap: 6px;
       border-left: 2px solid var(--border-color);
       border-right: 2px solid var(--border-color);
-      padding: 0 20px;
-      font-size: 0.95rem;
-      color: var(--text-sub);
+      padding: 0 16px; font-size: 0.85rem; color: var(--text-sub);
     }
 
     .game-status-time {
-      color: var(--accent-glow);
-      font-family: 'Chakra Petch', sans-serif;
-      font-weight: 700;
-      font-size: 1.1rem;
+      color: var(--accent-glow); font-family: 'Chakra Petch', sans-serif;
+      font-weight: 700; font-size: 1rem;
+    }
+    .game-status-time.live {
+      color: #ff3333;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
 
     .odds-pill {
-      display: inline-block;
-      background: #000;
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border-color);
-      font-size: 0.85rem;
-      color: #fff;
-      margin-top: 4px;
-      width: fit-content;
+      display: inline-block; background: #000; padding: 4px 10px;
+      border-radius: 4px; border: 1px solid var(--border-color);
+      font-size: 0.8rem; color: #fff; margin-top: 2px; width: fit-content;
     }
 
-    /* Right Action Column */
-    .action-col {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      justify-content: center;
-    }
+    .action-col { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
 
     .gamecast-btn {
-      background: var(--accent-main);
-      border: 2px solid var(--accent-glow);
-      color: #fff;
-      padding: 10px 22px;
-      border-radius: 20px;
-      font-family: 'Chakra Petch', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      background: var(--accent-main); border: 2px solid var(--accent-glow);
+      color: #fff; padding: 8px 18px; border-radius: 20px;
+      font-family: 'Chakra Petch', sans-serif; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s ease;
     }
-
-    .gamecast-btn:hover {
-      background: var(--accent-glow);
-      color: #000;
-    }
+    .gamecast-btn:hover { background: var(--accent-glow); color: #000; }
 
     /* Bottom Line Ticker */
     .ticker-bar {
-      background: #000;
-      border-top: 3px solid var(--accent-main);
-      display: flex; height: 45px; align-items: center; overflow: hidden;
-      font-family: 'VT323', monospace; font-size: 1.4rem;
+      background: #000; border-top: 3px solid var(--accent-main);
+      display: flex; height: 42px; align-items: center; overflow: hidden;
+      font-family: 'VT323', monospace; font-size: 1.3rem;
       position: fixed; bottom: 0; width: 100%; z-index: 100;
     }
-
     .ticker-title {
-      background: var(--accent-main); color: #fff; padding: 0 16px;
+      background: var(--accent-main); color: #fff; padding: 0 14px;
       height: 100%; display: flex; align-items: center; font-weight: bold;
       border-right: 3px solid var(--accent-glow); white-space: nowrap;
     }
-
     .ticker-content {
       white-space: nowrap; animation: ticker 30s linear infinite;
       color: #fff; padding-left: 100%;
@@ -378,15 +281,25 @@
       100% { transform: translate3d(-100%, 0, 0); }
     }
 
-    @media (max-width: 950px) {
-      .game-card { grid-template-columns: 1fr; }
-      .info-col { border: none; padding: 12px 0; border-top: 2px solid var(--border-color); border-bottom: 2px solid var(--border-color); }
+    /* Mobile Responsive Layout */
+    @media (max-width: 900px) {
+      .game-card { grid-template-columns: 1fr; padding: 16px; gap: 12px; }
+      .info-col {
+        border-left: none; border-right: none;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        padding: 10px 0;
+      }
       .action-col { align-items: flex-start; }
+      .team-logo-box { width: 52px; height: 52px; min-width: 52px; }
+      .brand-title { font-size: 1rem; }
+      .brand-logo { font-size: 1.8rem; }
     }
   </style>
 
-  <!-- Auto-generated Team Database -->
+  <!-- Auto-generated Databases -->
   <script src="team_database.js"></script>
+  <script src="conference_database.js"></script>
 </head>
 <body class="era-90s">
 
@@ -397,9 +310,8 @@
     </div>
   </header>
 
-  <!-- CFB Era Selection Toolbar -->
+  <!-- Controls Bar -->
   <div class="era-nav-bar">
-    <span class="era-title-label">Select CFB Era Theme:</span>
     <div class="era-buttons-container">
       <button class="era-btn" data-era="60s" data-year="1960">60's</button>
       <button class="era-btn" data-era="70s" data-year="1970">70's</button>
@@ -409,11 +321,40 @@
       <button class="era-btn" data-era="10s" data-year="2010">10's</button>
       <button class="era-btn" data-era="20s" data-year="2020">20's</button>
     </div>
+
+    <!-- Conference Selector Dropdown -->
+    <div class="conf-select-wrapper">
+      <select id="conference-filter" class="conf-dropdown">
+        <option value="all">All FBS Conferences</option>
+        <option value="acc">ACC</option>
+        <option value="big12">Big 12</option>
+        <option value="bigten">Big Ten</option>
+        <option value="sec">SEC</option>
+        <option value="aac">AAC</option>
+        <option value="cusa">C-USA</option>
+        <option value="mac">MAC</option>
+        <option value="mwc">Mountain West</option>
+        <option value="sunbelt">Sun Belt</option>
+        <option value="pac12">Pac-12</option>
+        <option value="independents">FBS Independents</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ESPN Week Selector Bar -->
+  <div class="week-nav-bar">
+    <button class="nav-arrow-btn" id="prev-week-btn">‹</button>
+    <div class="weeks-scroll-wrapper" id="weeks-container"></div>
+    <button class="nav-arrow-btn" id="next-week-btn">›</button>
   </div>
 
   <main>
+    <!-- Retro Conference Banner -->
+    <div id="conference-banner-container"></div>
+
     <div class="section-header">
       <h2 class="section-title" id="era-heading">1990 CFB ERA SCOREBOARD</h2>
+      <div class="week-date-subtitle" id="week-date-subtitle">WEEK 6 SCHEDULE</div>
     </div>
 
     <div class="game-grid" id="scoreboard-grid">
@@ -424,68 +365,189 @@
   <div class="ticker-bar">
     <div class="ticker-title">THE BOTTOM LINE</div>
     <div class="ticker-content" id="ticker-text">
-      LIVE ESPN SCOREBOARD LOADED ... CLICK A DECADE ERA BUTTON TO SWITCH THE VISUAL THEME AND RETRO LOGOS ...
+      LIVE ESPN SCOREBOARD LOADED ... FILTER BY CONFERENCE AND DECADE ERA TO DISPLAY RETRO LOGO BRANDING ...
     </div>
   </div>
 
   <script>
     let liveGamesData = [];
     let currentSelectedYear = 1990;
-    let currentEraClass = 'era-90s';
+    let currentWeek = 6;
+    let selectedConfGroup = 'all';
+
+    // ESPN Official Conference Group ID Mapping
+    const espnConfIds = {
+      'acc': ['1'],
+      'big12': ['4'],
+      'bigten': ['5'],
+      'sec': ['8'],
+      'aac': ['151'],
+      'cusa': ['12'],
+      'mac': ['15'],
+      'mwc': ['17'],
+      'sunbelt': ['37'],
+      'pac12': ['9'],
+      'independents': ['18']
+    };
 
     const eraHeading = document.getElementById('era-heading');
+    const weekDateSubtitle = document.getElementById('week-date-subtitle');
     const scoreboardGrid = document.getElementById('scoreboard-grid');
     const tickerText = document.getElementById('ticker-text');
+    const confBannerContainer = document.getElementById('conference-banner-container');
+    const confDropdown = document.getElementById('conference-filter');
     const eraButtons = document.querySelectorAll('.era-btn');
+    const weeksContainer = document.getElementById('weeks-container');
+    const prevWeekBtn = document.getElementById('prev-week-btn');
+    const nextWeekBtn = document.getElementById('next-week-btn');
 
+    // Build Week Navigation Bar
+    function buildWeekBar() {
+      weeksContainer.innerHTML = '';
+      for (let w = 1; w <= 16; w++) {
+        const weekBtn = document.createElement('div');
+        weekBtn.className = `week-item ${w === currentWeek ? 'active' : ''}`;
+        weekBtn.dataset.week = w;
+        weekBtn.innerHTML = w === 16 ? `<span>BOWLS / CFP</span>` : `<span>WEEK ${w}</span>`;
+        
+        weekBtn.addEventListener('click', () => {
+          currentWeek = w;
+          updateWeekUI();
+          fetchEspnScoreboard();
+        });
+        weeksContainer.appendChild(weekBtn);
+      }
+    }
+
+    function updateWeekUI() {
+      document.querySelectorAll('.week-item').forEach(el => {
+        el.classList.toggle('active', parseInt(el.dataset.week) === currentWeek);
+      });
+      const activeEl = document.querySelector('.week-item.active');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+
+    prevWeekBtn.addEventListener('click', () => {
+      if (currentWeek > 1) {
+        currentWeek--;
+        updateWeekUI();
+        fetchEspnScoreboard();
+      }
+    });
+
+    nextWeekBtn.addEventListener('click', () => {
+      if (currentWeek < 16) {
+        currentWeek++;
+        updateWeekUI();
+        fetchEspnScoreboard();
+      }
+    });
+
+    // Lookup Team Logo Path
     function getLocalLogoPath(espnTeamName, selectedYear) {
       if (typeof teamDatabase === 'undefined') return null;
-
       const cleanEspn = espnTeamName.toLowerCase().replace(/[^a-z0-9]/g, '');
-
       let matchedKey = Object.keys(teamDatabase).find(key => {
         const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
         return cleanKey.includes(cleanEspn) || cleanEspn.includes(cleanKey);
       });
-
       if (!matchedKey) return null;
-
       const teamData = teamDatabase[matchedKey];
       if (!teamData || !teamData.logos || teamData.logos.length === 0) return null;
-
       let activeLogo = teamData.logos.find(logo => selectedYear >= logo.start && selectedYear <= logo.end);
       if (!activeLogo) {
         if (selectedYear < teamData.logos[0].start) activeLogo = teamData.logos[0];
         else activeLogo = teamData.logos[teamData.logos.length - 1];
       }
-
       return `./${encodeURIComponent(teamData.folder)}/${encodeURIComponent(activeLogo.file)}`;
     }
 
+    // Lookup Conference Logo Path
+    function getLocalConfLogoPath(confKey, selectedYear) {
+      if (typeof conferenceDatabase === 'undefined' || !conferenceDatabase[confKey]) return null;
+      const confData = conferenceDatabase[confKey];
+      if (!confData.logos || confData.logos.length === 0) return null;
+      let activeLogo = confData.logos.find(logo => selectedYear >= logo.start && selectedYear <= logo.end);
+      if (!activeLogo) {
+        if (selectedYear < confData.logos[0].start) activeLogo = confData.logos[0];
+        else activeLogo = confData.logos[confData.logos.length - 1];
+      }
+      return `./${encodeURIComponent(confData.folder)}/${encodeURIComponent(activeLogo.file)}`;
+    }
+
+    // Render Conference Banner
+    function renderConferenceBanner() {
+      if (selectedConfGroup === 'all' || typeof conferenceDatabase === 'undefined' || !conferenceDatabase[selectedConfGroup]) {
+        confBannerContainer.innerHTML = '';
+        return;
+      }
+
+      const confData = conferenceDatabase[selectedConfGroup];
+      const logoUrl = getLocalConfLogoPath(selectedConfGroup, currentSelectedYear);
+
+      confBannerContainer.innerHTML = `
+        <div class="conf-banner-card">
+          <div class="conf-banner-logo-box">
+            ${logoUrl ? `<img src="${logoUrl}" alt="${confData.name}">` : `<span style="font-weight:bold;">${selectedConfGroup.toUpperCase()}</span>`}
+          </div>
+          <div class="conf-banner-details">
+            <h3 class="conf-banner-title">${confData.name} (${currentSelectedYear} ERA BRANDING)</h3>
+            <span class="conf-banner-sub">Displaying games matching this conference for Week ${currentWeek === 16 ? 'Postseason' : currentWeek}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Fetch Live Games
     async function fetchEspnScoreboard() {
-      const espnUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=100";
-      
+      scoreboardGrid.innerHTML = `<p style="color: var(--text-sub);">Loading Week ${currentWeek === 16 ? 'Postseason' : currentWeek} Schedule...</p>`;
+      const seasonType = currentWeek === 16 ? 3 : 2;
+      const weekParam = currentWeek === 16 ? 1 : currentWeek;
+      const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=100&seasontype=${seasonType}&week=${weekParam}`;
+
       try {
         const res = await fetch(espnUrl);
         const data = await res.json();
-        
         liveGamesData = data.events || [];
+        weekDateSubtitle.textContent = `${currentWeek === 16 ? 'BOWLS / POSTSEASON' : 'WEEK ' + currentWeek} SCHEDULE`;
+        renderConferenceBanner();
         renderScoreboard();
       } catch (err) {
-        console.error("Failed fetching ESPN API:", err);
+        console.error("ESPN Fetch error:", err);
         scoreboardGrid.innerHTML = `<p style="color: red;">Error connecting to live ESPN feed.</p>`;
       }
     }
 
+    // Filter and Render Scoreboard Cards (With Live and Past Scores)
     function renderScoreboard() {
       if (!liveGamesData || liveGamesData.length === 0) {
-        scoreboardGrid.innerHTML = `<p style="color: var(--text-sub);">No live games scheduled for today.</p>`;
+        scoreboardGrid.innerHTML = `<p style="color: var(--text-sub);">No FBS games scheduled for this week.</p>`;
         return;
       }
 
       scoreboardGrid.innerHTML = '';
 
-      liveGamesData.forEach(event => {
+      // Filter games by ESPN Conference ID
+      const filteredGames = liveGamesData.filter(event => {
+        if (selectedConfGroup === 'all') return true;
+
+        const comp = event.competitions[0];
+        const targetConfIds = espnConfIds[selectedConfGroup] || [];
+
+        return comp.competitors.some(c => {
+          const confId = c.team.conferenceId ? String(c.team.conferenceId) : null;
+          return targetConfIds.includes(confId);
+        });
+      });
+
+      if (filteredGames.length === 0) {
+        scoreboardGrid.innerHTML = `<p style="color: var(--text-sub);">No games found for this conference in Week ${currentWeek === 16 ? 'Postseason' : currentWeek}.</p>`;
+        return;
+      }
+
+      filteredGames.forEach(event => {
         const competition = event.competitions[0];
         const competitors = competition.competitors;
 
@@ -501,39 +563,68 @@
         const awayLogoUrl = getLocalLogoPath(awayName, currentSelectedYear) || awayTeamObj.team.logo;
         const homeLogoUrl = getLocalLogoPath(homeName, currentSelectedYear) || homeTeamObj.team.logo;
 
-        const statusDetail = event.status.type.detail || 'Scheduled';
+        // Parse Scores & Game State ('pre', 'in', 'post')
+        const gameState = event.status.type.state;
+        const isPreGame = gameState === 'pre';
+        const isLive = gameState === 'in';
+        const isPostGame = gameState === 'post';
+
+        const awayScore = awayTeamObj.score || '0';
+        const homeScore = homeTeamObj.score || '0';
+
+        const awayWinner = awayTeamObj.winner === true;
+        const homeWinner = homeTeamObj.winner === true;
+
+        let statusDisplay = event.status.type.detail || 'Scheduled';
+        if (isLive) {
+          const clock = event.status.displayClock || '';
+          const period = event.status.period || '';
+          statusDisplay = `LIVE • Q${period} ${clock}`;
+        }
+
         const tvBroadcast = competition.broadcasts && competition.broadcasts[0] ? competition.broadcasts[0].names[0] : '';
-        const venueName = competition.venue ? `${competition.venue.fullName} (${competition.venue.address.city}, ${competition.venue.address.state})` : '';
+        const venueName = competition.venue ? competition.venue.fullName : '';
         const oddsDetail = competition.odds && competition.odds[0] ? competition.odds[0].details : '';
+        const situationDetail = competition.situation && competition.situation.downDistanceText ? competition.situation.downDistanceText : '';
 
         const gameCardHtml = `
           <div class="game-card">
             <div class="teams-col">
+              <!-- Away Team Row -->
               <div class="team-row">
-                <div class="team-logo-box">
-                  <img src="${awayLogoUrl}" alt="${awayName}" onerror="this.src='${awayTeamObj.team.logo}'">
+                <div class="team-left-info">
+                  <div class="team-logo-box">
+                    <img src="${awayLogoUrl}" alt="${awayName}" onerror="this.src='${awayTeamObj.team.logo}'">
+                  </div>
+                  <div class="team-info">
+                    <span class="team-name">${awayName}</span>
+                    <span class="team-record">${awayRecord}</span>
+                  </div>
                 </div>
-                <div class="team-info">
-                  <span class="team-name">${awayName}</span>
-                  <span class="team-record">${awayRecord}</span>
-                </div>
+                ${!isPreGame ? `<div class="team-score ${awayWinner ? 'winner' : ''}">${awayScore}</div>` : ''}
               </div>
 
+              <!-- Home Team Row -->
               <div class="team-row">
-                <div class="team-logo-box">
-                  <img src="${homeLogoUrl}" alt="${homeName}" onerror="this.src='${homeTeamObj.team.logo}'">
+                <div class="team-left-info">
+                  <div class="team-logo-box">
+                    <img src="${homeLogoUrl}" alt="${homeName}" onerror="this.src='${homeTeamObj.team.logo}'">
+                  </div>
+                  <div class="team-info">
+                    <span class="team-name">${homeName}</span>
+                    <span class="team-record">${homeRecord}</span>
+                  </div>
                 </div>
-                <div class="team-info">
-                  <span class="team-name">${homeName}</span>
-                  <span class="team-record">${homeRecord}</span>
-                </div>
+                ${!isPreGame ? `<div class="team-score ${homeWinner ? 'winner' : ''}">${homeScore}</div>` : ''}
               </div>
             </div>
 
+            <!-- Game Status & Details -->
             <div class="info-col">
-              <span class="game-status-time">${statusDetail} ${tvBroadcast ? '• ' + tvBroadcast : ''}</span>
-              <span>${venueName}</span>
-              ${oddsDetail ? `<div class="odds-pill">Spread: ${oddsDetail}</div>` : ''}
+              <span class="game-status-time ${isLive ? 'live' : ''}">${statusDisplay} ${tvBroadcast ? '• ' + tvBroadcast : ''}</span>
+              ${situationDetail ? `<span style="color: var(--accent-glow); font-weight:600;">${situationDetail}</span>` : ''}
+              ${venueName ? `<span>${venueName}</span>` : ''}
+              ${isPreGame && oddsDetail ? `<div class="odds-pill">Spread: ${oddsDetail}</div>` : ''}
             </div>
 
             <div class="action-col">
@@ -545,11 +636,18 @@
         scoreboardGrid.insertAdjacentHTML('beforeend', gameCardHtml);
       });
 
-      tickerText.textContent = `RETRO ERA SWITCHED: DISPLAYING ${currentSelectedYear} ERA LOGO BRANDING FOR ALL FBS MATCHUPS ... LIVE SCHEDULE POWERED BY ESPN API ...`;
+      tickerText.textContent = `RETRO ERA: ${currentSelectedYear} ERA LOGO BRANDING ... DISPLAYING ${currentWeek === 16 ? 'POSTSEASON' : 'WEEK ' + currentWeek} SCHEDULE AND SCORES ...`;
     }
 
+    // Event Listeners
+    confDropdown.addEventListener('change', (e) => {
+      selectedConfGroup = e.target.value;
+      renderConferenceBanner();
+      renderScoreboard();
+    });
+
     eraButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         eraButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
@@ -559,11 +657,17 @@
         document.body.className = `era-${era}`;
         eraHeading.textContent = `${currentSelectedYear} CFB ERA SCOREBOARD`;
 
+        renderConferenceBanner();
         renderScoreboard();
       });
     });
 
+    // Initialize
+    buildWeekBar();
     fetchEspnScoreboard();
+
+    // Auto-refresh live scores every 30 seconds
+    setInterval(fetchEspnScoreboard, 30000);
   </script>
 </body>
 </html>
