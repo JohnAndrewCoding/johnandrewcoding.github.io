@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>League Picks Visual Checker</title>
+  <style>
+    :root {
+      --bg: #0b0f19; --card: #151d30; --border: #232f48;
+      --primary: #38bdf8; --text: #f1f5f9; --muted: #94a3b8;
+      --win: #064e3b; --win-text: #34d399;
+      --loss: #7f1d1d; --loss-text: #f87171;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: var(--card); padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: center; font-size: 13px; }
+    th { background: #0c1424; color: var(--muted); }
+    td.game-cell { text-align: left; font-weight: bold; }
+    .pick-box { padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; min-width: 50px; }
+    .pick-win { background: var(--win); color: var(--win-text); border: 1px solid var(--win-text); }
+    .pick-loss { background: var(--loss); color: var(--loss-text); border: 1px solid var(--loss-text); }
+    .pick-pending { background: #1e293b; color: var(--muted); border: 1px solid var(--border); }
+    .sticky-footer { position: sticky; bottom: 10px; background: #0284c7; color: white; padding: 12px 20px; border-radius: 8px; display: flex; justify-content: space-between; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 16px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="bar">
+    <div>
+      <h2 style="margin:0; color:var(--primary);">🎯 Visual Picks Matrix</h2>
+      <a href="index.html" style="color:var(--muted); font-size:13px;">⬅ Back to Hub</a>
+    </div>
+    <div>
+      <label for="matrix-week" style="font-weight:bold;">Week: </label>
+      <select id="matrix-week" onchange="renderMatrix()" style="background:var(--bg); color:#fff; padding:6px; border:1px solid var(--border); border-radius:4px;">
+        <option value="1">Week 1</option><option value="2">Week 2</option>
+        <option value="3">Week 3</option><option value="4">Week 4</option>
+        <option value="5">Week 5</option><option value="6">Week 6</option>
+        <option value="7">Week 7</option><option value="8">Week 8</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="overflow-x: auto;">
+    <table id="matrix-table">
+      <thead id="matrix-head"></thead>
+      <tbody id="matrix-body"></tbody>
+    </table>
+  </div>
+
+  <div id="summary-bar" class="sticky-footer">
+    <span>Pool Record: Calculating...</span>
+    <span id="win-loss-counter">Correct: 0 | Incorrect: 0</span>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase } from './app.js';
+
+  window.renderMatrix = async () => {
+    const week = document.getElementById('matrix-week').value;
+    const thead = document.getElementById('matrix-head');
+    const tbody = document.getElementById('matrix-body');
+    tbody.innerHTML = '<tr><td>Loading matrix...</td></tr>';
+
+    // 1. Fetch active profiles (excluding dummy account)
+    const { data: users } = await supabase.from('profiles').select('device_uid, player_name').neq('player_name', 'LEE HARVEY OSWA');
+    // 2. Fetch games for week
+    const { data: games } = await supabase.from('games').select('*').eq('week_number', week);
+    // 3. Fetch all picks for week
+    const { data: picks } = await supabase.from('picks').select('*').eq('week_number', week);
+
+    if (!games || games.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="color:var(--muted)">No games scheduled for this week.</td></tr>';
+      return;
+    }
+
+    // Build header
+    thead.innerHTML = `
+      <tr>
+        <th style="text-align:left;">Matchup</th>
+        <th>Winner</th>
+        ${users.map(u => `<th>${u.player_name}</th>`).join('')}
+      </tr>
+    `;
+
+    let totalWins = 0;
+    let totalLosses = 0;
+
+    // Build row per game
+    tbody.innerHTML = games.map(g => {
+      const isFinal = g.status === 'STATUS_FINAL';
+      const winner = g.winner_team;
+
+      const userPickCells = users.map(u => {
+        const userPick = (picks || []).find(p => p.espn_game_id === g.espn_game_id && p.device_uid === u.device_uid);
+        if (!userPick) return `<td><span class="pick-box pick-pending">-</span></td>`;
+
+        let cls = 'pick-pending';
+        if (isFinal && winner) {
+          if (userPick.chosen_team === winner) {
+            cls = 'pick-win';
+            totalWins++;
+          } else {
+            cls = 'pick-loss';
+            totalLosses++;
+          }
+        }
+        return `<td><span class="pick-box ${cls}">${userPick.chosen_team}</span></td>`;
+      }).join('');
+
+      return `
+        <tr>
+          <td class="game-cell">${g.away_team} @ ${g.home_team}</td>
+          <td><strong style="color:var(--primary);">${winner || (isFinal ? 'TIE' : 'In Progress')}</strong></td>
+          ${userPickCells}
+        </tr>
+      `;
+    }).join('');
+
+    const dec = totalWins + totalLosses;
+    const pct = dec > 0 ? ((totalWins / dec) * 100).toFixed(1) : 0;
+    document.getElementById('summary-bar').innerHTML = `
+      <span>Week ${week} Group Pool Status</span>
+      <span>${totalWins} W - ${totalLosses} L (${pct}%)</span>
+    `;
+  };
+
+  renderMatrix();
+</script>
+</body>
+</html>
