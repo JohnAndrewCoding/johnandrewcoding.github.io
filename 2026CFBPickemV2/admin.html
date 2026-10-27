@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pick'em Admin Control Panel</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151d30;
+      --border: #232f48;
+      --primary: #38bdf8;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1, h2 { color: var(--primary); margin-top: 0; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    select, button, input {
+      background: #0e1524;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    button { cursor: pointer; }
+    button.btn-primary { background: var(--primary); color: #0b0f19; border: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+    th { background: #0e1524; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>⚙️ Pick'em Admin Control Panel</h1>
+
+  <!-- 1. SLATE BUILDER -->
+  <div class="card">
+    <h2>1. Select Weekly Slate from ESPN</h2>
+    <div class="row">
+      <label for="admin-week">Week: </label>
+      <select id="admin-week">
+        <option value="1">Week 1</option>
+        <option value="2">Week 2</option>
+        <option value="3">Week 3</option>
+        <option value="4">Week 4</option>
+        <option value="5">Week 5</option>
+        <option value="6">Week 6</option>
+        <option value="7">Week 7</option>
+        <option value="8">Week 8</option>
+      </select>
+      <button onclick="fetchEspnSchedule()">Fetch Games from ESPN</button>
+      <button class="btn-primary" onclick="publishSelectedSlate()">Save Selected Slate to Database</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th width="40"><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
+          <th>Game ID</th>
+          <th>Matchup</th>
+          <th>Start Time</th>
+        </tr>
+      </thead>
+      <tbody id="espn-games-list">
+        <tr><td colspan="4" style="color: var(--muted);">Click "Fetch Games from ESPN" to view available games.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 2. MANAGE PICKS -->
+  <div class="card">
+    <h2>2. User Picks Management</h2>
+    <div class="row">
+      <button onclick="loadAllPicks()">Refresh User Picks</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Week</th>
+          <th>Game ID</th>
+          <th>Selected Team</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="user-picks-list">
+        <tr><td colspan="5" style="color: var(--muted);">Click "Refresh User Picks" to display database entries.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase, syncWeekFromESPN, normalizeTeam } from './app.js';
+
+  let fetchedGames = [];
+
+  // 1. Fetch available matchups from ESPN
+  window.fetchEspnSchedule = async () => {
+    const week = document.getElementById('admin-week').value;
+    const tbody = document.getElementById('espn-games-list');
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted)">Loading ESPN schedule...</td></tr>';
+
+    try {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=2026&week=${week}&seasontype=2&groups=80&limit=250`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const events = data.events || [];
+
+      fetchedGames = events.map(e => {
+        const comp = e.competitions[0];
+        const home = comp.competitors.find(c => c.homeAway === 'home');
+        const away = comp.competitors.find(c => c.homeAway === 'away');
+        return {
+          espn_game_id: String(e.id),
+          week_number: parseInt(week),
+          home_team: normalizeTeam(home.team.abbreviation),
+          away_team: normalizeTeam(away.team.abbreviation),
+          start_time: comp.date
+        };
+      });
+
+      tbody.innerHTML = fetchedGames.map((g, idx) => `
+        <tr>
+          <td><input type="checkbox" class="game-chk" value="${idx}"></td>
+          <td>${g.espn_game_id}</td>
+          <td><strong>${g.away_team}</strong> @ <strong>${g.home_team}</strong></td>
+          <td>${new Date(g.start_time).toLocaleString()}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4" style="color:#ef4444">Failed to fetch ESPN schedule: ${err.message}</td></tr>`;
+    }
+  };
+
+  window.toggleSelectAll = (master) => {
+    document.querySelectorAll('.game-chk').forEach(c => c.checked = master.checked);
+  };
+
+  // 2. Publish chosen games to Supabase
+  window.publishSelectedSlate = async () => {
+    const selectedBoxes = document.querySelectorAll('.game-chk:checked');
+    if (selectedBoxes.length === 0) return alert("Select at least one game to save.");
+
+    const payload = Array.from(selectedBoxes).map(b => fetchedGames[parseInt(b.value)]);
+    
+    const { error } = await supabase.from('games').upsert(payload, { onConflict: 'espn_game_id' });
+    if (error) {
+      alert("Error saving slate: " + error.message);
+    } else {
+      alert(`Successfully published ${payload.length} games to Week ${payload[0].week_number}!`);
+    }
+  };
+
+  // 3. View & edit user picks
+  window.loadAllPicks = async () => {
+    const tbody = document.getElementById('user-picks-list');
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">Loading picks...</td></tr>';
+
+    const { data, error } = await supabase
+      .from('picks')
+      .select('id, week_number, chosen_team, espn_game_id, profiles(player_name)')
+      .order('week_number', { ascending: false });
+
+    if (error) return alert("Error loading picks: " + error.message);
+
+    tbody.innerHTML = (data || []).map(p => `
+      <tr>
+        <td><strong>${p.profiles?.player_name || 'Unknown'}</strong></td>
+        <td>Week ${p.week_number}</td>
+        <td>${p.espn_game_id}</td>
+        <td><input type="text" value="${p.chosen_team}" id="pick-input-${p.id}" style="width:70px;"></td>
+        <td><button onclick="updatePick(${p.id})">Update</button></td>
+      </tr>
+    `).join('');
+  };
+
+  window.updatePick = async (pickId) => {
+    const newVal = document.getElementById(`pick-input-${pickId}`).value.trim().toUpperCase();
+    const { error } = await supabase.from('picks').update({ chosen_team: newVal }).eq('id', pickId);
+    if (error) alert("Update failed: " + error.message);
+    else alert("Pick updated successfully!");
+  };
+</script>
+</body>
+</html>
