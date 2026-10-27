@@ -1,11 +1,12 @@
 // app.js
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
+// Supabase Project Credentials
 export const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Standardize team names so picks and ESPN always match 100%
+// Standardize team abbreviations so user picks and ESPN matches 100%
 export const TEAM_ALIASES = {
   "OLE MISS": "MISS", "OLEMISS": "MISS", "UCONN": "CONN",
   "UMASS": "MASS", "NC STATE": "NCSU", "MIAMI (FL)": "MIA",
@@ -20,16 +21,25 @@ export function normalizeTeam(teamStr) {
   return TEAM_ALIASES[cleaned] || cleaned;
 }
 
-// User device identity handling
+// Device UID helper functions
+export function getStoredDeviceUID() {
+  return localStorage.getItem('my_device_uid');
+}
+
+export function saveDeviceUID(uid) {
+  localStorage.setItem('my_device_uid', uid);
+}
+
+// Identity manager: ensures the device has an account and profile name
 export async function ensureUser() {
-  let uid = localStorage.getItem('my_device_uid');
+  let uid = getStoredDeviceUID();
   if (!uid) {
     uid = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
-    localStorage.setItem('my_device_uid', uid);
+    saveDeviceUID(uid);
   }
 
-  // Check if profile exists
-  let { data: profile } = await supabase.from('profiles').select('*').eq('device_uid', uid).single();
+  // Check if profile exists in Supabase
+  let { data: profile } = await supabase.from('profiles').select('*').eq('device_uid', uid).maybeSingle();
 
   if (!profile) {
     let name = prompt("Enter your Player/Coach Name for Pick'em:") || ("Player_" + uid.slice(-4));
@@ -41,9 +51,12 @@ export async function ensureUser() {
   return profile;
 }
 
-// Bulk ESPN Score Fetcher
+// Bulk ESPN Score Fetcher & DB Updater
 export async function syncScoresFromESPN(weekNum) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=2026&week=${weekNum}&seasontype=2&groups=80&limit=250`;
+  // Dynamically uses current year or defaults to current football calendar
+  const year = new Date().getFullYear();
+  const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${year}&week=${weekNum}&seasontype=2&groups=80&limit=250`;
+  
   try {
     const res = await fetch(url);
     const data = await res.json();
