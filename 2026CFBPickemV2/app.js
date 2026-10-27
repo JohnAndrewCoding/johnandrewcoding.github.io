@@ -1,16 +1,17 @@
+// app.js
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// 1. Supabase Initialization
 export const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 2. Team Alias Dictionary (Prevents mismatch bugs between your picks and ESPN's naming)
+// Standardize team names so picks and ESPN always match 100%
 export const TEAM_ALIASES = {
   "OLE MISS": "MISS", "OLEMISS": "MISS", "UCONN": "CONN",
   "UMASS": "MASS", "NC STATE": "NCSU", "MIAMI (FL)": "MIA",
   "MIAMI (OH)": "M-OH", "TEXAS A&M": "TAMU", "OKLAHOMA STATE": "OKST",
-  "FLORIDA STATE": "FSU", "GEORGIA TECH": "GT", "MICHIGAN STATE": "MSU"
+  "FLORIDA STATE": "FSU", "GEORGIA TECH": "GT", "MICHIGAN STATE": "MSU",
+  "HAWAI'I": "HAW", "HAWAII": "HAW", "SAN JOSE STATE": "SJSU"
 };
 
 export function normalizeTeam(teamStr) {
@@ -19,30 +20,42 @@ export function normalizeTeam(teamStr) {
   return TEAM_ALIASES[cleaned] || cleaned;
 }
 
-// 3. User & Identity Management
-export function getStoredDeviceUID() {
-  return localStorage.getItem('my_device_uid');
+// User device identity handling
+export async function ensureUser() {
+  let uid = localStorage.getItem('my_device_uid');
+  if (!uid) {
+    uid = 'dev_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+    localStorage.setItem('my_device_uid', uid);
+  }
+
+  // Check if profile exists
+  let { data: profile } = await supabase.from('profiles').select('*').eq('device_uid', uid).single();
+
+  if (!profile) {
+    let name = prompt("Enter your Player/Coach Name for Pick'em:") || ("Player_" + uid.slice(-4));
+    name = name.trim().toUpperCase();
+    await supabase.from('profiles').insert([{ device_uid: uid, player_name: name, coach_name: name }]);
+    profile = { device_uid: uid, player_name: name };
+  }
+
+  return profile;
 }
 
-export function saveDeviceUID(uid) {
-  localStorage.setItem('my_device_uid', uid);
-}
-
-// 4. Fast Bulk ESPN Scoreboard Sync
-export async function syncWeekFromESPN(year = 2026, weekNum = 1, seasonType = 2) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${year}&week=${weekNum}&seasontype=${seasonType}&groups=80&limit=250`;
-  
+// Bulk ESPN Score Fetcher
+export async function syncScoresFromESPN(weekNum) {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=2026&week=${weekNum}&seasontype=2&groups=80&limit=250`;
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    const res = await fetch(url);
+    const data = await res.json();
     const events = data.events || [];
 
-    const gameRecords = events.map(evt => {
-      const comp = evt.competitions[0];
+    const updates = [];
+    events.forEach(e => {
+      const comp = e.competitions[0];
       const home = comp.competitors.find(c => c.homeAway === 'home');
       const away = comp.competitors.find(c => c.homeAway === 'away');
-      const statusType = comp.status?.type?.name || 'STATUS_SCHEDULED';
       const isCompleted = comp.status?.type?.completed || false;
+      const statusType = comp.status?.type?.name || 'STATUS_SCHEDULED';
 
       let winner = null;
       if (isCompleted) {
@@ -50,8 +63,8 @@ export async function syncWeekFromESPN(year = 2026, weekNum = 1, seasonType = 2)
         else if (away.winner) winner = normalizeTeam(away.team.abbreviation);
       }
 
-      return {
-        espn_game_id: String(evt.id),
+      updates.push({
+        espn_game_id: String(e.id),
         week_number: parseInt(weekNum),
         home_team: normalizeTeam(home.team.abbreviation),
         away_team: normalizeTeam(away.team.abbreviation),
@@ -60,16 +73,15 @@ export async function syncWeekFromESPN(year = 2026, weekNum = 1, seasonType = 2)
         winner_team: winner,
         status: statusType,
         start_time: comp.date
-      };
+      });
     });
 
-    if (gameRecords.length > 0) {
-      const { error } = await supabase.from('games').upsert(gameRecords, { onConflict: 'espn_game_id' });
-      if (error) console.error("Error upserting games into Supabase:", error);
+    if (updates.length > 0) {
+      await supabase.from('games').upsert(updates, { onConflict: 'espn_game_id' });
     }
-    return gameRecords;
+    return updates;
   } catch (err) {
-    console.error("Failed to sync from ESPN:", err);
+    console.error("ESPN Sync Error:", err);
     return [];
   }
 }
