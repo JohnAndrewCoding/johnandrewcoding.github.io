@@ -3,84 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>College Football Pick'em</title>
+  <title>College Football Pick'em Hub</title>
   <style>
     :root {
-      --bg: #0f172a; --card: #1e293b; --border: #334155;
-      --primary: #38bdf8; --text: #f8fafc; --muted: #94a3b8;
-      --win: #10b981; --loss: #ef4444;
+      --bg: #0b0f19;
+      --card-bg: #151d30;
+      --border: #232f48;
+      --primary: #38bdf8;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --win: #10b981;
+      --loss: #ef4444;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; }
-    .container { max-width: 900px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-    .nav { display: flex; gap: 8px; margin-bottom: 16px; }
-    button { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    button.active, button:hover { background: var(--primary); color: #000; border-color: var(--primary); }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-    .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-    .game-card { background: #131d2e; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
-    .matchup-row { display: flex; gap: 8px; margin-top: 10px; }
-    .team-btn { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #1e293b; color: #fff; font-weight: bold; cursor: pointer; text-align: center; }
-    .team-btn.picked { background: #0284c7; border-color: var(--primary); color: #fff; }
-    .team-btn.winner { border: 2px solid var(--win); }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); background: #111a2e; }
-    .badge { padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-    .badge-win { background: rgba(16,185,129,0.2); color: var(--win); }
-    .badge-loss { background: rgba(239,68,68,0.2); color: var(--loss); }
-    .badge-pending { background: rgba(148,163,184,0.2); color: var(--muted); }
-    .hidden { display: none; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .user-pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    button {
+      background: var(--card-bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 9px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    button:hover, button.active {
+      background: var(--primary);
+      color: #0b0f19;
+      border-color: var(--primary);
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: #0e1524; color: var(--muted); font-size: 13px; padding: 12px; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .badge-win { background: rgba(16,185,129,0.2); color: #34d399; }
+    .badge-loss { background: rgba(239,68,68,0.2); color: #f87171; }
+    .badge-pending { background: rgba(148,163,184,0.15); color: var(--muted); }
+    .matchup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+    .pick-btn {
+      width: 48%;
+      padding: 10px;
+      margin-top: 8px;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+    .pick-btn.selected {
+      background: #0284c7;
+      color: white;
+      border-color: #38bdf8;
+    }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
+
 <div class="container">
   <header>
     <div>
-      <h2 style="margin:0; color:var(--primary);">🏈 CFB Pick'em Hub</h2>
-      <small id="user-info" style="color:var(--muted);">Loading profile...</small>
+      <h1 style="margin: 0; font-size: 24px; color: var(--primary);">🏈 Pick'em Hub</h1>
+      <span style="font-size: 13px; color: var(--muted);">College Football Season Tracker</span>
     </div>
-    <a href="viewpicks.html" style="color:var(--primary); text-decoration:none; font-weight:bold;">View All Picks Matrix ➔</a>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <div id="user-display" class="user-pill">Checking user...</div>
+      <a href="viewpicks.html" style="color:var(--primary); font-weight:600; text-decoration:none;">Matrix View ➔</a>
+    </div>
   </header>
 
-  <div class="nav">
-    <button id="tab-btn-picks" class="active" onclick="switchTab('picks')">My Picks</button>
-    <button id="tab-btn-leaderboard" onclick="switchTab('leaderboard')">Leaderboard</button>
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button id="btn-leaderboard" class="active" onclick="switchView('leaderboard')">Leaderboard</button>
+    <button id="btn-picks" onclick="switchView('picks')">Make Picks</button>
+    <button style="margin-left: auto;" onclick="runEspnSync()">⚡ Sync ESPN Scores</button>
   </div>
 
-  <!-- PICKS TAB -->
-  <div id="tab-picks">
-    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div>
-        <label for="week-select" style="font-weight:bold;">Select Week: </label>
-        <select id="week-select" onchange="loadGamesAndPicks()" style="background:var(--bg); color:#fff; padding:6px 10px; border:1px solid var(--border); border-radius:4px;">
-          <option value="1">Week 1</option><option value="2">Week 2</option>
-          <option value="3">Week 3</option><option value="4">Week 4</option>
-          <option value="5">Week 5</option><option value="6">Week 6</option>
-          <option value="7">Week 7</option><option value="8">Week 8</option>
-        </select>
-      </div>
-      <button onclick="refreshScores()">Sync Live Scores</button>
-    </div>
-    <div id="games-list" class="game-grid"></div>
-  </div>
-
-  <!-- LEADERBOARD TAB -->
-  <div id="tab-leaderboard" class="card hidden">
-    <h3 style="margin-top:0;">🏆 Current Standings</h3>
+  <!-- LEADERBOARD VIEW -->
+  <div id="view-leaderboard" class="card">
+    <h2 style="margin-top:0;">🏆 League Standings</h2>
     <table>
       <thead>
         <tr>
           <th>Rank</th>
           <th>Player</th>
           <th>Record (W - L)</th>
-          <th>Win %</th>
+          <th>Win Rate</th>
           <th>Pending</th>
-          <th>Total</th>
+          <th>Total Picks</th>
         </tr>
       </thead>
-      <tbody id="leaderboard-body"></tbody>
+      <tbody id="leaderboard-rows">
+        <tr><td colspan="6" style="text-align: center; color: var(--muted);">Loading standings...</td></tr>
+      </tbody>
     </table>
+  </div>
+
+  <!-- PICKS CARDS VIEW -->
+  <div id="view-picks" class="hidden">
+    <div class="card" style="display: flex; gap: 12px; align-items: center; justify-content: space-between;">
+      <div>
+        <label for="week-select" style="font-weight: bold;">Select Week: </label>
+        <select id="week-select" onchange="renderPicks()" style="background: var(--bg); color: var(--text); padding: 8px; border: 1px solid var(--border); border-radius: 6px;">
+          <option value="1">Week 1</option><option value="2">Week 2</option>
+          <option value="3">Week 3</option><option value="4">Week 4</option>
+          <option value="5">Week 5</option><option value="6">Week 6</option>
+          <option value="7">Week 7</option><option value="8">Week 8</option>
+        </select>
+      </div>
+      <small style="color:var(--muted)">Tap a team to make your pick</small>
+    </div>
+    <div id="games-container" class="matchup-grid"></div>
   </div>
 </div>
 
@@ -88,65 +160,85 @@
   import { supabase, ensureUser, syncScoresFromESPN } from './app.js';
 
   let currentUser = null;
-  let currentPicks = {};
+  let userPicksMap = {};
 
-  async function init() {
+  // Attach switchView to window immediately
+  window.switchView = (viewName) => {
+    ['leaderboard', 'picks'].forEach(v => {
+      document.getElementById(`view-${v}`).classList.toggle('hidden', v !== viewName);
+      document.getElementById(`btn-${v}`).classList.toggle('active', v === viewName);
+    });
+    if (viewName === 'picks') renderPicks();
+    if (viewName === 'leaderboard') loadLeaderboard();
+  };
+
+  async function initProfile() {
     currentUser = await ensureUser();
-    document.getElementById('user-info').textContent = `Playing as: ${currentUser.player_name}`;
-    loadGamesAndPicks();
+    document.getElementById('user-display').textContent = `👤 ${currentUser.player_name}`;
     loadLeaderboard();
   }
 
-  window.switchTab = (tab) => {
-    document.getElementById('tab-picks').classList.toggle('hidden', tab !== 'picks');
-    document.getElementById('tab-leaderboard').classList.toggle('hidden', tab !== 'leaderboard');
-    document.getElementById('tab-btn-picks').classList.toggle('active', tab === 'picks');
-    document.getElementById('tab-btn-leaderboard').classList.toggle('active', tab === 'leaderboard');
-    if (tab === 'leaderboard') loadLeaderboard();
-  };
+  async function loadLeaderboard() {
+    const { data, error } = await supabase.from('leaderboard_view').select('*');
+    if (error) {
+      console.error(error);
+      return;
+    }
 
-  window.loadGamesAndPicks = async () => {
+    const tbody = document.getElementById('leaderboard-rows');
+    tbody.innerHTML = (data || []).map((row, i) => `
+      <tr>
+        <td style="font-weight: bold; color: ${i === 0 ? '#fbbf24' : 'var(--muted)'};">#${i + 1}</td>
+        <td><strong>${row.player_name}</strong></td>
+        <td><strong style="color: var(--primary);">${row.wins} - ${row.losses}</strong></td>
+        <td>${row.win_pct || 0}%</td>
+        <td><span class="badge badge-pending">${row.pending}</span></td>
+        <td style="color: var(--muted);">${row.total_picks}</td>
+      </tr>
+    `).join('');
+  }
+
+  window.renderPicks = async () => {
     const week = document.getElementById('week-select').value;
-    const list = document.getElementById('games-list');
-    list.innerHTML = '<p style="color:var(--muted);">Loading games...</p>';
+    const container = document.getElementById('games-container');
+    container.innerHTML = '<p style="color:var(--muted)">Loading games...</p>';
 
-    // Fetch this week's scheduled games and user's saved picks concurrently
+    // Load games & existing picks
     const [gamesRes, picksRes] = await Promise.all([
       supabase.from('games').select('*').eq('week_number', week),
       supabase.from('picks').select('*').eq('device_uid', currentUser.device_uid).eq('week_number', week)
     ]);
 
-    currentPicks = {};
-    (picksRes.data || []).forEach(p => { currentPicks[p.espn_game_id] = p.chosen_team; });
+    userPicksMap = {};
+    (picksRes.data || []).forEach(p => { userPicksMap[p.espn_game_id] = p.chosen_team; });
 
     if (!gamesRes.data || gamesRes.data.length === 0) {
-      list.innerHTML = `<p style="color:var(--muted);">No games set for Week ${week} yet. Go to <a href="admin.html" style="color:var(--primary);">Admin</a> to add games to this week.</p>`;
+      container.innerHTML = `<p style="color:var(--muted)">No games recorded for Week ${week} yet. Go to <a href="admin.html" style="color:var(--primary);">Admin Page</a> to publish this week's slate.</p>`;
       return;
     }
 
-    list.innerHTML = gamesRes.data.map(g => {
-      const myPick = currentPicks[g.espn_game_id];
+    container.innerHTML = gamesRes.data.map(g => {
+      const myPick = userPicksMap[g.espn_game_id];
       const isFinal = g.status === 'STATUS_FINAL';
-      let badge = `<span class="badge badge-pending">${g.status.replace('STATUS_', '')}</span>`;
+      const hasWon = isFinal && myPick && myPick === g.winner_team;
+      const hasLost = isFinal && myPick && myPick !== g.winner_team;
 
-      if (isFinal && myPick) {
-        if (myPick === g.winner_team) badge = `<span class="badge badge-win">CORRECT</span>`;
-        else badge = `<span class="badge badge-loss">INCORRECT</span>`;
-      }
+      let statusBadge = `<span class="badge badge-pending">${g.status.replace('STATUS_', '')}</span>`;
+      if (hasWon) statusBadge = `<span class="badge badge-win">CORRECT</span>`;
+      if (hasLost) statusBadge = `<span class="badge badge-loss">INCORRECT</span>`;
 
       return `
-        <div class="game-card">
-          <div style="display:flex; justify-content:space-between; font-size:12px;">
-            <span style="color:var(--muted);">${new Date(g.start_time).toLocaleDateString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</span>
-            ${badge}
+        <div class="card" style="margin-bottom:0;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-size:12px; color:var(--muted);">${new Date(g.start_time).toLocaleDateString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</span>
+            ${statusBadge}
           </div>
-          <div class="matchup-row">
-            <button class="team-btn ${myPick === g.away_team ? 'picked' : ''} ${g.winner_team === g.away_team ? 'winner' : ''}" 
-                    onclick="pickTeam('${g.espn_game_id}', '${g.away_team}', ${week})">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <button class="pick-btn ${myPick === g.away_team ? 'selected' : ''}" onclick="makePick('${g.espn_game_id}', '${g.away_team}', ${week})">
               ${g.away_team} ${g.away_score || 0}
             </button>
-            <button class="team-btn ${myPick === g.home_team ? 'picked' : ''} ${g.winner_team === g.home_team ? 'winner' : ''}" 
-                    onclick="pickTeam('${g.espn_game_id}', '${g.home_team}', ${week})">
+            <span style="font-size:12px; color:var(--muted);">@</span>
+            <button class="pick-btn ${myPick === g.home_team ? 'selected' : ''}" onclick="makePick('${g.espn_game_id}', '${g.home_team}', ${week})">
               ${g.home_team} ${g.home_score || 0}
             </button>
           </div>
@@ -155,16 +247,15 @@
     }).join('');
   };
 
-  window.pickTeam = async (gameId, team, week) => {
-    // Optimistic UI Update
-    currentPicks[gameId] = team;
-    loadGamesAndPicks();
+  window.makePick = async (espnGameId, chosenTeam, week) => {
+    // Optimistic UI update
+    userPicksMap[espnGameId] = chosenTeam;
+    renderPicks();
 
-    // Upsert into Supabase (idempotent, won't duplicate)
     const { error } = await supabase.from('picks').upsert([{
       device_uid: currentUser.device_uid,
-      espn_game_id: String(gameId),
-      chosen_team: team,
+      espn_game_id: String(espnGameId),
+      chosen_team: chosenTeam,
       week_number: parseInt(week)
     }], { onConflict: 'device_uid, espn_game_id' });
 
@@ -173,29 +264,16 @@
     }
   };
 
-  async function loadLeaderboard() {
-    const { data } = await supabase.from('leaderboard_view').select('*');
-    const tbody = document.getElementById('leaderboard-body');
-    tbody.innerHTML = (data || []).map((row, i) => `
-      <tr>
-        <td style="font-weight:bold; color:${i === 0 ? '#fbbf24' : 'var(--muted)'}">#${i + 1}</td>
-        <td><strong>${row.player_name}</strong></td>
-        <td><strong style="color:var(--primary);">${row.wins} - ${row.losses}</strong></td>
-        <td>${row.win_pct || 0}%</td>
-        <td><span class="badge badge-pending">${row.pending}</span></td>
-        <td>${row.total_picks}</td>
-      </tr>
-    `).join('');
-  }
-
-  window.refreshScores = async () => {
+  window.runEspnSync = async () => {
     const week = document.getElementById('week-select').value;
+    alert(`Syncing week ${week} games & scores directly from ESPN...`);
     await syncScoresFromESPN(week);
-    loadGamesAndPicks();
+    alert("Sync complete!");
     loadLeaderboard();
+    renderPicks();
   };
 
-  init();
+  initProfile();
 </script>
 </body>
 </html>
