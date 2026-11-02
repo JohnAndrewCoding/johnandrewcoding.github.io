@@ -504,23 +504,51 @@
             }
         }
 
-        // Exact helper function used in ViewGames to match user picks reliably
-        function findUserPickForGame(picks, uid, weekNum, espnGameId, cardIndex, homeName, awayName) {
-            const cardIdStr = `card-${cardIndex}`;
-            return (picks || []).find(p => {
-                if (p.device_uid !== uid || p.week_number !== weekNum) return false;
+        // Fetch ALL picks across pages to bypass the Supabase 1,000-row limit
+        async function fetchAllPicks() {
+            let all = [];
+            let from = 0;
+            const pageSize = 1000;
+            let hasMore = true;
 
+            while (hasMore) {
+                const { data, error } = await supabaseClient
+                    .from('picks')
+                    .select('id, device_uid, week_number, card_id, chosen_team, espn_game_id, created_at')
+                    .order('id', { ascending: true })
+                    .range(from, from + pageSize - 1);
+
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    all = all.concat(data);
+                    from += pageSize;
+                    if (data.length < pageSize) hasMore = false;
+                } else {
+                    hasMore = false;
+                }
+            }
+            return all;
+        }
+
+        // Exact match prioritized by ESPN game ID, card id, and team name
+        function findUserPickForGame(userPicks, weekNum, espnGameId, cardIndex, homeName, awayName) {
+            const cardIdStr = `card-${cardIndex}`;
+            const matches = userPicks.filter(p => {
+                if (p.week_number !== weekNum) return false;
                 const pGameId = String(p.espn_game_id || '');
                 const pCardId = String(p.card_id || '');
                 const chosen = p.chosen_team;
 
                 if (pGameId === String(espnGameId)) return true;
-
                 if (pCardId === cardIdStr || pCardId === String(cardIndex)) {
-                    if (chosen === awayName || chosen === homeName) return true;
+                    return chosen === awayName || chosen === homeName;
                 }
                 return false;
             });
+
+            if (matches.length === 0) return null;
+            // Always return the most recently updated pick (highest id)
+            return matches[matches.length - 1];
         }
 
         async function generateAnalystTicker() {
@@ -595,7 +623,8 @@
 
                                 const gamePicks = [];
                                 globalProfiles.forEach(prof => {
-                                    const pick = findUserPickForGame(globalPicks, prof.device_uid, parseInt(weekNum), gameId, idx + 1, homeName, awayName);
+                                    const userAllPicks = globalPicks.filter(p => p.device_uid === prof.device_uid);
+                                    const pick = findUserPickForGame(userAllPicks, parseInt(weekNum), gameId, idx + 1, homeName, awayName);
                                     if (pick && pick.chosen_team) {
                                         gamePicks.push(pick);
                                     }
@@ -682,7 +711,7 @@
                 if (profErr) throw profErr;
                 globalProfiles = profiles || [];
 
-                // 2. Fetch Weekly Slates sorted by ID exactly like ViewGames
+                // 2. Fetch Weekly Slates sorted numerically by ID (matches ViewGames)
                 const { data: slates, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, week_number, espn_game_id')
@@ -690,14 +719,10 @@
                 if (slateErr) throw slateErr;
                 globalSlates = slates || [];
 
-                // 3. Fetch Picks including espn_game_id
-                const { data: picks, error: pickErr } = await supabaseClient
-                    .from('picks')
-                    .select('device_uid, week_number, card_id, chosen_team, espn_game_id');
-                if (pickErr) throw pickErr;
-                globalPicks = picks || [];
+                // 3. Fetch ALL picks (bypassing the 1,000-row limit)
+                globalPicks = await fetchAllPicks();
 
-                // 4. Fetch ESPN scores for every active week
+                // 4. Fetch ESPN scoreboards for all weeks present in slates
                 const weeks = [...new Set(globalSlates.map(s => s.week_number))];
                 const gameEventMap = new Map();
                 globalGameConferenceMap = {};
@@ -739,11 +764,10 @@
                     }
                 }
 
-                // 5. Calculate User Standings based strictly on games scheduled in slates
+                // 5. Evaluate standings mirroring ViewGames exactly
                 globalUserConfStats = {};
                 const now = new Date();
 
-                // Group and preserve slate order by week
                 const weekSlateGroups = {};
                 globalSlates.forEach(s => {
                     if (!weekSlateGroups[s.week_number]) weekSlateGroups[s.week_number] = [];
@@ -756,7 +780,8 @@
                 const userScores = globalProfiles.map(p => {
                     const uid = p.device_uid;
                     const userName = p.coach_name || p.player_name || 'ANALYST (' + uid.slice(0, 4) + ')';
-                    
+                    const userAllPicks = globalPicks.filter(pick => pick.device_uid === uid);
+
                     let wins = 0;
                     let losses = 0;
 
@@ -769,7 +794,7 @@
                         slatesForWeek.forEach((slate, idx) => {
                             const gameId = String(slate.espn_game_id);
                             const event = gameEventMap.get(gameId);
-                            if (!event) return;
+                            if (!event) return; // Skip if ESPN doesn't list the game
 
                             const comp = event.competitions[0];
                             const home = comp.competitors.find(c => c.homeAway === 'home');
@@ -787,8 +812,7 @@
                                 globalUserConfStats[uid][conf] = { wins: 0, losses: 0 };
                             }
 
-                            // Match user pick using the verified game ID + card index logic
-                            const pick = findUserPickForGame(globalPicks, uid, wNum, gameId, idx + 1, homeName, awayName);
+                            const pick = findUserPickForGame(userAllPicks, wNum, gameId, idx + 1, homeName, awayName);
 
                             if (state === 'post') {
                                 const homeScore = parseInt(home.score || '0');
@@ -821,12 +845,10 @@
                                         globalUserConfStats[uid][conf].losses += 1;
                                     }
                                 } else {
-                                    // Game finished with no pick made -> counts as loss
                                     losses++;
                                     globalUserConfStats[uid][conf].losses += 1;
                                 }
                             } else if (isLocked && (!pick || !pick.chosen_team)) {
-                                // Locked in-progress or kicked off game with NO pick counts as a loss
                                 losses++;
                                 globalUserConfStats[uid][conf].losses += 1;
                             }
@@ -848,7 +870,7 @@
 
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
-                // 6. Conference Kings
+                // 6. Conference Kings (sole leader with >= 50% win rate)
                 const confLeaders = {};
                 ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
                     let bestPct = -1.0;
@@ -984,6 +1006,7 @@
             const eventMap = new Map();
             weekEvents.forEach(e => eventMap.set(String(e.id), e));
 
+            const userAllPicks = globalPicks.filter(p => p.device_uid === activeUserUid);
             const now = new Date();
             const isSelf = (activeUserUid === deviceUID);
 
@@ -1015,7 +1038,7 @@
                 const isGameLocked = now >= gameDate || state !== 'pre';
                 const canRevealPick = isSelf || isGameLocked;
 
-                const userPick = findUserPickForGame(globalPicks, activeUserUid, activeModalWeek, gameId, idx + 1, homeName, awayName);
+                const userPick = findUserPickForGame(userAllPicks, activeModalWeek, gameId, idx + 1, homeName, awayName);
                 const hasPick = userPick && userPick.chosen_team;
                 const chosenTeam = hasPick ? userPick.chosen_team : 'NO PICK';
 
