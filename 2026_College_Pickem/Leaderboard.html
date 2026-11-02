@@ -84,7 +84,6 @@
             }
         }
 
-        /* RETRO NEWS TICKER STYLES */
         .news-ticker-container {
             width: 100%;
             max-width: 480px;
@@ -243,7 +242,6 @@
             border: 3px solid #000000;
         }
 
-        /* MODAL STYLES */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -418,7 +416,6 @@
         <a href="ViewGames.html" class="nav-link-btn">LIVE GAMES &gt;</a>
     </div>
 
-    <!-- DYNAMIC ANALYST TICKER -->
     <div class="news-ticker-container">
         <div class="ticker-title">BREAKING NEWS:</div>
         <marquee id="analyst-news-ticker" behavior="scroll" direction="left" scrollamount="5">
@@ -434,7 +431,6 @@
         <div class="empty-slate">CALCULATING STANDINGS...</div>
     </div>
 
-    <!-- USER BREAKDOWN MODAL -->
     <div class="modal-overlay" id="user-modal">
         <div class="modal-card">
             <div class="modal-header">
@@ -442,9 +438,7 @@
                 <button class="close-btn" onclick="closeModal()">X</button>
             </div>
 
-            <div class="modal-conf-stats" id="modal-conf-stats">
-                <!-- Conference breakdown stats render here -->
-            </div>
+            <div class="modal-conf-stats" id="modal-conf-stats"></div>
 
             <div class="modal-week-controls">
                 <button class="modal-week-btn" onclick="changeModalWeek(-1)">&lt; PREV</button>
@@ -452,9 +446,7 @@
                 <button class="modal-week-btn" onclick="changeModalWeek(1)">NEXT &gt;</button>
             </div>
 
-            <div class="modal-picks-list" id="modal-picks-list">
-                <!-- User picks render here -->
-            </div>
+            <div class="modal-picks-list" id="modal-picks-list"></div>
         </div>
     </div>
 
@@ -463,14 +455,12 @@
         let globalSlates = [];
         let globalPicks = [];
         let globalGamesCache = {}; 
-        let globalSlateMap = {};
         let globalGameConferenceMap = {}; 
         let globalUserConfStats = {}; 
 
         let activeUserUid = null;
         let activeModalWeek = 1;
 
-        // Dynamic Color Scale: Red -> Yellow -> Green
         function getRepScoreColor(pct) {
             const p = Math.max(0.0, Math.min(100.0, parseFloat(pct) || 0));
             if (p < 50.0) {
@@ -490,24 +480,19 @@
             }
         }
 
-        // TV Analyst Roasts
         function getAnalystRoastBadge(rank, totalUsers, winPct, totalGames) {
             if (totalGames === 0) {
                 return { title: "BENCHWARMER", color: "#64748b", borderColor: "#475569" };
             }
-
             if (rank === 1) {
                 return { title: "THE PROPHET 👑", color: "#facc15", borderColor: "#facc15" };
             }
-
             if (rank === 2) {
                 return { title: "FIRST LOSER 🥈", color: "#38bdf8", borderColor: "#38bdf8" };
             }
-
             if (rank === totalUsers && totalUsers > 2) {
                 return { title: "DOORMAT 🤡", color: "#ef4444", borderColor: "#ef4444" };
             }
-
             if (winPct >= 65.0) {
                 return { title: "LUCKY GUESSER 🍀", color: "#4ade80", borderColor: "#4ade80" };
             } else if (winPct >= 55.0) {
@@ -519,15 +504,31 @@
             }
         }
 
-        // Performance-Based Past Result Analyst News Ticker
+        // Exact helper function used in ViewGames to match user picks reliably
+        function findUserPickForGame(picks, uid, weekNum, espnGameId, cardIndex, homeName, awayName) {
+            const cardIdStr = `card-${cardIndex}`;
+            return (picks || []).find(p => {
+                if (p.device_uid !== uid || p.week_number !== weekNum) return false;
+
+                const pGameId = String(p.espn_game_id || '');
+                const pCardId = String(p.card_id || '');
+                const chosen = p.chosen_team;
+
+                if (pGameId === String(espnGameId)) return true;
+
+                if (pCardId === cardIdStr || pCardId === String(cardIndex)) {
+                    if (chosen === awayName || chosen === homeName) return true;
+                }
+                return false;
+            });
+        }
+
         async function generateAnalystTicker() {
             const tickerEl = document.getElementById('analyst-news-ticker');
             if (!tickerEl) return;
 
             try {
                 const headlines = [];
-
-                // Templates for Past Results
                 const wrongRoasts = [
                     (w, name, team) => `📺 WEEK ${w}: ${name} SWORE ${team} WAS A LOCK AND GOT UTTERLY EMBARRASSED!`,
                     (w, name, team) => `🤡 WEEK ${w}: "PRAY FOR ${name}," WHO INSISTED ${team} COULDN'T LOSE!`,
@@ -560,18 +561,23 @@
                     `🏈 LEAGUE HEADLINES: DRAMA MOUNTS ON LIVE AIR AT THE LEAGUE ANALYST DESK!`
                 ];
 
-                // Map all completed games across weeks for evaluation
                 const evaluatedPicks = [];
 
                 Object.keys(globalGamesCache).forEach(weekNum => {
                     const events = globalGamesCache[weekNum] || [];
+                    const weekSlates = globalSlates.filter(s => s.week_number === parseInt(weekNum));
 
-                    events.forEach(event => {
-                        if (event.status.type.state === 'post') {
+                    weekSlates.forEach((slate, idx) => {
+                        const gameId = String(slate.espn_game_id);
+                        const event = events.find(e => String(e.id) === gameId);
+
+                        if (event && event.status.type.state === 'post') {
                             const comp = event.competitions[0];
                             const home = comp.competitors.find(c => c.homeAway === 'home');
                             const away = comp.competitors.find(c => c.homeAway === 'away');
 
+                            const homeName = home.team.abbreviation || home.team.shortDisplayName;
+                            const awayName = away.team.abbreviation || away.team.shortDisplayName;
                             const homeScore = parseInt(home.score || '0');
                             const awayScore = parseInt(away.score || '0');
 
@@ -587,21 +593,18 @@
                                     (winnerObj.team.displayName || '').toUpperCase()
                                 ]);
 
-                                const gameId = String(event.id);
-
-                                // Find all user picks for this completed game
-                                const gamePicks = globalPicks.filter(p => {
-                                    const lookupKey = `${p.week_number}_${p.card_id}`;
-                                    const mappedId = globalSlateMap[lookupKey] || String(p.card_id);
-                                    return p.week_number === parseInt(weekNum) && mappedId === gameId && p.chosen_team;
+                                const gamePicks = [];
+                                globalProfiles.forEach(prof => {
+                                    const pick = findUserPickForGame(globalPicks, prof.device_uid, parseInt(weekNum), gameId, idx + 1, homeName, awayName);
+                                    if (pick && pick.chosen_team) {
+                                        gamePicks.push(pick);
+                                    }
                                 });
 
-                                // Check pick correctness
                                 gamePicks.forEach(p => {
                                     const chosen = (p.chosen_team || '').trim().toUpperCase();
                                     const isCorrect = winnerNames.has(chosen);
-                                    
-                                    // Check if this pick was a "Lone Wolf" pick
+
                                     const pickedSameTeam = gamePicks.filter(gp => (gp.chosen_team || '').trim().toUpperCase() === chosen);
                                     const isLoneWolf = isCorrect && (pickedSameTeam.length === 1) && (gamePicks.length > 2);
 
@@ -609,7 +612,7 @@
                                     const userName = foundUser ? (foundUser.coach_name || foundUser.player_name || 'ANALYST').toUpperCase() : 'ANALYST';
 
                                     evaluatedPicks.push({
-                                        week: p.week_number,
+                                        week: weekNum,
                                         userName,
                                         team: p.chosen_team,
                                         isCorrect,
@@ -621,9 +624,7 @@
                     });
                 });
 
-                // Build headlines from actual evaluated past picks
                 if (evaluatedPicks.length > 0) {
-                    // Group by user so everyone gets spotlight/roast time
                     const userPicksGroup = {};
                     evaluatedPicks.forEach(ep => {
                         if (!userPicksGroup[ep.userName]) userPicksGroup[ep.userName] = [];
@@ -632,8 +633,6 @@
 
                     Object.keys(userPicksGroup).forEach(userName => {
                         const userPicks = userPicksGroup[userName];
-                        
-                        // Prioritize Lone Wolf picks first if any
                         const lonePicks = userPicks.filter(p => p.isLoneWolf);
                         const wrongPicks = userPicks.filter(p => !p.isCorrect);
                         const rightPicks = userPicks.filter(p => p.isCorrect);
@@ -643,7 +642,6 @@
                             const tmpl = loneWolfFlexes[Math.floor(Math.random() * loneWolfFlexes.length)];
                             headlines.push(tmpl(pick.week, userName, pick.team));
                         } else if (wrongPicks.length > 0 && Math.random() < 0.7) {
-                            // Roast wrong picks 70% of the time for humor
                             const pick = wrongPicks[Math.floor(Math.random() * wrongPicks.length)];
                             const tmpl = wrongRoasts[Math.floor(Math.random() * wrongRoasts.length)];
                             headlines.push(tmpl(pick.week, userName, pick.team));
@@ -653,7 +651,6 @@
                             headlines.push(tmpl(pick.week, userName, pick.team));
                         }
 
-                        // Add random fan call-in roast for flavor
                         if (Math.random() < 0.4) {
                             const roastTmpl = fanRoasts[Math.floor(Math.random() * fanRoasts.length)];
                             headlines.push(roastTmpl(userName));
@@ -661,17 +658,14 @@
                     });
                 }
 
-                // Add general league drama
                 headlines.push(...leagueNews);
 
-                // Shuffle headlines array for fresh ticker order on every load
                 for (let i = headlines.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [headlines[i], headlines[j]] = [headlines[j], headlines[i]];
                 }
 
                 tickerEl.innerText = headlines.join('   ---   ');
-
             } catch (err) {
                 console.error("Failed to generate analyst ticker:", err);
             }
@@ -688,7 +682,7 @@
                 if (profErr) throw profErr;
                 globalProfiles = profiles || [];
 
-                // 2. Fetch Weekly Slates
+                // 2. Fetch Weekly Slates sorted by ID exactly like ViewGames
                 const { data: slates, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, week_number, espn_game_id')
@@ -696,31 +690,16 @@
                 if (slateErr) throw slateErr;
                 globalSlates = slates || [];
 
-                // 3. Fetch Picks
+                // 3. Fetch Picks including espn_game_id
                 const { data: picks, error: pickErr } = await supabaseClient
                     .from('picks')
-                    .select('device_uid, week_number, card_id, chosen_team');
+                    .select('device_uid, week_number, card_id, chosen_team, espn_game_id');
                 if (pickErr) throw pickErr;
                 globalPicks = picks || [];
 
-                // 4. Map Slate games
-                const weekRowCounters = {};
-                globalSlates.forEach(s => {
-                    const w = s.week_number;
-                    const gameId = String(s.espn_game_id);
-
-                    if (!weekRowCounters[w]) weekRowCounters[w] = 0;
-                    weekRowCounters[w] += 1;
-
-                    const cardKey = `card-${weekRowCounters[w]}`;
-                    globalSlateMap[`${w}_${cardKey}`] = gameId;
-                    globalSlateMap[`${w}_${gameId}`] = gameId;
-                });
-
-                // 5. Fetch ESPN data & Conferences
+                // 4. Fetch ESPN scores for every active week
                 const weeks = [...new Set(globalSlates.map(s => s.week_number))];
-                const completedGames = new Map();
-                const gameInfoMap = new Map(); // Store dates and state for lock check
+                const gameEventMap = new Map();
                 globalGameConferenceMap = {};
 
                 for (const week of weeks) {
@@ -731,13 +710,10 @@
 
                         (espnData.events || []).forEach(event => {
                             const eventId = String(event.id);
+                            gameEventMap.set(eventId, event);
+
                             const comp = event.competitions[0];
                             let confName = 'OTHER';
-
-                            gameInfoMap.set(eventId, {
-                                date: new Date(event.date),
-                                state: event.status.type.state
-                            });
 
                             if (comp.groups && comp.groups.shortName) {
                                 confName = comp.groups.shortName.toUpperCase();
@@ -757,96 +733,102 @@
                             else if (confName.includes('PAC')) confName = 'PAC12';
 
                             globalGameConferenceMap[eventId] = confName;
-
-                            if (event.status.type.state === 'post') {
-                                const home = comp.competitors.find(c => c.homeAway === 'home');
-                                const away = comp.competitors.find(c => c.homeAway === 'away');
-
-                                const homeScore = parseInt(home.score || '0');
-                                const awayScore = parseInt(away.score || '0');
-
-                                let winner = null;
-                                if (homeScore > awayScore) winner = home;
-                                else if (awayScore > homeScore) winner = away;
-
-                                if (winner) {
-                                    const winnerNames = new Set([
-                                        (winner.team.abbreviation || '').toUpperCase(),
-                                        (winner.team.shortDisplayName || '').toUpperCase(),
-                                        (winner.team.name || '').toUpperCase(),
-                                        (winner.team.displayName || '').toUpperCase()
-                                    ]);
-                                    completedGames.set(eventId, winnerNames);
-                                }
-                            }
                         });
                     } catch (e) {
-                        console.error(`Failed to fetch ESPN scores for week ${week}:`, e);
+                        console.error(`Failed to fetch ESPN data for week ${week}:`, e);
                     }
                 }
 
-                // 6. Calculate Records (Including NO PICK + Locked Game = Loss)
+                // 5. Calculate User Standings based strictly on games scheduled in slates
                 globalUserConfStats = {};
                 const now = new Date();
+
+                // Group and preserve slate order by week
+                const weekSlateGroups = {};
+                globalSlates.forEach(s => {
+                    if (!weekSlateGroups[s.week_number]) weekSlateGroups[s.week_number] = [];
+                    weekSlateGroups[s.week_number].push(s);
+                });
+                Object.keys(weekSlateGroups).forEach(w => {
+                    weekSlateGroups[w].sort((a, b) => a.id - b.id);
+                });
 
                 const userScores = globalProfiles.map(p => {
                     const uid = p.device_uid;
                     const userName = p.coach_name || p.player_name || 'ANALYST (' + uid.slice(0, 4) + ')';
                     
-                    const userPicks = globalPicks.filter(pick => pick.device_uid === uid);
-
                     let wins = 0;
                     let losses = 0;
 
                     globalUserConfStats[uid] = {};
 
-                    // Group slates by week to easily look up card IDs
-                    const weekSlateGroups = {};
-                    globalSlates.forEach(s => {
-                        if (!weekSlateGroups[s.week_number]) weekSlateGroups[s.week_number] = [];
-                        weekSlateGroups[s.week_number].push(s);
-                    });
-
-                    // Evaluate all slates on the calendar
                     Object.keys(weekSlateGroups).forEach(weekStr => {
                         const wNum = parseInt(weekStr);
                         const slatesForWeek = weekSlateGroups[wNum];
 
                         slatesForWeek.forEach((slate, idx) => {
                             const gameId = String(slate.espn_game_id);
-                            const cardKey = `card-${idx + 1}`;
+                            const event = gameEventMap.get(gameId);
+                            if (!event) return;
+
+                            const comp = event.competitions[0];
+                            const home = comp.competitors.find(c => c.homeAway === 'home');
+                            const away = comp.competitors.find(c => c.homeAway === 'away');
+
+                            const homeName = home.team.abbreviation || home.team.shortDisplayName;
+                            const awayName = away.team.abbreviation || away.team.shortDisplayName;
+
+                            const gameDate = new Date(event.date);
+                            const state = event.status.type.state;
+                            const isLocked = (now >= gameDate || state !== 'pre');
                             const conf = globalGameConferenceMap[gameId] || 'OTHER';
 
                             if (!globalUserConfStats[uid][conf]) {
                                 globalUserConfStats[uid][conf] = { wins: 0, losses: 0 };
                             }
 
-                            // Match user pick by card_id or gameId
-                            const pick = userPicks.find(p => p.week_number === wNum && (String(p.card_id) === cardKey || String(p.card_id) === gameId));
-                            const gameInfo = gameInfoMap.get(gameId);
+                            // Match user pick using the verified game ID + card index logic
+                            const pick = findUserPickForGame(globalPicks, uid, wNum, gameId, idx + 1, homeName, awayName);
 
-                            const isGameLocked = gameInfo && (now >= gameInfo.date || gameInfo.state !== 'pre');
+                            if (state === 'post') {
+                                const homeScore = parseInt(home.score || '0');
+                                const awayScore = parseInt(away.score || '0');
+                                let winnerNames = new Set();
 
-                            if (pick && pick.chosen_team) {
-                                // User made a pick
-                                if (completedGames.has(gameId)) {
-                                    const winningNames = completedGames.get(gameId);
+                                if (homeScore > awayScore) {
+                                    winnerNames = new Set([
+                                        (home.team.abbreviation || '').toUpperCase(),
+                                        (home.team.shortDisplayName || '').toUpperCase(),
+                                        (home.team.name || '').toUpperCase(),
+                                        (home.team.displayName || '').toUpperCase()
+                                    ]);
+                                } else if (awayScore > homeScore) {
+                                    winnerNames = new Set([
+                                        (away.team.abbreviation || '').toUpperCase(),
+                                        (away.team.shortDisplayName || '').toUpperCase(),
+                                        (away.team.name || '').toUpperCase(),
+                                        (away.team.displayName || '').toUpperCase()
+                                    ]);
+                                }
+
+                                if (pick && pick.chosen_team) {
                                     const chosen = (pick.chosen_team || '').trim().toUpperCase();
-
-                                    if (winningNames.has(chosen)) {
+                                    if (winnerNames.has(chosen)) {
                                         wins++;
                                         globalUserConfStats[uid][conf].wins += 1;
                                     } else {
                                         losses++;
                                         globalUserConfStats[uid][conf].losses += 1;
                                     }
-                                }
-                            } else {
-                                // NO PICK: If game is locked, it's counted as a loss
-                                if (isGameLocked) {
+                                } else {
+                                    // Game finished with no pick made -> counts as loss
                                     losses++;
                                     globalUserConfStats[uid][conf].losses += 1;
                                 }
+                            } else if (isLocked && (!pick || !pick.chosen_team)) {
+                                // Locked in-progress or kicked off game with NO pick counts as a loss
+                                losses++;
+                                globalUserConfStats[uid][conf].losses += 1;
                             }
                         });
                     });
@@ -866,8 +848,8 @@
 
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
-                // 7. Find Conference Kings (ONLY awarded if a user is uniquely leading with no ties)
-                const confLeaders = {}; // confName -> uid
+                // 6. Conference Kings
+                const confLeaders = {};
                 ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
                     let bestPct = -1.0;
                     let topCandidates = [];
@@ -880,30 +862,26 @@
                                 const cPct = (cStat.wins / cTotal) * 100.0;
                                 if (cPct > bestPct) {
                                     bestPct = cPct;
-                                    topCandidates = [uid]; // Reset with new sole leader
+                                    topCandidates = [uid];
                                 } else if (cPct === bestPct) {
-                                    topCandidates.push(uid); // Add to tie list
+                                    topCandidates.push(uid);
                                 }
                             }
                         }
                     });
 
-                    // ONLY award title if there is EXACTLY ONE candidate (no ties) and >= 50% win rate
                     if (topCandidates.length === 1 && bestPct >= 50.0) {
                         confLeaders[conf] = topCandidates[0];
                     }
                 });
 
-                // 8. Render Leaderboard Cards
+                // 7. Render Standings
                 container.innerHTML = '';
-                
                 const totalUsersCount = userScores.length;
                 let currentRank = 1;
 
                 userScores.forEach((user, idx) => {
-                    if (idx > 0 && user.winPct === userScores[idx - 1].winPct) {
-                        // Tie rank
-                    } else {
+                    if (idx > 0 && user.winPct !== userScores[idx - 1].winPct) {
                         currentRank = idx + 1;
                     }
 
@@ -940,7 +918,6 @@
                     container.appendChild(card);
                 });
 
-                // Generate Ticker Headlines
                 generateAnalystTicker();
 
             } catch (err) {
@@ -1001,28 +978,24 @@
                 return;
             }
 
+            weekSlates.sort((a, b) => a.id - b.id);
+
             const weekEvents = globalGamesCache[activeModalWeek] || [];
             const eventMap = new Map();
             weekEvents.forEach(e => eventMap.set(String(e.id), e));
 
-            const weekPicks = globalPicks.filter(p => p.device_uid === activeUserUid && p.week_number === activeModalWeek);
             const now = new Date();
             const isSelf = (activeUserUid === deviceUID);
 
             weekSlates.forEach((slate, idx) => {
                 const gameId = String(slate.espn_game_id);
                 const gameEvent = eventMap.get(gameId);
-                const cardKey = `card-${idx + 1}`;
-
-                const userPick = weekPicks.find(p => String(p.card_id) === cardKey || String(p.card_id) === gameId);
-                const hasPick = userPick && userPick.chosen_team;
-                const chosenTeam = hasPick ? userPick.chosen_team : 'NO PICK';
 
                 if (!gameEvent) {
                     container.innerHTML += `
                         <div class="modal-pick-card">
                             <div class="modal-matchup-row"><span>MATCHUP ${idx+1}</span><span>N/A</span></div>
-                            <div class="modal-pick-result"><span>PICK: ${chosenTeam}</span><span class="result-badge pending">UNSCHEDULED</span></div>
+                            <div class="modal-pick-result"><span>PICK: UNKNOWN</span><span class="result-badge pending">UNSCHEDULED</span></div>
                         </div>`;
                     return;
                 }
@@ -1042,6 +1015,10 @@
                 const isGameLocked = now >= gameDate || state !== 'pre';
                 const canRevealPick = isSelf || isGameLocked;
 
+                const userPick = findUserPickForGame(globalPicks, activeUserUid, activeModalWeek, gameId, idx + 1, homeName, awayName);
+                const hasPick = userPick && userPick.chosen_team;
+                const chosenTeam = hasPick ? userPick.chosen_team : 'NO PICK';
+
                 let statusClass = '';
                 let resultText = '';
                 let displayPick = '';
@@ -1051,7 +1028,6 @@
                     resultText = hasPick ? 'PICKED ✓' : 'WAITING';
                     statusClass = 'pending';
                 } else if (!hasPick && isGameLocked) {
-                    // Game is locked and user failed to pick -> Loss
                     displayPick = 'NO PICK';
                     statusClass = 'incorrect';
                     resultText = '✗ WRONG';
