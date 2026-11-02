@@ -504,7 +504,7 @@
             }
         }
 
-        // Fetch ALL picks across pages to bypass the Supabase 1,000-row limit
+        // Fetch all picks (bypasses Supabase 1,000-row limit)
         async function fetchAllPicks() {
             let all = [];
             let from = 0;
@@ -530,25 +530,36 @@
             return all;
         }
 
-        // Exact match prioritized by ESPN game ID, card id, and team name
+        // Matches by espn_game_id first to prevent any card-index shifts
         function findUserPickForGame(userPicks, weekNum, espnGameId, cardIndex, homeName, awayName) {
             const cardIdStr = `card-${cardIndex}`;
-            const matches = userPicks.filter(p => {
-                if (p.week_number !== weekNum) return false;
-                const pGameId = String(p.espn_game_id || '');
-                const pCardId = String(p.card_id || '');
-                const chosen = p.chosen_team;
+            const targetId = String(espnGameId);
 
-                if (pGameId === String(espnGameId)) return true;
-                if (pCardId === cardIdStr || pCardId === String(cardIndex)) {
-                    return chosen === awayName || chosen === homeName;
+            // 1. Direct match on espn_game_id
+            const byGameId = userPicks.filter(p => {
+                if (p.week_number !== weekNum) return false;
+                return String(p.espn_game_id) === targetId || String(p.card_id) === targetId;
+            });
+
+            if (byGameId.length > 0) {
+                return byGameId[byGameId.length - 1]; // latest by ID
+            }
+
+            // 2. Fallback to card index ONLY if chosen team is in this specific game
+            const byCard = userPicks.filter(p => {
+                if (p.week_number !== weekNum) return false;
+                const cId = String(p.card_id || '');
+                if (cId === cardIdStr || cId === String(cardIndex)) {
+                    return p.chosen_team === homeName || p.chosen_team === awayName;
                 }
                 return false;
             });
 
-            if (matches.length === 0) return null;
-            // Always return the most recently updated pick (highest id)
-            return matches[matches.length - 1];
+            if (byCard.length > 0) {
+                return byCard[byCard.length - 1];
+            }
+
+            return null;
         }
 
         async function generateAnalystTicker() {
@@ -711,7 +722,7 @@
                 if (profErr) throw profErr;
                 globalProfiles = profiles || [];
 
-                // 2. Fetch Weekly Slates sorted numerically by ID (matches ViewGames)
+                // 2. Fetch Weekly Slates ordered by ID
                 const { data: slates, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, week_number, espn_game_id')
@@ -719,10 +730,10 @@
                 if (slateErr) throw slateErr;
                 globalSlates = slates || [];
 
-                // 3. Fetch ALL picks (bypassing the 1,000-row limit)
+                // 3. Fetch all picks across all rows
                 globalPicks = await fetchAllPicks();
 
-                // 4. Fetch ESPN scoreboards for all weeks present in slates
+                // 4. Fetch ESPN scores
                 const weeks = [...new Set(globalSlates.map(s => s.week_number))];
                 const gameEventMap = new Map();
                 globalGameConferenceMap = {};
@@ -764,7 +775,7 @@
                     }
                 }
 
-                // 5. Evaluate standings mirroring ViewGames exactly
+                // 5. Evaluate standings
                 globalUserConfStats = {};
                 const now = new Date();
 
@@ -794,7 +805,7 @@
                         slatesForWeek.forEach((slate, idx) => {
                             const gameId = String(slate.espn_game_id);
                             const event = gameEventMap.get(gameId);
-                            if (!event) return; // Skip if ESPN doesn't list the game
+                            if (!event) return;
 
                             const comp = event.competitions[0];
                             const home = comp.competitors.find(c => c.homeAway === 'home');
@@ -870,7 +881,7 @@
 
                 userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
 
-                // 6. Conference Kings (sole leader with >= 50% win rate)
+                // 6. Conference Kings
                 const confLeaders = {};
                 ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
                     let bestPct = -1.0;
@@ -1038,6 +1049,7 @@
                 const isGameLocked = now >= gameDate || state !== 'pre';
                 const canRevealPick = isSelf || isGameLocked;
 
+                // Accurately pairs pick with this specific ESPN game ID
                 const userPick = findUserPickForGame(userAllPicks, activeModalWeek, gameId, idx + 1, homeName, awayName);
                 const hasPick = userPick && userPick.chosen_team;
                 const chosenTeam = hasPick ? userPick.chosen_team : 'NO PICK';
