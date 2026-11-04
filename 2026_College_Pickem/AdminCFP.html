@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Admin Central - CFP Bracket Manager</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <!-- SUPABASE CLIENT INTEGRATION -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+
+    <style>
+        :root {
+            --bg-canvas: #090d16;
+            --bg-card: #151e2e;
+            --retro-yellow: #facc15;
+            --retro-blue: #38bdf8;
+            --retro-green: #4ade80;
+            --retro-red: #ef4444;
+            --retro-purple: #c084fc;
+            --pixel-font: 'Press Start 2P', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: #ffffff;
+            font-family: var(--pixel-font);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .admin-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* HEADER */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px dashed var(--retro-red);
+            padding-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .admin-title {
+            color: var(--retro-red);
+            font-size: 0.95rem;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .nav-back-btn {
+            background: #000;
+            color: var(--retro-yellow);
+            border: 2px solid var(--retro-yellow);
+            padding: 0.5rem 0.75rem;
+            text-decoration: none;
+            font-size: 0.5rem;
+            cursor: pointer;
+        }
+
+        /* STATS BAR */
+        .admin-stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 2px solid #334155;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .stat-label {
+            font-size: 0.45rem;
+            color: #94a3b8;
+        }
+
+        .stat-val {
+            font-size: 1rem;
+            color: var(--retro-yellow);
+        }
+
+        /* SECTION PANELS */
+        .admin-panel {
+            background: var(--bg-card);
+            border: 3px solid #334155;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .panel-hdr {
+            color: var(--retro-blue);
+            font-size: 0.65rem;
+            border-bottom: 2px dashed #334155;
+            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* USER SUBMISSIONS TABLE */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.48rem;
+            text-align: left;
+        }
+
+        th {
+            background: #000;
+            color: var(--retro-yellow);
+            padding: 0.6rem 0.5rem;
+            border: 1px solid #334155;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.6rem 0.5rem;
+            border: 1px solid #334155;
+            background: #0b1120;
+            white-space: nowrap;
+        }
+
+        tr:nth-child(even) td {
+            background: #0f172a;
+        }
+
+        .badge-status {
+            padding: 0.2rem 0.4rem;
+            border-radius: 2px;
+            font-size: 0.4rem;
+            display: inline-block;
+        }
+
+        .badge-locked { background: #064e3b; color: var(--retro-green); border: 1px solid var(--retro-green); }
+        .badge-reentry { background: #7f1d1d; color: var(--retro-red); border: 1px solid var(--retro-red); }
+        .badge-none { background: #334155; color: #94a3b8; }
+
+        .btn-action {
+            background: #000;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 0.35rem 0.5rem;
+            font-family: var(--pixel-font);
+            font-size: 0.42rem;
+            cursor: pointer;
+            margin-right: 0.3rem;
+        }
+
+        .btn-action:hover {
+            border-color: var(--retro-yellow);
+            color: var(--retro-yellow);
+        }
+
+        .btn-action.danger {
+            border-color: var(--retro-red);
+            color: var(--retro-red);
+        }
+
+        .btn-action.success {
+            border-color: var(--retro-green);
+            color: var(--retro-green);
+        }
+
+        /* TIER RANGE / ODDS CONFIG EDITORS */
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .config-grid { grid-template-columns: 1fr; }
+        }
+
+        .editor-box {
+            background: #020617;
+            border: 2px solid #334155;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .editor-desc {
+            font-size: 0.42rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        textarea.code-editor {
+            width: 100%;
+            height: 240px;
+            background: #090d16;
+            color: var(--retro-green);
+            border: 1px solid #475569;
+            font-family: monospace;
+            font-size: 0.7rem;
+            padding: 0.5rem;
+            resize: vertical;
+        }
+
+        .btn-save-cfg {
+            background: var(--retro-yellow);
+            color: #000;
+            border: 2px solid #fff;
+            padding: 0.6rem;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* EDIT PICKS MODAL */
+        .admin-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .admin-modal-overlay.active { display: flex; }
+
+        .admin-modal-card {
+            background: var(--bg-card);
+            border: 3px solid var(--retro-yellow);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            font-size: 0.48rem;
+        }
+
+        .field-group input, .field-group select {
+            background: #000;
+            color: #fff;
+            border: 1px solid #475569;
+            padding: 0.4rem;
+            font-family: var(--pixel-font);
+            font-size: 0.48rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-container">
+        <!-- HEADER -->
+        <div class="admin-header">
+            <div>
+                <div class="admin-title">⚡ CFP BRACKET & ODDS CONTROLLER</div>
+                <div style="font-size:0.42rem; color:#94a3b8; margin-top:0.3rem;">ADMIN PRIVILEGES GRANTED</div>
+            </div>
+            <a href="Leaderboard (1).html" class="nav-back-btn">&lt; BACK TO LEADERBOARD</a>
+        </div>
+
+        <!-- STATS -->
+        <div class="admin-stats-row">
+            <div class="stat-card">
+                <span class="stat-label">TOTAL REGISTERED USERS</span>
+                <span class="stat-val" id="stat-total-users">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">BRACKETS LOCKED</span>
+                <span class="stat-val" id="stat-locked-brackets" style="color:var(--retro-green);">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">PENDING RE-ENTRY</span>
+                <span class="stat-val" id="stat-reentry-count" style="color:var(--retro-red);">0</span>
+            </div>
+        </div>
+
+        <!-- USER MANAGEMENT SECTION -->
+        <div class="admin-panel">
+            <div class="panel-hdr">
+                <span>USER RESPONSES & BRACKET ACCESS</span>
+                <button class="btn-action" onclick="loadAllUserData()">↻ REFRESH TABLE</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>COACH / PLAYER</th>
+                            <th>STATUS</th>
+                            <th>RETENTION GUESS</th>
+                            <th>CHAMPION PICK</th>
+                            <th>TOTAL VALUE</th>
+                            <th>SUBMITTED AT</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-rows-tbody">
+                        <tr><td colspan="7" style="text-align:center;">LOADING USERS...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CONFIGURATION: TIER WIN RANGES & ODDS OVERRIDES -->
+        <div class="admin-panel">
+            <div class="panel-hdr">
+                <span>SYSTEM CONFIGURATION & ODDS MULTIPLIERS</span>
+            </div>
+
+            <div class="config-grid">
+                <!-- TIER SCALING RANGE -->
+                <div class="editor-box">
+                    <div style="color:var(--retro-yellow); font-size:0.55rem;">1. UNDERDOG WIN RANGES</div>
+                    <div class="editor-desc">
+                        Modify thresholds `[maxOdds, winBonus]`. Teams under or equal to each odds ceiling receive that amount of wins:
+                    </div>
+                    <textarea id="tier-ranges-json" class="code-editor"></textarea>
+                    <button class="btn-save-cfg" onclick="saveTierRangesConfig()">SAVE WIN RANGES</button>
+                </div>
+
+                <!-- NATIONAL CHAMPION JACKPOT SCALING -->
+                <div class="editor-box">
+                    <div style="color:var(--retro-yellow); font-size:0.55rem;">2. NATTY JACKPOT TIERS</div>
+                    <div class="editor-desc">
+                        Modify thresholds `[maxOdds, nattyBonus]`. The champion winner bonus added at the finish line:
+                    </div>
+                    <textarea id="natty-ranges-json" class="code-editor"></textarea>
+                    <button class="btn-save-cfg" onclick="saveNattyRangesConfig()">SAVE NATTY TIERS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PICKS MODAL -->
+    <div class="admin-modal-overlay" id="edit-user-modal">
+        <div class="admin-modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed #475569; padding-bottom:0.5rem;">
+                <span style="color:var(--retro-yellow); font-size:0.65rem;" id="modal-editing-coach">EDITING PICKS</span>
+                <button class="close-btn" onclick="closeEditModal()">X</button>
+            </div>
+
+            <div class="field-group">
+                <label>INITIAL RETENTION GUESS (0-12):</label>
+                <input type="number" id="edit-modal-retention" min="0" max="12">
+            </div>
+
+            <div class="field-group">
+                <label>NATIONAL CHAMPION PICK:</label>
+                <input type="text" id="edit-modal-champion">
+            </div>
+
+            <div class="field-group">
+                <label>TOTAL POTENTIAL WINS OVERRIDE:</label>
+                <input type="number" id="edit-modal-total-pts">
+            </div>
+
+            <button class="btn-save-cfg" onclick="saveUserPickOverrides()">COMMIT EDITS TO DATABASE</button>
+        </div>
+    </div>
+
+    <script>
+        let globalUsersList = [];
+        let globalBracketsList = [];
+        let currentlyEditingUID = null;
+
+        // Default Tier Rules
+        const DEFAULT_WIN_TIERS = [
+            { maxOdds: 200, wins: 2 },
+            { maxOdds: 350, wins: 3 },
+            { maxOdds: 500, wins: 5 },
+            { maxOdds: 800, wins: 7 },
+            { maxOdds: 1200, wins: 10 },
+            { maxOdds: 1700, wins: 13 },
+            { maxOdds: 2500, wins: 18 },
+            { maxOdds: 4000, wins: 26 },
+            { maxOdds: 6000, wins: 38 },
+            { maxOdds: 10000, wins: 55 },
+            { maxOdds: 20000, wins: 75 },
+            { maxOdds: 40000, wins: 110 },
+            { maxOdds: 125000, wins: 200 }
+        ];
+
+        const DEFAULT_NATTY_TIERS = [
+            { maxOdds: 500, wins: 5 },
+            { maxOdds: 1000, wins: 8 },
+            { maxOdds: 1500, wins: 12 },
+            { maxOdds: 3500, wins: 20 },
+            { maxOdds: 6500, wins: 35 },
+            { maxOdds: 10000, wins: 50 },
+            { maxOdds: 25000, wins: 80 },
+            { maxOdds: 50000, wins: 130 },
+            { maxOdds: 75000, wins: 180 },
+            { maxOdds: 125000, wins: 300 }
+        ];
+
+        async function loadAllUserData() {
+            const tbody = document.getElementById('user-rows-tbody');
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">LOADING USERS...</td></tr>`;
+
+            try {
+                // 1. Fetch profiles
+                const { data: profiles, error: pErr } = await supabaseClient
+                    .from('profiles')
+                    .select('device_uid, coach_name, player_name');
+                if (pErr) throw pErr;
+                globalUsersList = profiles || [];
+
+                // 2. Fetch bracket entries
+                const { data: brackets, error: bErr } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .select('*');
+                if (bErr) throw bErr;
+                globalBracketsList = brackets || [];
+
+                // Render metrics
+                document.getElementById('stat-total-users').innerText = globalUsersList.length;
+                const completed = globalBracketsList.filter(b => !b.needs_reentry).length;
+                document.getElementById('stat-locked-brackets').innerText = completed;
+                const reentry = globalBracketsList.filter(b => b.needs_reentry).length;
+                document.getElementById('stat-reentry-count').innerText = reentry;
+
+                // Render table
+                tbody.innerHTML = '';
+                if (globalUsersList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">NO REGISTERED USERS FOUND</td></tr>`;
+                    return;
+                }
+
+                globalUsersList.forEach(user => {
+                    const submission = globalBracketsList.find(b => b.device_uid === user.device_uid);
+                    const coachName = user.coach_name || user.player_name || user.device_uid.substring(0, 8);
+
+                    let statusBadge = '<span class="badge-status badge-none">NOT SUBMITTED</span>';
+                    let retention = '--';
+                    let champ = '--';
+                    let totalPts = '--';
+                    let dateStr = '--';
+
+                    if (submission) {
+                        if (submission.needs_reentry) {
+                            statusBadge = '<span class="badge-status badge-reentry">RE-ENTRY REQUIRED</span>';
+                        } else {
+                            statusBadge = '<span class="badge-status badge-locked">LOCKED IN</span>';
+                        }
+
+                        retention = submission.initial_retention_guess ?? '--';
+                        champ = (submission.bracket_winners && submission.bracket_winners.champion) ? submission.bracket_winners.champion : '--';
+                        totalPts = submission.total_bracket_potential_pts ?? '--';
+                        dateStr = submission.created_at ? new Date(submission.created_at).toLocaleDateString() : '--';
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color:#fff;">${coachName}</td>
+                        <td>${statusBadge}</td>
+                        <td style="text-align:center;">${retention}</td>
+                        <td style="color:var(--retro-yellow);">${champ}</td>
+                        <td style="color:var(--retro-green); font-weight:bold;">${totalPts !== '--' ? '+' + totalPts + 'W' : '--'}</td>
+                        <td style="color:#94a3b8;">${dateStr}</td>
+                        <td>
+                            ${submission ? `
+                                <button class="btn-action" onclick="openEditModal('${user.device_uid}')">EDIT PICKS</button>
+                                <button class="btn-action ${submission.needs_reentry ? 'success' : 'danger'}" onclick="toggleReentry('${user.device_uid}', ${!submission.needs_reentry})">
+                                    ${submission.needs_reentry ? 'MARK LOCKED' : 'FORCE RE-ENTRY'}
+                                </button>
+                                <button class="btn-action danger" onclick="deleteBracketSubmission('${user.device_uid}')">RESET</button>
+                            ` : `
+                                <span style="color:#64748b; font-size:0.4rem;">NO ACTIONS</span>
+                            `}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Error loading user data:", err);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--retro-red);">ERROR LOADING DATA</td></tr>`;
+            }
+        }
+
+        // ========================================================
+        // USER ACTIONS: TOGGLE RE-ENTRY, EDIT, DELETE
+        // ========================================================
+        async function toggleReentry(uid, shouldReenter) {
+            const confirmMsg = shouldReenter ? 
+                "Flag this user for RE-ENTRY? The next time they open the page, the pop-up will trigger and require them to re-pick." :
+                "Mark this user's picks as locked in again?";
+
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .update({ needs_reentry: shouldReenter })
+                    .eq('device_uid', uid);
+
+                if (error) throw error;
+                alert("User status updated successfully!");
+                loadAllUserData();
+            } catch (err) {
+                alert("Failed to update status: " + err.message);
+            }
+        }
+
+        async function deleteBracketSubmission(uid) {
+            if (!confirm("Are you sure you want to COMPLETELY WIPE this user's submission? They will start fresh.")) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .delete()
+                    .eq('device_uid', uid);
+
+                if (error) throw error;
+                alert("Submission deleted.");
+                loadAllUserData();
+            } catch (err) {
+                alert("Failed to delete: " + err.message);
+            }
+        }
+
+        function openEditModal(uid) {
+            currentlyEditingUID = uid;
+            const sub = globalBracketsList.find(b => b.device_uid === uid);
+            const user = globalUsersList.find(u => u.device_uid === uid);
+            if (!sub) return;
+
+            document.getElementById('modal-editing-coach').innerText = `EDITING: ${(user?.coach_name || uid).toUpperCase()}`;
+            document.getElementById('edit-modal-retention').value = sub.initial_retention_guess ?? 8;
+            document.getElementById('edit-modal-champion').value = (sub.bracket_winners && sub.bracket_winners.champion) ? sub.bracket_winners.champion : '';
+            document.getElementById('edit-modal-total-pts').value = sub.total_bracket_potential_pts ?? 0;
+
+            document.getElementById('edit-user-modal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-user-modal').classList.remove('active');
+            currentlyEditingUID = null;
+        }
+
+        async function saveUserPickOverrides() {
+            if (!currentlyEditingUID) return;
+
+            const newRetention = parseInt(document.getElementById('edit-modal-retention').value, 10);
+            const newChamp = document.getElementById('edit-modal-champion').value.trim();
+            const newPts = parseInt(document.getElementById('edit-modal-total-pts').value, 10);
+
+            const existing = globalBracketsList.find(b => b.device_uid === currentlyEditingUID);
+            const currentWinners = existing.bracket_winners || {};
+            currentWinners.champion = newChamp;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .update({
+                        initial_retention_guess: newRetention,
+                        bracket_winners: currentWinners,
+                        total_bracket_potential_pts: newPts
+                    })
+                    .eq('device_uid', currentlyEditingUID);
+
+                if (error) throw error;
+                alert("Pick overrides committed!");
+                closeEditModal();
+                loadAllUserData();
+            } catch (err) {
+                alert("Update failed: " + err.message);
+            }
+        }
+
+        // ========================================================
+        // GLOBAL TIERS / ODDS CONFIG SAVING
+        // ========================================================
+        async function loadConfigData() {
+            try {
+                const { data } = await supabaseClient
+                    .from('admin_config')
+                    .select('*')
+                    .in('id', ['win_tiers', 'natty_tiers']);
+
+                const winTiersRow = data?.find(d => d.id === 'win_tiers');
+                const nattyTiersRow = data?.find(d => d.id === 'natty_tiers');
+
+                document.getElementById('tier-ranges-json').value = JSON.stringify(
+                    winTiersRow ? winTiersRow.payload : DEFAULT_WIN_TIERS, null, 2
+                );
+
+                document.getElementById('natty-ranges-json').value = JSON.stringify(
+                    nattyTiersRow ? nattyTiersRow.payload : DEFAULT_NATTY_TIERS, null, 2
+                );
+            } catch (err) {
+                console.error("Config load error:", err);
+                document.getElementById('tier-ranges-json').value = JSON.stringify(DEFAULT_WIN_TIERS, null, 2);
+                document.getElementById('natty-ranges-json').value = JSON.stringify(DEFAULT_NATTY_TIERS, null, 2);
+            }
+        }
+
+        async function saveTierRangesConfig() {
+            try {
+                const parsed = JSON.parse(document.getElementById('tier-ranges-json').value);
+                const { error } = await supabaseClient
+                    .from('admin_config')
+                    .upsert({ id: 'win_tiers', payload: parsed, updated_at: new Date().toISOString() });
+                if (error) throw error;
+                alert("Win tier thresholds successfully saved!");
+            } catch (err) {
+                alert("Invalid JSON or database error: " + err.message);
+            }
+        }
+
+        async function saveNattyRangesConfig() {
+            try {
+                const parsed = JSON.parse(document.getElementById('natty-ranges-json').value);
+                const { error } = await supabaseClient
+                    .from('admin_config')
+                    .upsert({ id: 'natty_tiers', payload: parsed, updated_at: new Date().toISOString() });
+                if (error) throw error;
+                alert("National championship thresholds successfully saved!");
+            } catch (err) {
+                alert("Invalid JSON or database error: " + err.message);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadAllUserData();
+            loadConfigData();
+        });
+    </script>
+</body>
+</html>
