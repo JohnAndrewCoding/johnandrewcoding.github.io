@@ -789,23 +789,35 @@
             font-weight: bold;
         }
 
+        /* DYNAMIC LOCK IN BUTTON & STATUS CALLOUT */
+        .completion-status-box {
+            background: #020617;
+            border: 2px dashed #475569;
+            padding: 0.6rem;
+            text-align: center;
+            font-size: 0.48rem;
+            color: var(--retro-yellow);
+            line-height: 1.4;
+        }
+
         .lock-in-final-btn {
             background: var(--retro-green);
             color: #000;
             border: 3px solid #fff;
-            padding: 0.75rem;
+            padding: 0.85rem;
             font-family: var(--pixel-font);
-            font-size: 0.62rem;
+            font-size: 0.65rem;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 4px 4px 0px #000;
+            display: none;
+            animation: pulse-glow 1.5s infinite;
         }
 
-        .lock-in-final-btn:disabled {
-            background: #334155;
-            color: #94a3b8;
-            cursor: not-allowed;
-            border-color: #475569;
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px var(--retro-green), 4px 4px 0 #000; }
+            50% { box-shadow: 0 0 20px var(--retro-green), 4px 4px 0 #000; }
+            100% { box-shadow: 0 0 5px var(--retro-green), 4px 4px 0 #000; }
         }
     </style>
 </head>
@@ -879,7 +891,7 @@
                         "The fans want your expert opinion. The first rankings came out and they were horrible. Based on your years of knowledge how will the teams be ranked at the end of the year?"
                     </p>
                     <div class="prompt-sub">
-                        LOCK IN YOUR COMEBACK PICKS. UNTIL YOU FIX THIS MESS, ACCESS TO THE LEADERBOARD IS RESTRICTED.
+                        LOCK IN YOUR COMEBACK PICKS. UNTIL YOU COMPLETE EVERYTHING, ACCESS TO THE LEADERBOARD IS RESTRICTED.
                     </div>
                 </div>
 
@@ -974,8 +986,14 @@
                     </div>
                 </div>
 
+                <!-- PROGRESS CHECKER CALLOUT -->
+                <div class="completion-status-box" id="completion-status-msg">
+                    ⚠️ INCOMPLETE: ASSIGN ALL 12 PLAYOFF SEEDS TO UNLOCK THE BRACKET
+                </div>
+
+                <!-- SUBMIT BUTTON (ONLY SHOWN ON COMPLETE VALIDATION) -->
                 <button type="button" class="lock-in-final-btn" id="lock-in-picks-btn" onclick="submitExpertQuestionnaire()">
-                    LOCK IN EXPERT PICKS & ENTER LEADERBOARD
+                    ✓ LOCK IN EXPERT PICKS & ENTER LEADERBOARD
                 </button>
             </div>
         </div>
@@ -1111,7 +1129,6 @@
             ]
         };
 
-        // EXACT PLAYOFF ODDS POOL PROVIDED
         const EXPERT_PLAYOFF_POOL = [
             { team: "Miami", odds: "-7000", type: "POWER" },
             { team: "Georgia", odds: "-5000", type: "POWER" },
@@ -1161,67 +1178,23 @@
             { team: "Air Force", odds: "+40000", type: "G5" }
         ];
 
-        // EXACT NATIONAL CHAMPIONSHIP ODDS BOARD PROVIDED
         const NATIONAL_CHAMP_ODDS = {
-            "Georgia": "+330",
-            "Notre Dame": "+550",
-            "LSU": "+750",
-            "Miami": "+750",
-            "Indiana": "+1000",
-            "Alabama": "+1000",
-            "Texas": "+1100",
-            "Ohio State": "+1300",
-            "Ole Miss": "+1500",
-            "Utah": "+3000",
-            "UCLA": "+4500",
-            "Tennessee": "+5000",
-            "Missouri": "+5500",
-            "Kentucky": "+6000",
-            "Wake Forest": "+6000",
-            "USC": "+6500",
-            "BYU": "+7500",
-            "Texas Tech": "+8000",
-            "Florida": "+8000",
-            "South Carolina": "+10000",
-            "Iowa": "+12500",
-            "Northwestern": "+15000",
-            "Oregon": "+17500",
-            "Houston": "+22500",
-            "Boise State": "+30000",
-            "SMU": "+40000",
-            "Arizona": "+40000",
-            "New Mexico": "+40000",
-            "Oklahoma State": "+50000",
-            "Louisville": "+60000",
-            "Wisconsin": "+75000",
-            "Baylor": "+75000",
-            "Oklahoma": "+75000",
-            "Michigan": "+75000",
-            "Iowa State": "+125000",
-            "West Virginia": "+125000",
-            "North Texas": "+125000",
-            "Clemson": "+125000",
-            "Louisiana Tech": "+125000",
-            "Cincinnati": "+125000",
-            "South Florida": "+125000",
-            "North Carolina": "+125000",
-            "Oregon State": "+125000",
-            "Virginia Tech": "+125000",
-            "Minnesota": "+125000",
-            "Duke": "+125000",
-            "Liberty": "+125000",
-            "Memphis": "+125000",
-            "UCF": "+125000",
-            "Nebraska": "+125000",
-            "Pittsburgh": "+125000",
-            "UTSA": "+125000",
-            "Arizona State": "+125000",
-            "TCU": "+125000",
-            "Purdue": "+125000",
-            "North Dakota State": "+125000"
+            "Georgia": "+330", "Notre Dame": "+550", "LSU": "+750", "Miami": "+750",
+            "Indiana": "+1000", "Alabama": "+1000", "Texas": "+1100", "Ohio State": "+1300",
+            "Ole Miss": "+1500", "Utah": "+3000", "UCLA": "+4500", "Tennessee": "+5000",
+            "Missouri": "+5500", "Kentucky": "+6000", "Wake Forest": "+6000", "USC": "+6500",
+            "BYU": "+7500", "Texas Tech": "+8000", "Florida": "+8000", "South Carolina": "+10000",
+            "Iowa": "+12500", "Northwestern": "+15000", "Oregon": "+17500", "Houston": "+22500",
+            "Boise State": "+30000", "SMU": "+40000", "Arizona": "+40000", "New Mexico": "+40000",
+            "Oklahoma State": "+50000", "Louisville": "+60000", "Wisconsin": "+75000", "Baylor": "+75000",
+            "Oklahoma": "+75000", "Michigan": "+75000", "Iowa State": "+125000", "West Virginia": "+125000",
+            "North Texas": "+125000", "Clemson": "+125000", "Louisiana Tech": "+125000", "Cincinnati": "+125000",
+            "South Florida": "+125000", "North Carolina": "+125000", "Oregon State": "+125000", "Virginia Tech": "+125000",
+            "Minnesota": "+125000", "Duke": "+125000", "Liberty": "+125000", "Memphis": "+125000",
+            "UCF": "+125000", "Nebraska": "+125000", "Pittsburgh": "+125000", "UTSA": "+125000",
+            "Arizona State": "+125000", "TCU": "+125000", "Purdue": "+125000", "North Dakota State": "+125000"
         };
 
-        // Calculates bonus wins from Playoff Odds
         function getBonusMultiplier(oddsStr) {
             if (!oddsStr) return 1;
             if (oddsStr.startsWith('-')) return 1;
@@ -1229,7 +1202,6 @@
             return Math.max(1, Math.round(1 + (num / 250)));
         }
 
-        // Calculates dedicated Natty Bonus Jackpot based on Championship line
         function getNattyBonusWins(teamName) {
             const oddsStr = NATIONAL_CHAMP_ODDS[teamName] || "+5000";
             const num = parseInt(oddsStr.replace('+', ''), 10);
@@ -1246,9 +1218,14 @@
         };
 
         // ========================================================
-        // 2. MANDATORY GATEWAY POPUP ENGINE
+        // 2. MANDATORY GATEWAY POPUP ENGINE (ONE-TIME ONLY)
         // ========================================================
         async function verifyMandatoryQuestionnaire() {
+            // Check local lock flag first for speed
+            if (localStorage.getItem(`expert_bracket_locked_${deviceUID}`) === 'true') {
+                return;
+            }
+
             try {
                 const { data, error } = await supabaseClient
                     .from('user_expert_cfb_bracket')
@@ -1256,11 +1233,16 @@
                     .eq('device_uid', deviceUID)
                     .maybeSingle();
 
-                if (!data) {
-                    document.body.style.overflow = "hidden";
-                    initExpertQuestionnaire();
-                    document.getElementById('expert-cfb-modal').classList.add('show-mandatory');
+                if (data && data.id) {
+                    // Record exists: mark local flag so it never queries again
+                    localStorage.setItem(`expert_bracket_locked_${deviceUID}`, 'true');
+                    return;
                 }
+
+                // Never submitted: lock screen and require full completion
+                document.body.style.overflow = "hidden";
+                initExpertQuestionnaire();
+                document.getElementById('expert-cfb-modal').classList.add('show-mandatory');
             } catch (err) {
                 console.error("Gatekeeper verification error:", err);
             }
@@ -1270,6 +1252,7 @@
             renderConfSelectors();
             renderSeedsSlots();
             renderPoolChips();
+            checkFormCompletion();
         }
 
         function stepRetention(delta) {
@@ -1278,6 +1261,7 @@
             if (val < 0) val = 0;
             if (val > 12) val = 12;
             el.value = val;
+            checkFormCompletion();
         }
 
         function renderConfSelectors() {
@@ -1294,7 +1278,7 @@
                 container.innerHTML += `
                     <div class="conf-row-select">
                         <span style="color:var(--retro-yellow);">${conf} CHAMPION:</span>
-                        <select id="expert-conf-${conf.replace(/[^a-zA-Z0-9]/g, '_')}">${options}</select>
+                        <select id="expert-conf-${conf.replace(/[^a-zA-Z0-9]/g, '_')}" onchange="checkFormCompletion()">${options}</select>
                     </div>
                 `;
             });
@@ -1309,39 +1293,73 @@
             renderPoolChips();
         }
 
-        // Calculates entire bracket bonus value (Seeds + Bracket Round Advancements + Natty)
         function calculateTotalBracketScore() {
             let total = 0;
-
-            // 1. Seed values
-            assignedSeeds.filter(Boolean).forEach(t => {
-                total += getBonusMultiplier(t.odds);
-            });
-
-            // 2. Round 1 wins
+            assignedSeeds.filter(Boolean).forEach(t => total += getBonusMultiplier(t.odds));
             bracketPicks.r1.filter(Boolean).forEach(tName => {
                 const teamObj = assignedSeeds.find(s => s && s.team === tName);
                 if (teamObj) total += getBonusMultiplier(teamObj.odds);
             });
-
-            // 3. Quarterfinal wins
             bracketPicks.qf.filter(Boolean).forEach(tName => {
                 const teamObj = assignedSeeds.find(s => s && s.team === tName);
                 if (teamObj) total += getBonusMultiplier(teamObj.odds);
             });
-
-            // 4. Semifinal wins
             bracketPicks.sf.filter(Boolean).forEach(tName => {
                 const teamObj = assignedSeeds.find(s => s && s.team === tName);
                 if (teamObj) total += getBonusMultiplier(teamObj.odds);
             });
-
-            // 5. National Champion Jackpot
             if (bracketPicks.champion) {
                 total += getNattyBonusWins(bracketPicks.champion);
             }
-
             return total;
+        }
+
+        function checkFormCompletion() {
+            const submitBtn = document.getElementById('lock-in-picks-btn');
+            const statusMsg = document.getElementById('completion-status-msg');
+
+            const seedsFilled = assignedSeeds.filter(Boolean).length;
+            if (seedsFilled < 12) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: SET ALL 12 SEEDS (${seedsFilled}/12 CURRENTLY)`;
+                return;
+            }
+
+            const r1Missing = bracketPicks.r1.filter(Boolean).length < 4;
+            if (r1Missing) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK ALL 4 FIRST ROUND WINNERS`;
+                return;
+            }
+
+            const qfMissing = bracketPicks.qf.filter(Boolean).length < 4;
+            if (qfMissing) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK ALL 4 QUARTERFINAL WINNERS`;
+                return;
+            }
+
+            const sfMissing = bracketPicks.sf.filter(Boolean).length < 2;
+            if (sfMissing) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK BOTH SEMIFINAL WINNERS`;
+                return;
+            }
+
+            if (!bracketPicks.champion) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK YOUR NATIONAL TITLE WINNER`;
+                return;
+            }
+
+            // ALL 100% COMPLETE
+            statusMsg.style.display = 'none';
+            submitBtn.style.display = 'block';
         }
 
         function renderSeedsSlots() {
@@ -1382,6 +1400,8 @@
             } else {
                 document.getElementById('bracket-simulation-section').style.display = 'none';
             }
+
+            checkFormCompletion();
         }
 
         function renderPoolChips() {
@@ -1420,7 +1440,6 @@
             renderPoolChips();
         }
 
-        // Bracket Simulator: First round games (5v12, 6v11, 7v10, 8v9)
         function buildPlayoffBracket() {
             const r1Matchups = [
                 { g: 0, t1: assignedSeeds[4], t2: assignedSeeds[11], seed1: 5, seed2: 12 },
@@ -1448,6 +1467,7 @@
 
             renderQuarterfinals();
             document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
+            checkFormCompletion();
         }
 
         function pickR1Winner(gameIdx, teamName) {
@@ -1561,6 +1581,7 @@
             }
 
             document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
+            checkFormCompletion();
         }
 
         function pickChampion(teamName) {
@@ -1569,12 +1590,17 @@
         }
 
         async function submitExpertQuestionnaire() {
-            if (assignedSeeds.some(s => s === null)) {
-                alert("Please assign all 12 Playoff Seeds!");
-                return;
-            }
-            if (!bracketPicks.champion) {
-                alert("Complete the full bracket by picking the National Champion!");
+            // WARNING CONFIRMATION PROMPT
+            const warningConfirmed = confirm(
+                "🚨 FINAL WARNING - READ CAREFULLY 🚨\n\n" +
+                "Once you lock in your Expert Picks, they are 100% PERMANENT!\n" +
+                "• You cannot change or edit any picks.\n" +
+                "• This questionnaire will NEVER appear again.\n" +
+                "• These picks will decide your end-of-season bonus wins.\n\n" +
+                "Are you completely confident in your selections?"
+            );
+
+            if (!warningConfirmed) {
                 return;
             }
 
@@ -1595,27 +1621,34 @@
                 cfp_seeds: assignedSeeds,
                 bracket_winners: bracketPicks,
                 total_bracket_potential_pts: totalBracketPts,
-                updated_at: new Date().toISOString()
+                created_at: new Date().toISOString()
             };
 
             const submitBtn = document.getElementById('lock-in-picks-btn');
             submitBtn.disabled = true;
-            submitBtn.innerText = "SAVING TO SYSTEM...";
+            submitBtn.innerText = "PERMANENTLY LOCKING IN...";
 
             try {
                 const { error } = await supabaseClient
                     .from('user_expert_cfb_bracket')
-                    .upsert(payload, { onConflict: 'device_uid' });
+                    .insert([payload]);
 
                 if (error) throw error;
 
-                alert("PICKS SUBMITTED! Welcome to the Leaderboard, Coach.");
+                // Mark local storage so it never attempts to show again
+                localStorage.setItem(`expert_bracket_locked_${deviceUID}`, 'true');
+
+                alert("✓ PICKS PERMANENTLY LOCKED IN!\nWelcome to the Leaderboard, Coach.");
                 document.body.style.overflow = "auto";
                 document.getElementById('expert-cfb-modal').classList.remove('show-mandatory');
+                
+                // Remove modal from DOM completely to prevent any inspection edits
+                const modal = document.getElementById('expert-cfb-modal');
+                if (modal) modal.remove();
             } catch (err) {
                 alert("Submission failed: " + err.message);
                 submitBtn.disabled = false;
-                submitBtn.innerText = "LOCK IN EXPERT PICKS & ENTER LEADERBOARD";
+                submitBtn.innerText = "✓ LOCK IN EXPERT PICKS & ENTER LEADERBOARD";
             }
         }
 
