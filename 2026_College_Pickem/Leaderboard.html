@@ -115,7 +115,7 @@
             color: #ffffff;
         }
 
-        /* CFP TRACKER DRAWER */
+        /* CFP TRACKER DRAWER (12-TEAM & 24-TEAM EXPANSION) */
         .cfp-drawer {
             width: 100%;
             max-width: 480px;
@@ -136,6 +136,33 @@
             cursor: pointer;
             background: #0f172a;
             border-bottom: 1px solid #1e293b;
+        }
+
+        .cfp-mode-switch {
+            display: flex;
+            background: #0b1120;
+            border-bottom: 2px solid #334155;
+            padding: 0.35rem 0.5rem;
+            gap: 0.4rem;
+        }
+
+        .cfp-mode-btn {
+            flex: 1;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #94a3b8;
+            font-family: var(--pixel-font);
+            font-size: 0.42rem;
+            padding: 0.4rem 0.2rem;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .cfp-mode-btn.active {
+            background: var(--retro-blue);
+            color: #000;
+            border-color: #fff;
+            font-weight: bold;
         }
 
         .cfp-list {
@@ -159,6 +186,78 @@
         .cfp-seed {
             color: var(--retro-yellow);
             font-weight: bold;
+        }
+
+        /* 24-TEAM BRACKET TREE STYLES */
+        .cfp-24-container {
+            padding: 0.5rem;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .cfp-24-byes-box {
+            background: #090d16;
+            border: 2px dashed var(--retro-yellow);
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .cfp-24-byes-title {
+            color: var(--retro-yellow);
+            font-size: 0.46rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .cfp-byes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.3rem;
+        }
+
+        .bye-pill {
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 0.3rem;
+            font-size: 0.42rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .cfp-24-tree {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.45rem;
+        }
+
+        .r1-bracket-node {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .r1-game-hdr {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.4rem;
+            color: var(--retro-blue);
+            border-bottom: 1px dashed #334155;
+            padding-bottom: 0.2rem;
+        }
+
+        .r1-matchup-row {
+            display: flex;
+            justify-content: space-between;
+            background: #1e293b;
+            padding: 0.3rem 0.4rem;
+            font-size: 0.44rem;
+            border: 1px solid #475569;
         }
 
         header {
@@ -868,19 +967,34 @@
     <!-- NEWS TICKER -->
     <div class="news-ticker-container">
         <div class="ticker-title">BREAKING NEWS:</div>
-        <marquee id="analyst-news-ticker" behavior="scroll" direction="left" scrollamount="5">
+        <marquee id="analyst-news-ticker" behavior="scroll" direction="left" scrollamount="5"[cite: 1]>
             FETCHING ANALYST HOT TAKES...
         </marquee>
     </div>
 
-    <!-- LIVE CFP SEEDINGS DRAWER -->
+    <!-- DUAL-MODE CFP DRAWER (12-TEAM & 24-TEAM EXPANSION) -->
     <div class="cfp-drawer">
         <div class="cfp-header" onclick="toggleCFP()">
-            <span>🏈 PROJECTED CFP TOP 12</span>
+            <span id="cfp-drawer-title">🏈 PLAYOFF SEEDINGS & BRACKET</span>
             <span id="cfp-toggle-arrow">▼</span>
         </div>
-        <div class="cfp-list" id="cfp-teams-list" style="display: none;">
-            <div class="empty-slate" style="font-size:0.5rem; padding: 0.5rem;">FETCHING CFP SEEDS...</div>
+        
+        <div id="cfp-drawer-body" style="display: none;">
+            <div class="cfp-mode-switch">
+                <button type="button" class="cfp-mode-btn active" id="btn-mode-12" onclick="switchCFPView(12)">12-TEAM CFP</button>
+                <button type="button" class="cfp-mode-btn" id="btn-mode-24" onclick="switchCFPView(24)">24-TEAM EXPANSION</button>
+            </div>
+
+            <!-- 12-TEAM GRID -->
+            <div class="cfp-list" id="cfp-teams-list">
+                <div class="empty-slate" style="font-size:0.5rem; padding: 0.5rem;">FETCHING CFP SEEDS...</div>
+            </div>
+
+            <!-- 24-TEAM BRACKET TREE -->
+            <div class="cfp-24-container" id="cfp-24-view" style="display: none;">
+                <div class="cfp-24-byes-box" id="cfp-24-byes"></div>
+                <div class="cfp-24-tree" id="cfp-24-tree-matchups"></div>
+            </div>
         </div>
     </div>
 
@@ -1045,6 +1159,9 @@
 
         let activeUserUid = null;
         let activeModalWeek = 1;
+
+        let liveCFPRanks = [];
+        let currentCFPMode = 12;
 
         // ========================================================
         // 1. DATA CONFIGURATION: EXACT ODDS & WIN FORMULAS
@@ -1368,7 +1485,7 @@
         }
 
         // ========================================================
-        // DYNAMIC POTENTIAL WINS ENGINE (WITH REVISED RULES)
+        // DYNAMIC POTENTIAL WINS ENGINE (WITH ACCUMULATED RULES)
         // ========================================================
         function getBracketBreakdown() {
             let fieldBaseBank = 0;
@@ -1377,13 +1494,11 @@
             let nattyBonus = 0;
             const perfectSweepBonus = 20;
 
-            // 1. Final Field Predictions: Base odds value + 3W exact rank bonus per slot
             assignedSeeds.filter(Boolean).forEach(t => {
                 fieldBaseBank += getBonusMultiplier(t.odds);
                 exactPositionBonus += 3;
             });
 
-            // 2. Knockout Matches: 5 wins base + team odds value per win
             bracketPicks.r1.filter(Boolean).forEach(tName => {
                 const teamObj = assignedSeeds.find(s => s && s.team === tName);
                 matchBank += (5 + getBonusMultiplier(teamObj ? teamObj.odds : '+300'));
@@ -1399,7 +1514,6 @@
                 matchBank += (5 + getBonusMultiplier(teamObj ? teamObj.odds : '+300'));
             });
 
-            // 3. National Title Game Matchup & Champion Value
             if (bracketPicks.champion) {
                 matchBank += (5 + getBonusMultiplier(assignedSeeds.find(s => s && s.team === bracketPicks.champion)?.odds || '+300'));
                 nattyBonus = getNattyBonusWins(bracketPicks.champion);
@@ -1769,7 +1883,7 @@
         }
 
         // ========================================================
-        // 3. CFP SEEDING WIDGET (DRAWER)
+        // 3. CFP SEEDING WIDGET (12-TEAM & 24-TEAM DUAL VIEWS)
         // ========================================================
         async function fetchCFPPlayoffTeams() {
             const listEl = document.getElementById('cfp-teams-list');
@@ -1780,24 +1894,111 @@
                 const poll = data.rankings.find(r => r.name.toLowerCase().includes('playoff')) || data.rankings[0];
                 if (!poll || !poll.ranks) return;
 
-                const top12 = poll.ranks.slice(0, 12);
-                listEl.innerHTML = top12.map(item => `
-                    <div class="cfp-team-pill">
-                        <span class="cfp-seed">#${item.current}</span>
-                        <span style="color:#fff;">${item.team.abbreviation || item.team.shortDisplayName}</span>
-                        <span style="color:#64748b; font-size:0.4rem; margin-left:auto;">${item.recordSummary}</span>
-                    </div>
-                `).join('');
+                liveCFPRanks = poll.ranks.slice(0, 24).map(item => ({
+                    rank: item.current,
+                    name: item.team.abbreviation || item.team.shortDisplayName || item.team.name,
+                    record: item.recordSummary || ''
+                }));
+
+                renderCFP12List();
+                renderCFP24Bracket();
             } catch (err) {
-                listEl.innerHTML = `<div style="color:#ef4444; font-size:0.45rem; padding:0.5rem;">FAILED TO LOAD CFP SEEDS</div>`;
+                if (listEl) listEl.innerHTML = `<div style="color:#ef4444; font-size:0.45rem; padding:0.5rem;">FAILED TO LOAD CFP SEEDS</div>`;
+            }
+        }
+
+        function renderCFP12List() {
+            const listEl = document.getElementById('cfp-teams-list');
+            if (!listEl || liveCFPRanks.length === 0) return;
+
+            listEl.innerHTML = liveCFPRanks.slice(0, 12).map(item => `
+                <div class="cfp-team-pill">
+                    <span class="cfp-seed">#${item.rank}</span>
+                    <span style="color:#fff;">${item.name}</span>
+                    <span style="color:#64748b; font-size:0.4rem; margin-left:auto;">${item.record}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderCFP24Bracket() {
+            const byesContainer = document.getElementById('cfp-24-byes');
+            const treeContainer = document.getElementById('cfp-24-tree-matchups');
+            if (!byesContainer || !treeContainer || liveCFPRanks.length < 24) return;
+
+            const byes = liveCFPRanks.slice(0, 8);
+            byesContainer.innerHTML = `
+                <div class="cfp-24-byes-title">⚡ SEEDS 1-8: FIRST-ROUND BYE (ROUND OF 16)</div>
+                <div class="cfp-byes-grid">
+                    ${byes.map(t => `
+                        <div class="bye-pill">
+                            <span><strong style="color:var(--retro-yellow);">#${t.rank}</strong> ${t.name}</span>
+                            <span style="color:#64748b;">${t.record}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            const pairings = [
+                { hostSeed: 9, visitorSeed: 24, byeTarget: 8 },
+                { hostSeed: 16, visitorSeed: 17, byeTarget: 1 },
+                { hostSeed: 10, visitorSeed: 23, byeTarget: 7 },
+                { hostSeed: 15, visitorSeed: 18, byeTarget: 2 },
+                { hostSeed: 11, visitorSeed: 22, byeTarget: 6 },
+                { hostSeed: 14, visitorSeed: 19, byeTarget: 3 },
+                { hostSeed: 12, visitorSeed: 21, byeTarget: 5 },
+                { hostSeed: 13, visitorSeed: 20, byeTarget: 4 }
+            ];
+
+            treeContainer.innerHTML = pairings.map(p => {
+                const host = liveCFPRanks.find(t => t.rank === p.hostSeed) || { rank: p.hostSeed, name: `Seed ${p.hostSeed}`, record: '' };
+                const visitor = liveCFPRanks.find(t => t.rank === p.visitorSeed) || { rank: p.visitorSeed, name: `Seed ${p.visitorSeed}`, record: '' };
+                const byeTeam = liveCFPRanks.find(t => t.rank === p.byeTarget) || { rank: p.byeTarget, name: `Seed ${p.byeTarget}` };
+
+                return `
+                    <div class="r1-bracket-node">
+                        <div class="r1-game-hdr">
+                            <span>CAMPUS ROUND 1</span>
+                            <span style="color:var(--retro-yellow);">WINNER PLAYS #${byeTeam.rank} ${byeTeam.name}</span>
+                        </div>
+                        <div class="r1-matchup-row">
+                            <span><strong>#${host.rank}</strong> ${host.name} <em style="color:#94a3b8; font-size:0.35rem;">[HOST]</em></span>
+                            <span style="color:#64748b;">${host.record}</span>
+                        </div>
+                        <div class="r1-matchup-row">
+                            <span><strong>#${visitor.rank}</strong> ${visitor.name}</span>
+                            <span style="color:#64748b;">${visitor.record}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function switchCFPView(mode) {
+            currentCFPMode = mode;
+            const btn12 = document.getElementById('btn-mode-12');
+            const btn24 = document.getElementById('btn-mode-24');
+            const view12 = document.getElementById('cfp-teams-list');
+            const view24 = document.getElementById('cfp-24-view');
+
+            if (mode === 12) {
+                btn12.classList.add('active');
+                btn24.classList.remove('active');
+                view12.style.display = 'grid';
+                view24.style.display = 'none';
+            } else {
+                btn24.classList.add('active');
+                btn12.classList.remove('active');
+                view12.style.display = 'none';
+                view24.style.display = 'flex';
             }
         }
 
         function toggleCFP() {
-            const listEl = document.getElementById('cfp-teams-list');
+            const body = document.getElementById('cfp-drawer-body');
             const arrow = document.getElementById('cfp-toggle-arrow');
-            const isOpen = listEl.style.display === 'grid';
-            listEl.style.display = isOpen ? 'none' : 'grid';
+            const isOpen = body.style.display !== 'none';
+            
+            body.style.display = isOpen ? 'none' : 'block';
             arrow.innerText = isOpen ? '▼' : '▲';
         }
 
@@ -1933,7 +2134,7 @@
                 ];
 
                 const leagueNews = [
-                    `🚨 BREAKING: CFP COMMITTEE STANDINGS UNDER FIRE BY COACHES ACROSS THE NATION!`,
+                    `🚨 BREAKING: CFP EXPANSION DISCUSSIONS LOOM AS 24-TEAM BRACKET MODEL ROLLS OUT!`,
                     `📊 ANALYST DESK ALERT: STAT FRAUDS EXPOSED AFTER DISASTROUS SLATE RESULTS!`,
                     `🔥 SOURCES: EXPERT CFP HAIL MARY PICKS SHAKING UP SEASON REPUTATION SCORES!`,
                     `🏈 LEAGUE HEADLINES: DRAMA MOUNTS ON LIVE AIR AT THE LEAGUE ANALYST DESK!`
