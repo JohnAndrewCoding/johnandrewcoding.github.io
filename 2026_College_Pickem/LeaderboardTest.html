@@ -464,7 +464,7 @@
             border: 4px solid var(--retro-red);
             box-shadow: 0 0 35px rgba(239, 68, 68, 0.4), 8px 8px 0px #000;
             width: 100%;
-            max-width: 540px;
+            max-width: 550px;
             max-height: 94vh;
             display: flex;
             flex-direction: column;
@@ -757,13 +757,14 @@
         }
 
         .team-slot-pick {
-            padding: 0.3rem;
+            padding: 0.35rem;
             background: #1e293b;
             border: 1px solid #475569;
-            font-size: 0.45rem;
+            font-size: 0.44rem;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         .team-slot-pick.winner {
@@ -899,12 +900,12 @@
                     <div class="reward-pill-sub">EXACT: +10 WINS | CLOSEST (OR TIE): +5 WINS</div>
                 </div>
 
-                <!-- STEP 2: CONFERENCE CHAMPIONS (ALL FBS CONFERENCES) -->
+                <!-- STEP 2: CONFERENCE CHAMPIONS (EXACT SPORTSBOOK ODDS) -->
                 <div class="bracket-sec">
                     <div class="bracket-sec-hdr">
                         <span class="step-num">STEP 2</span> ALL CONFERENCE CHAMPIONS (ODDS MULTIPLIER)
                     </div>
-                    <div class="sec-help">Pick the champion for every FBS conference. High underdog odds yield huge bonus wins!</div>
+                    <div class="sec-help">Pick the champion for each conference. High underdog odds yield huge bonus wins!</div>
                     <div class="conf-grid" id="conf-selectors-zone"></div>
                 </div>
 
@@ -914,12 +915,12 @@
                         <span class="step-num">STEP 3</span> SEED THE FINAL 12 TEAMS (1 TO 12)
                     </div>
                     <div class="sec-help">
-                        Seeds #1-#4 receive 1st round byes. Pick seeds in order. Your accumulated multiplier score updates live!
+                        Seeds #1-#4 receive 1st round byes. Pick seeds in order. Every team picked earns bonus wins based on their playoff odds!
                     </div>
                     
                     <div class="cfp-summary-banner">
-                        <span>SEEDS SET: <strong id="seeds-filled-count" style="color:var(--retro-yellow);">0</strong>/12</span>
-                        <span>POTENTIAL WINS: <strong id="total-bracket-odds-pts" style="color:var(--retro-green);">0</strong> WINS</span>
+                        <span>SEEDS: <strong id="seeds-filled-count" style="color:var(--retro-yellow);">0</strong>/12</span>
+                        <span>BRACKET VALUE: <strong id="total-bracket-odds-pts" style="color:var(--retro-green);">0</strong> WINS</span>
                     </div>
 
                     <div class="seeds-pick-slots" id="bracket-seeds-slots"></div>
@@ -938,9 +939,9 @@
                 <!-- STEP 4: PLAYOFF BRACKET SIMULATOR -->
                 <div class="bracket-sec" id="bracket-simulation-section" style="display:none;">
                     <div class="bracket-sec-hdr">
-                        <span class="step-num">STEP 4</span> PLAYOFF BRACKET KNOCKOUT
+                        <span class="step-num">STEP 4</span> PLAYOFF BRACKET KNOCKOUT (WIN ACCUMULATOR)
                     </div>
-                    <div class="sec-help">Tap a team to advance them through each round to the National Championship!</div>
+                    <div class="sec-help">Tap a team to advance them! Each round victory and the National Title adds odds-based bonus wins directly to your season score!</div>
                     
                     <div class="bracket-tree-container">
                         <div class="bracket-round-col">
@@ -992,7 +993,7 @@
         let activeModalWeek = 1;
 
         // ========================================================
-        // 1. DATA CONFIGURATION: ALL CONFERENCES & 45+ CFP CONTENDERS
+        // 1. DATA CONFIGURATION: EXACT ODDS & WIN FORMULAS
         // ========================================================
         const FIRST_RANKINGS_TOP_12 = [
             "Miami", "Georgia", "Utah", "Indiana", 
@@ -1000,145 +1001,239 @@
             "BYU", "Ole Miss", "Notre Dame", "Boise State"
         ];
 
-        // All 9 FBS conferences with market-derived lines
         const EXPERT_CONF_ODDS = {
-            "SEC": [
-                { team: "Georgia", odds: "-150" },
-                { team: "Alabama", odds: "+460" },
-                { team: "Texas", odds: "+580" },
-                { team: "Ole Miss", odds: "+1300" },
-                { team: "Kentucky", odds: "+1800" },
-                { team: "LSU", odds: "+2300" },
-                { team: "Tennessee", odds: "+4000" },
-                { team: "Texas A&M", odds: "+6000" },
-                { team: "Missouri", odds: "+8000" }
+            "ACC": [
+                { team: "Miami", odds: "-320" },
+                { team: "Wake Forest", odds: "+350" },
+                { team: "SMU", odds: "+2000" },
+                { team: "Louisville", odds: "+3500" },
+                { team: "Duke", odds: "+6000" },
+                { team: "Virginia Tech", odds: "+10000" },
+                { team: "Clemson", odds: "+10000" },
+                { team: "Pittsburgh", odds: "+40000" },
+                { team: "North Carolina", odds: "+40000" }
             ],
             "BIG TEN": [
-                { team: "Ohio State", odds: "-125" },
-                { team: "Indiana", odds: "+190" },
-                { team: "Oregon", odds: "+1200" },
-                { team: "UCLA", odds: "+1500" },
-                { team: "Washington", odds: "+2400" },
-                { team: "Wisconsin", odds: "+2500" },
-                { team: "USC", odds: "+4500" },
-                { team: "Penn State", odds: "+5000" },
-                { team: "Iowa", odds: "+6000" }
+                { team: "Indiana", odds: "+120" },
+                { team: "Ohio State", odds: "+240" },
+                { team: "UCLA", odds: "+430" },
+                { team: "USC", odds: "+1200" },
+                { team: "Oregon", odds: "+2000" },
+                { team: "Wisconsin", odds: "+4000" },
+                { team: "Northwestern", odds: "+4500" },
+                { team: "Iowa", odds: "+5500" },
+                { team: "Minnesota", odds: "+8000" },
+                { team: "Illinois", odds: "+40000" },
+                { team: "Michigan", odds: "+40000" }
             ],
             "BIG 12": [
-                { team: "Utah", odds: "+235" },
-                { team: "BYU", odds: "+235" },
-                { team: "Texas Tech", odds: "+260" },
-                { team: "Houston", odds: "+1050" },
-                { team: "Arizona", odds: "+1650" },
-                { team: "Kansas State", odds: "+3000" },
-                { team: "Iowa State", odds: "+3500" },
-                { team: "Colorado", odds: "+4000" }
+                { team: "Utah", odds: "+125" },
+                { team: "BYU", odds: "+310" },
+                { team: "Texas Tech", odds: "+410" },
+                { team: "Houston", odds: "+1000" },
+                { team: "Arizona", odds: "+1500" },
+                { team: "Oklahoma State", odds: "+1700" },
+                { team: "Baylor", odds: "+2700" },
+                { team: "TCU", odds: "+30000" },
+                { team: "West Virginia", odds: "+40000" },
+                { team: "Cincinnati", odds: "+40000" },
+                { team: "Arizona State", odds: "+40000" },
+                { team: "UCF", odds: "+40000" },
+                { team: "Iowa State", odds: "+40000" }
             ],
-            "ACC": [
-                { team: "Miami", odds: "-500" },
-                { team: "SMU", odds: "+1000" },
-                { team: "Louisville", odds: "+2500" },
-                { team: "Wake Forest", odds: "+2800" },
-                { team: "Virginia", odds: "+3000" },
-                { team: "Clemson", odds: "+7400" },
-                { team: "Pittsburgh", odds: "+8500" }
+            "PAC-12": [
+                { team: "Boise State", odds: "-150" },
+                { team: "Oregon State", odds: "+230" },
+                { team: "Texas State", odds: "+950" },
+                { team: "Fresno State", odds: "+1200" },
+                { team: "Utah State", odds: "+3300" },
+                { team: "San Diego State", odds: "+4500" },
+                { team: "Colorado State", odds: "+40000" }
             ],
-            "MOUNTAIN WEST": [
-                { team: "Boise State", odds: "-220" },
-                { team: "UNLV", odds: "+320" },
-                { team: "Colorado State", odds: "+850" },
-                { team: "Fresno State", odds: "+1400" },
-                { team: "San Jose State", odds: "+2200" }
+            "SEC": [
+                { team: "Georgia", odds: "-105" },
+                { team: "LSU", odds: "+600" },
+                { team: "Ole Miss", odds: "+650" },
+                { team: "Alabama", odds: "+850" },
+                { team: "Texas", odds: "+1200" },
+                { team: "Kentucky", odds: "+1200" },
+                { team: "Tennessee", odds: "+2200" },
+                { team: "Missouri", odds: "+2500" },
+                { team: "Florida", odds: "+6000" },
+                { team: "Oklahoma", odds: "+15000" },
+                { team: "South Carolina", odds: "+20000" }
             ],
             "AMERICAN (AAC)": [
-                { team: "Tulane", odds: "+120" },
-                { team: "Army", odds: "+180" },
-                { team: "Memphis", odds: "+450" },
-                { team: "Navy", odds: "+700" },
-                { team: "East Carolina", odds: "+1800" }
-            ],
-            "SUN BELT": [
-                { team: "Louisiana", odds: "+130" },
-                { team: "Georgia Southern", odds: "+300" },
-                { team: "Marshall", odds: "+450" },
-                { team: "James Madison", odds: "+650" },
-                { team: "App State", odds: "+1500" }
-            ],
-            "MAC": [
-                { team: "Western Michigan", odds: "+140" },
-                { team: "Toledo", odds: "+155" },
-                { team: "Ohio", odds: "+450" },
-                { team: "Miami (OH)", odds: "+500" },
-                { team: "Eastern Michigan", odds: "+1000" },
-                { team: "Central Michigan", odds: "+1100" }
+                { team: "UTSA", odds: "+165" },
+                { team: "North Texas", odds: "+180" },
+                { team: "Memphis", odds: "+270" },
+                { team: "Army", odds: "+2500" },
+                { team: "South Florida", odds: "+2500" },
+                { team: "Florida Atlantic", odds: "+5000" },
+                { team: "East Carolina", odds: "+7500" },
+                { team: "UAB", odds: "+12500" },
+                { team: "Tulane", odds: "+12500" },
+                { team: "Tulsa", odds: "+40000" }
             ],
             "CONFERENCE USA": [
-                { team: "Liberty", odds: "-140" },
-                { team: "Western Kentucky", odds: "+210" },
-                { team: "Sam Houston", odds: "+600" },
-                { team: "Jacksonville State", odds: "+750" }
+                { team: "Liberty", odds: "-370" },
+                { team: "Jacksonville State", odds: "+430" },
+                { team: "Delaware", odds: "+1700" },
+                { team: "Western Kentucky", odds: "+5000" },
+                { team: "Missouri State", odds: "+7500" },
+                { team: "New Mexico State", odds: "+10000" },
+                { team: "Middle Tennessee", odds: "+10000" },
+                { team: "FIU", odds: "+20000" },
+                { team: "Kennesaw State", odds: "+40000" }
+            ],
+            "MAC": [
+                { team: "Toledo", odds: "+115" },
+                { team: "Western Michigan", odds: "+210" },
+                { team: "Ohio", odds: "+370" },
+                { team: "Buffalo", odds: "+1000" },
+                { team: "Miami (OH)", odds: "+2700" },
+                { team: "Eastern Michigan", odds: "+17500" },
+                { team: "Ball State", odds: "+25000" }
+            ],
+            "SUN BELT": [
+                { team: "Louisiana Tech", odds: "+135" },
+                { team: "James Madison", odds: "+240" },
+                { team: "Georgia Southern", odds: "+350" },
+                { team: "App State", odds: "+1600" },
+                { team: "Arkansas State", odds: "+2500" },
+                { team: "Troy", odds: "+3000" },
+                { team: "Louisiana", odds: "+3000" },
+                { team: "Coastal Carolina", odds: "+5500" },
+                { team: "Marshall", odds: "+7000" },
+                { team: "Southern Miss", odds: "+10000" },
+                { team: "South Alabama", odds: "+12500" },
+                { team: "Georgia State", odds: "+22500" }
             ]
         };
 
-        // 45+ College Football Playoff Pool Options with dynamic payouts
+        // EXACT PLAYOFF ODDS POOL PROVIDED
         const EXPERT_PLAYOFF_POOL = [
-            // Favorites & P4 Elite
-            { team: "Miami", odds: "-6000", type: "POWER" },
-            { team: "Georgia", odds: "-6000", type: "POWER" },
-            { team: "Ohio State", odds: "-2500", type: "POWER" },
-            { team: "Indiana", odds: "-1200", type: "POWER" },
-            { team: "Oregon", odds: "-800", type: "POWER" },
-            { team: "Notre Dame", odds: "-500", type: "POWER" },
-            { team: "Alabama", odds: "-350", type: "POWER" },
-            { team: "Penn State", odds: "-280", type: "POWER" },
-            { team: "Utah", odds: "-240", type: "POWER" },
-            { team: "Texas", odds: "-180", type: "POWER" },
-            { team: "Ole Miss", odds: "-160", type: "POWER" },
-            { team: "LSU", odds: "-140", type: "POWER" },
-            { team: "UCLA", odds: "-120", type: "POWER" },
-            
-            // P4 Chasers & Bubble Teams
-            { team: "Kentucky", odds: "+130", type: "POWER" },
-            { team: "BYU", odds: "+150", type: "POWER" },
-            { team: "Texas Tech", odds: "+220", type: "POWER" },
-            { team: "Tennessee", odds: "+250", type: "POWER" },
-            { team: "SMU", odds: "+260", type: "POWER" },
-            { team: "Wake Forest", odds: "+280", type: "POWER" },
-            { team: "USC", odds: "+380", type: "POWER" },
-            { team: "Iowa", odds: "+400", type: "POWER" },
-            { team: "Clemson", odds: "+450", type: "POWER" },
-            { team: "Washington", odds: "+500", type: "POWER" },
-            { team: "Texas A&M", odds: "+550", type: "POWER" },
-            { team: "Houston", odds: "+650", type: "POWER" },
-            { team: "Colorado", odds: "+700", type: "POWER" },
-            { team: "Missouri", odds: "+750", type: "POWER" },
-            { team: "Kansas State", odds: "+850", type: "POWER" },
-            { team: "Iowa State", odds: "+900", type: "POWER" },
-            { team: "Louisville", odds: "+1000", type: "POWER" },
-            { team: "South Carolina", odds: "+1200", type: "POWER" },
-            { team: "Wisconsin", odds: "+1400", type: "POWER" },
-            { team: "Arizona", odds: "+1500", type: "POWER" },
-            { team: "Pittsburgh", odds: "+1800", type: "POWER" },
-
-            // Group of 5 Contenders (Auto-bid Hunters)
-            { team: "Boise State", odds: "-110", type: "G5" },
-            { team: "Army", odds: "+180", type: "G5" },
-            { team: "Tulane", odds: "+220", type: "G5" },
-            { team: "UNLV", odds: "+320", type: "G5" },
-            { team: "Memphis", odds: "+450", type: "G5" },
-            { team: "Navy", odds: "+600", type: "G5" },
-            { team: "Louisiana", odds: "+650", type: "G5" },
-            { team: "Liberty", odds: "+700", type: "G5" },
-            { team: "Western Michigan", odds: "+1200", type: "G5" },
-            { team: "Toledo", odds: "+1400", type: "G5" },
-            { team: "James Madison", odds: "+1800", type: "G5" },
-            { team: "Washington State", odds: "+2200", type: "G5" }
+            { team: "Miami", odds: "-7000", type: "POWER" },
+            { team: "Georgia", odds: "-5000", type: "POWER" },
+            { team: "Indiana", odds: "-1100", type: "POWER" },
+            { team: "Alabama", odds: "-340", type: "POWER" },
+            { team: "Notre Dame", odds: "-320", type: "POWER" },
+            { team: "Utah", odds: "-260", type: "POWER" },
+            { team: "LSU", odds: "-200", type: "POWER" },
+            { team: "Ole Miss", odds: "-185", type: "POWER" },
+            { team: "UCLA", odds: "-160", type: "POWER" },
+            { team: "Ohio State", odds: "-140", type: "POWER" },
+            { team: "Texas", odds: "-135", type: "POWER" },
+            { team: "Boise State", odds: "-105", type: "G5" },
+            { team: "Wake Forest", odds: "+110", type: "POWER" },
+            { team: "Kentucky", odds: "+145", type: "POWER" },
+            { team: "BYU", odds: "+160", type: "POWER" },
+            { team: "Texas Tech", odds: "+240", type: "POWER" },
+            { team: "New Mexico", odds: "+240", type: "G5" },
+            { team: "Tennessee", odds: "+270", type: "POWER" },
+            { team: "Florida", odds: "+390", type: "POWER" },
+            { team: "USC", odds: "+420", type: "POWER" },
+            { team: "Missouri", odds: "+420", type: "POWER" },
+            { team: "UTSA", odds: "+440", type: "G5" },
+            { team: "Iowa", odds: "+500", type: "POWER" },
+            { team: "Houston", odds: "+600", type: "POWER" },
+            { team: "Northwestern", odds: "+650", type: "POWER" },
+            { team: "South Carolina", odds: "+700", type: "POWER" },
+            { team: "Arizona", odds: "+1000", type: "POWER" },
+            { team: "SMU", odds: "+1400", type: "POWER" },
+            { team: "Oregon", odds: "+1400", type: "POWER" },
+            { team: "Oklahoma State", odds: "+1500", type: "POWER" },
+            { team: "North Texas", odds: "+1500", type: "G5" },
+            { team: "Baylor", odds: "+2200", type: "POWER" },
+            { team: "Liberty", odds: "+2200", type: "G5" },
+            { team: "Louisville", odds: "+3000", type: "POWER" },
+            { team: "Wisconsin", odds: "+3500", type: "POWER" },
+            { team: "Duke", odds: "+5000", type: "POWER" },
+            { team: "Louisiana Tech", odds: "+5500", type: "G5" },
+            { team: "Michigan", odds: "+6000", type: "POWER" },
+            { team: "Virginia Tech", odds: "+8000", type: "POWER" },
+            { team: "Clemson", odds: "+8000", type: "POWER" },
+            { team: "Minnesota", odds: "+8000", type: "POWER" },
+            { team: "Memphis", odds: "+8000", type: "G5" },
+            { team: "Oklahoma", odds: "+15000", type: "POWER" },
+            { team: "Nebraska", odds: "+15000", type: "POWER" },
+            { team: "Oregon State", odds: "+17500", type: "G5" },
+            { team: "Air Force", odds: "+40000", type: "G5" }
         ];
 
+        // EXACT NATIONAL CHAMPIONSHIP ODDS BOARD PROVIDED
+        const NATIONAL_CHAMP_ODDS = {
+            "Georgia": "+330",
+            "Notre Dame": "+550",
+            "LSU": "+750",
+            "Miami": "+750",
+            "Indiana": "+1000",
+            "Alabama": "+1000",
+            "Texas": "+1100",
+            "Ohio State": "+1300",
+            "Ole Miss": "+1500",
+            "Utah": "+3000",
+            "UCLA": "+4500",
+            "Tennessee": "+5000",
+            "Missouri": "+5500",
+            "Kentucky": "+6000",
+            "Wake Forest": "+6000",
+            "USC": "+6500",
+            "BYU": "+7500",
+            "Texas Tech": "+8000",
+            "Florida": "+8000",
+            "South Carolina": "+10000",
+            "Iowa": "+12500",
+            "Northwestern": "+15000",
+            "Oregon": "+17500",
+            "Houston": "+22500",
+            "Boise State": "+30000",
+            "SMU": "+40000",
+            "Arizona": "+40000",
+            "New Mexico": "+40000",
+            "Oklahoma State": "+50000",
+            "Louisville": "+60000",
+            "Wisconsin": "+75000",
+            "Baylor": "+75000",
+            "Oklahoma": "+75000",
+            "Michigan": "+75000",
+            "Iowa State": "+125000",
+            "West Virginia": "+125000",
+            "North Texas": "+125000",
+            "Clemson": "+125000",
+            "Louisiana Tech": "+125000",
+            "Cincinnati": "+125000",
+            "South Florida": "+125000",
+            "North Carolina": "+125000",
+            "Oregon State": "+125000",
+            "Virginia Tech": "+125000",
+            "Minnesota": "+125000",
+            "Duke": "+125000",
+            "Liberty": "+125000",
+            "Memphis": "+125000",
+            "UCF": "+125000",
+            "Nebraska": "+125000",
+            "Pittsburgh": "+125000",
+            "UTSA": "+125000",
+            "Arizona State": "+125000",
+            "TCU": "+125000",
+            "Purdue": "+125000",
+            "North Dakota State": "+125000"
+        };
+
+        // Calculates bonus wins from Playoff Odds
         function getBonusMultiplier(oddsStr) {
+            if (!oddsStr) return 1;
             if (oddsStr.startsWith('-')) return 1;
             const num = parseInt(oddsStr.replace('+', ''), 10);
             return Math.max(1, Math.round(1 + (num / 250)));
+        }
+
+        // Calculates dedicated Natty Bonus Jackpot based on Championship line
+        function getNattyBonusWins(teamName) {
+            const oddsStr = NATIONAL_CHAMP_ODDS[teamName] || "+5000";
+            const num = parseInt(oddsStr.replace('+', ''), 10);
+            return Math.max(2, Math.round(2 + (num / 1500)));
         }
 
         let assignedSeeds = new Array(12).fill(null);
@@ -1214,6 +1309,41 @@
             renderPoolChips();
         }
 
+        // Calculates entire bracket bonus value (Seeds + Bracket Round Advancements + Natty)
+        function calculateTotalBracketScore() {
+            let total = 0;
+
+            // 1. Seed values
+            assignedSeeds.filter(Boolean).forEach(t => {
+                total += getBonusMultiplier(t.odds);
+            });
+
+            // 2. Round 1 wins
+            bracketPicks.r1.filter(Boolean).forEach(tName => {
+                const teamObj = assignedSeeds.find(s => s && s.team === tName);
+                if (teamObj) total += getBonusMultiplier(teamObj.odds);
+            });
+
+            // 3. Quarterfinal wins
+            bracketPicks.qf.filter(Boolean).forEach(tName => {
+                const teamObj = assignedSeeds.find(s => s && s.team === tName);
+                if (teamObj) total += getBonusMultiplier(teamObj.odds);
+            });
+
+            // 4. Semifinal wins
+            bracketPicks.sf.filter(Boolean).forEach(tName => {
+                const teamObj = assignedSeeds.find(s => s && s.team === tName);
+                if (teamObj) total += getBonusMultiplier(teamObj.odds);
+            });
+
+            // 5. National Champion Jackpot
+            if (bracketPicks.champion) {
+                total += getNattyBonusWins(bracketPicks.champion);
+            }
+
+            return total;
+        }
+
         function renderSeedsSlots() {
             const container = document.getElementById('bracket-seeds-slots');
             container.innerHTML = '';
@@ -1228,8 +1358,9 @@
                 slot.className = `seed-slot-card ${isBye ? 'bye-slot' : ''} ${currentTeam ? 'filled' : ''}`;
                 
                 if (currentTeam) {
+                    const pts = getBonusMultiplier(currentTeam.odds);
                     slot.innerHTML = `
-                        <span><span class="seed-badge-indicator">#${seedNum}</span> ${currentTeam.team} (${currentTeam.odds})${byeTag}</span>
+                        <span><span class="seed-badge-indicator">#${seedNum}</span> ${currentTeam.team} <strong style="color:var(--retro-green);">(+${pts}W)</strong>${byeTag}</span>
                         <span class="clear-seed-x" onclick="removeSeed(${i})">X</span>
                     `;
                 } else {
@@ -1243,12 +1374,7 @@
 
             const filled = assignedSeeds.filter(Boolean).length;
             document.getElementById('seeds-filled-count').innerText = filled;
-
-            let totalWinBonus = 0;
-            assignedSeeds.filter(Boolean).forEach(t => {
-                totalWinBonus += getBonusMultiplier(t.odds);
-            });
-            document.getElementById('total-bracket-odds-pts').innerText = totalWinBonus;
+            document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
 
             if (filled === 12) {
                 document.getElementById('bracket-simulation-section').style.display = 'flex';
@@ -1294,7 +1420,7 @@
             renderPoolChips();
         }
 
-        // Bracket Logic: 12-team simulation (5v12, 6v11, 7v10, 8v9)
+        // Bracket Simulator: First round games (5v12, 6v11, 7v10, 8v9)
         function buildPlayoffBracket() {
             const r1Matchups = [
                 { g: 0, t1: assignedSeeds[4], t2: assignedSeeds[11], seed1: 5, seed2: 12 },
@@ -1305,17 +1431,23 @@
 
             r1Matchups.forEach(m => {
                 const node = document.getElementById(`node-r1-g${m.g + 1}`);
+                const pts1 = getBonusMultiplier(m.t1.odds);
+                const pts2 = getBonusMultiplier(m.t2.odds);
+
                 node.innerHTML = `
                     <div class="team-slot-pick ${bracketPicks.r1[m.g] === m.t1.team ? 'winner' : ''}" onclick="pickR1Winner(${m.g}, '${m.t1.team}')">
                         <span>#${m.seed1} ${m.t1.team}</span>
+                        <span style="color:var(--retro-green);">+${pts1}W</span>
                     </div>
                     <div class="team-slot-pick ${bracketPicks.r1[m.g] === m.t2.team ? 'winner' : ''}" onclick="pickR1Winner(${m.g}, '${m.t2.team}')">
                         <span>#${m.seed2} ${m.t2.team}</span>
+                        <span style="color:var(--retro-green);">+${pts2}W</span>
                     </div>
                 `;
             });
 
             renderQuarterfinals();
+            document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
         }
 
         function pickR1Winner(gameIdx, teamName) {
@@ -1336,13 +1468,23 @@
 
             qfSetup.forEach(m => {
                 const node = document.getElementById(`node-qf-g${m.g + 1}`);
-                const oppHtml = m.opponent ? 
-                    `<div class="team-slot-pick ${bracketPicks.qf[m.g] === m.opponent ? 'winner' : ''}" onclick="pickQFWinner(${m.g}, '${m.opponent}')"><span>${m.opponent}</span></div>` :
-                    `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING R1...</span></div>`;
+                const byePts = getBonusMultiplier(m.bye.odds);
+                
+                let oppHtml = `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING R1...</span></div>`;
+                if (m.opponent) {
+                    const oppTeamObj = assignedSeeds.find(s => s && s.team === m.opponent);
+                    const oppPts = getBonusMultiplier(oppTeamObj ? oppTeamObj.odds : '+300');
+                    oppHtml = `
+                        <div class="team-slot-pick ${bracketPicks.qf[m.g] === m.opponent ? 'winner' : ''}" onclick="pickQFWinner(${m.g}, '${m.opponent}')">
+                            <span>${m.opponent}</span>
+                            <span style="color:var(--retro-green);">+${oppPts}W</span>
+                        </div>`;
+                }
 
                 node.innerHTML = `
                     <div class="team-slot-pick ${bracketPicks.qf[m.g] === m.bye.team ? 'winner' : ''}" onclick="pickQFWinner(${m.g}, '${m.bye.team}')">
                         <span>#${m.byeSeed} ${m.bye.team}</span>
+                        <span style="color:var(--retro-green);">+${byePts}W</span>
                     </div>
                     ${oppHtml}
                 `;
@@ -1365,16 +1507,22 @@
             const t4 = bracketPicks.qf[2];
 
             const sf1Node = document.getElementById('node-sf-g1');
-            sf1Node.innerHTML = `
-                <div class="team-slot-pick ${bracketPicks.sf[0] === t1 && t1 ? 'winner' : ''}" onclick="${t1 ? `pickSFWinner(0, '${t1}')` : ''}"><span>${t1 || 'WAITING QF1...'}</span></div>
-                <div class="team-slot-pick ${bracketPicks.sf[0] === t2 && t2 ? 'winner' : ''}" onclick="${t2 ? `pickSFWinner(0, '${t2}')` : ''}"><span>${t2 || 'WAITING QF4...'}</span></div>
-            `;
+            const getTeamHtml = (t, sfIdx) => {
+                if (!t) return `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING QF...</span></div>`;
+                const teamObj = assignedSeeds.find(s => s && s.team === t);
+                const pts = getBonusMultiplier(teamObj ? teamObj.odds : '+300');
+                return `
+                    <div class="team-slot-pick ${bracketPicks.sf[sfIdx] === t ? 'winner' : ''}" onclick="pickSFWinner(${sfIdx}, '${t}')">
+                        <span>${t}</span>
+                        <span style="color:var(--retro-green);">+${pts}W</span>
+                    </div>
+                `;
+            };
+
+            sf1Node.innerHTML = getTeamHtml(t1, 0) + getTeamHtml(t2, 0);
 
             const sf2Node = document.getElementById('node-sf-g2');
-            sf2Node.innerHTML = `
-                <div class="team-slot-pick ${bracketPicks.sf[1] === t3 && t3 ? 'winner' : ''}" onclick="${t3 ? `pickSFWinner(1, '${t3}')` : ''}"><span>${t3 || 'WAITING QF2...'}</span></div>
-                <div class="team-slot-pick ${bracketPicks.sf[1] === t4 && t4 ? 'winner' : ''}" onclick="${t4 ? `pickSFWinner(1, '${t4}')` : ''}"><span>${t4 || 'WAITING QF3...'}</span></div>
-            `;
+            sf2Node.innerHTML = getTeamHtml(t3, 1) + getTeamHtml(t4, 1);
 
             renderNationalChampionship();
         }
@@ -1390,17 +1538,29 @@
             const c2 = bracketPicks.sf[1];
             const nattyNode = document.getElementById('node-natty');
 
-            nattyNode.innerHTML = `
-                <div class="team-slot-pick ${bracketPicks.champion === c1 && c1 ? 'winner' : ''}" onclick="${c1 ? `pickChampion('${c1}')` : ''}"><span>${c1 || 'WAITING SF1...'}</span></div>
-                <div class="team-slot-pick ${bracketPicks.champion === c2 && c2 ? 'winner' : ''}" onclick="${c2 ? `pickChampion('${c2}')` : ''}"><span>${c2 || 'WAITING SF2...'}</span></div>
-            `;
+            const getNattySlotHtml = (team) => {
+                if (!team) return `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING SF...</span></div>`;
+                const nattyOdds = NATIONAL_CHAMP_ODDS[team] || '+5000';
+                const bonus = getNattyBonusWins(team);
+                return `
+                    <div class="team-slot-pick ${bracketPicks.champion === team ? 'winner' : ''}" onclick="pickChampion('${team}')">
+                        <span>${team} (${nattyOdds})</span>
+                        <span style="color:var(--retro-yellow); font-weight:bold;">👑 +${bonus}W</span>
+                    </div>
+                `;
+            };
+
+            nattyNode.innerHTML = getNattySlotHtml(c1) + getNattySlotHtml(c2);
 
             const showcase = document.getElementById('natty-winner-showcase');
             if (bracketPicks.champion) {
-                showcase.innerText = `👑 CHAMPION: ${bracketPicks.champion.toUpperCase()}`;
+                const nattyBonus = getNattyBonusWins(bracketPicks.champion);
+                showcase.innerHTML = `👑 CHAMPION: ${bracketPicks.champion.toUpperCase()}<br><span style="font-size:0.5rem; color:var(--retro-green);">NATTY JACKPOT: +${nattyBonus} BONUS WINS</span>`;
             } else {
                 showcase.innerText = 'CHAMPION: ???';
             }
+
+            document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
         }
 
         function pickChampion(teamName) {
@@ -1426,8 +1586,7 @@
                 if (el) confChamps[conf] = el.value;
             });
 
-            let totalBracketPts = 0;
-            assignedSeeds.forEach(s => totalBracketPts += getBonusMultiplier(s.odds));
+            const totalBracketPts = calculateTotalBracketScore();
 
             const payload = {
                 device_uid: deviceUID,
