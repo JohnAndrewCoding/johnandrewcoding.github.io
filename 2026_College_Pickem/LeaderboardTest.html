@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Leaderboard & CFP Expert Central</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <!-- SUPABASE CLIENT INTEGRATION -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://pxwplfxbyjxjpaosswgu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_LAc_l74phmC-3LQNQn_bFQ_KxmpVJD9';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const deviceUID = localStorage.getItem('my_device_uid');
+        if (!deviceUID) {
+            window.location.href = "index.html";
+        }
+    </script>
+
+    <style>
+        :root {
+            --bg-canvas: #0f172a;       
+            --bg-card: #1e293b;         
+            --retro-yellow: #facc15;    
+            --retro-blue: #38bdf8;      
+            --retro-green: #4ade80;     
+            --retro-red: #ef4444;
+            --retro-purple: #c084fc;
+            --pixel-font: 'Press Start 2P', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            background-color: var(--bg-canvas);
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 480px;
+            margin-bottom: 0.75rem;
+            gap: 0.5rem;
+        }
+
+        .nav-link-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 0.4rem 0.5rem;
+            text-decoration: none;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            text-align: center;
+            flex: 1;
+        }
+
+        @media (hover: hover) {
+            .nav-link-btn:hover {
+                border-color: var(--retro-yellow);
+                color: var(--retro-yellow);
+            }
+        }
+
+        .news-ticker-container {
+            width: 100%;
+            max-width: 480px;
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .ticker-title {
+            color: var(--retro-yellow);
+            white-space: nowrap;
+            background: var(--bg-card);
+            padding: 0.15rem 0.35rem;
+            border: 1px solid var(--retro-yellow);
+            font-size: 0.5rem;
+        }
+
+        #analyst-news-ticker {
+            color: #ffffff;
+        }
+
+        /* CFP TRACKER DRAWER */
+        .cfp-drawer {
+            width: 100%;
+            max-width: 480px;
+            background: #000;
+            border: 2px solid #334155;
+            margin-bottom: 0.75rem;
+            font-family: var(--pixel-font);
+            box-shadow: 3px 3px 0px #000;
+        }
+
+        .cfp-header {
+            padding: 0.55rem 0.75rem;
+            font-size: 0.55rem;
+            color: var(--retro-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .cfp-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.4rem;
+            padding: 0.5rem;
+            background: #000;
+        }
+
+        .cfp-team-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 0.35rem;
+            font-size: 0.48rem;
+        }
+
+        .cfp-seed {
+            color: var(--retro-yellow);
+            font-weight: bold;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .title {
+            font-family: var(--pixel-font);
+            font-size: 1.1rem;
+            color: var(--retro-yellow);
+            text-shadow: 3px 3px 0px #000;
+            margin-bottom: 0.5rem;
+        }
+
+        .leaderboard-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .leaderboard-card {
+            background-color: var(--bg-card);
+            border: 4px solid #000000;
+            box-shadow: 4px 4px 0px #000000;
+            padding: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--pixel-font);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            position: relative;
+        }
+
+        .leaderboard-card:active {
+            transform: scale(0.98);
+        }
+
+        @media (hover: hover) {
+            .leaderboard-card:hover {
+                border-color: var(--retro-yellow);
+            }
+        }
+
+        .leaderboard-card.rank-1 {
+            border-color: var(--retro-yellow);
+            background: linear-gradient(135deg, #1e293b 75%, #422006);
+        }
+
+        .rank-badge {
+            font-size: 0.8rem;
+            color: var(--retro-yellow);
+            width: 45px;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            flex: 1;
+        }
+
+        .user-name-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .user-name {
+            font-size: 0.75rem;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+
+        .rep-tier-badge {
+            font-size: 0.42rem;
+            padding: 0.15rem 0.3rem;
+            border: 1px solid;
+            border-radius: 2px;
+            text-transform: uppercase;
+        }
+
+        .conf-badge {
+            font-size: 0.4rem;
+            padding: 0.12rem 0.25rem;
+            background: #000000;
+            border: 1px solid var(--retro-yellow);
+            color: var(--retro-yellow);
+            border-radius: 2px;
+            font-weight: bold;
+        }
+
+        .user-record {
+            font-size: 0.55rem;
+            color: #94a3b8;
+        }
+
+        .rep-score-box {
+            text-align: right;
+        }
+
+        .rep-label {
+            font-size: 0.45rem;
+            color: #94a3b8;
+            margin-bottom: 0.2rem;
+        }
+
+        .rep-value {
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+        }
+
+        .empty-slate {
+            text-align: center;
+            font-family: var(--pixel-font);
+            font-size: 0.65rem;
+            color: #64748b;
+            padding: 2rem 0;
+            background: var(--bg-card);
+            border: 3px solid #000000;
+        }
+
+        /* COACH BREAKDOWN MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background-color: var(--bg-card);
+            border: 4px solid var(--retro-yellow);
+            box-shadow: 6px 6px 0px #000000;
+            width: 100%;
+            max-width: 440px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            font-family: var(--pixel-font);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px dashed #475569;
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-title {
+            font-size: 0.75rem;
+            color: var(--retro-yellow);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 280px;
+        }
+
+        .close-btn {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            padding: 0.2rem 0.5rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+        }
+
+        .modal-conf-stats {
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            justify-content: space-around;
+            font-size: 0.45rem;
+        }
+
+        .conf-stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .modal-week-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            background: #000000;
+            padding: 0.4rem;
+            border: 2px solid #334155;
+        }
+
+        .modal-week-btn {
+            background: var(--bg-card);
+            color: #ffffff;
+            border: 1px solid #ffffff;
+            padding: 0.3rem 0.5rem;
+            cursor: pointer;
+            font-family: var(--pixel-font);
+            font-size: 0.55rem;
+        }
+
+        .modal-week-display {
+            font-size: 0.65rem;
+            color: var(--retro-blue);
+        }
+
+        .modal-picks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow-y: auto;
+            max-height: 45vh;
+            padding-right: 0.25rem;
+        }
+
+        .modal-pick-card {
+            background: #000000;
+            border: 2px solid #334155;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            font-size: 0.55rem;
+        }
+
+        .modal-pick-card.correct { border-color: var(--retro-green); }
+        .modal-pick-card.incorrect { border-color: var(--retro-red); }
+
+        .modal-matchup-row {
+            display: flex;
+            justify-content: space-between;
+            color: #94a3b8;
+        }
+
+        .modal-pick-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px dashed #334155;
+            padding-top: 0.3rem;
+        }
+
+        .result-badge {
+            padding: 0.15rem 0.3rem;
+            border-radius: 2px;
+        }
+        .result-badge.correct { color: var(--retro-green); }
+        .result-badge.incorrect { color: var(--retro-red); }
+        .result-badge.pending { color: var(--retro-yellow); }
+
+        /* ========================================================
+           MANDATORY GATEWAY POPUP (THE EXPERT RESCUE)
+           ======================================================== */
+        .mandatory-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(4, 6, 17, 0.97);
+            z-index: 99999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 0.5rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .mandatory-overlay.show-mandatory {
+            display: flex !important;
+        }
+
+        .mandatory-card {
+            background: #0b1120;
+            border: 4px solid var(--retro-red);
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.4), 8px 8px 0px #000;
+            width: 100%;
+            max-width: 520px;
+            max-height: 94vh;
+            display: flex;
+            flex-direction: column;
+            font-family: var(--pixel-font);
+        }
+
+        .retro-banner-top {
+            background: var(--retro-red);
+            color: #fff;
+            padding: 0.45rem;
+            font-size: 0.55rem;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .blink-dot { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        .mandatory-content {
+            overflow-y: auto;
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .prompt-box {
+            background: #020617;
+            border: 2px dashed var(--retro-yellow);
+            padding: 0.75rem;
+        }
+
+        .expert-quote {
+            color: #fff;
+            font-size: 0.58rem;
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+            font-style: italic;
+        }
+
+        .prompt-sub {
+            font-size: 0.45rem;
+            color: var(--retro-yellow);
+            line-height: 1.3;
+        }
+
+        .bracket-sec {
+            background: #020617;
+            border: 2px solid #334155;
+            padding: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .bracket-sec-hdr {
+            font-size: 0.55rem;
+            color: var(--retro-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .step-num {
+            background: var(--retro-blue);
+            color: #000;
+            padding: 0.15rem 0.3rem;
+            font-weight: bold;
+        }
+
+        .sec-help {
+            font-size: 0.45rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        .number-stepper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.2rem;
+        }
+
+        .stepper-btn {
+            background: var(--bg-card);
+            border: 2px solid #fff;
+            color: #fff;
+            font-family: var(--pixel-font);
+            font-size: 0.9rem;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+        }
+
+        #expert-retention-input {
+            width: 60px;
+            height: 35px;
+            background: #000;
+            border: 2px solid var(--retro-yellow);
+            color: var(--retro-yellow);
+            font-family: var(--pixel-font);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .reward-pill-sub {
+            font-size: 0.42rem;
+            color: var(--retro-green);
+            text-align: center;
+        }
+
+        /* CONF SELECTORS */
+        .conf-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .conf-row-select {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            font-size: 0.48rem;
+        }
+
+        .conf-row-select select {
+            background: #1e293b;
+            border: 1px solid var(--retro-yellow);
+            color: #fff;
+            font-family: var(--pixel-font);
+            font-size: 0.48rem;
+            padding: 0.35rem;
+        }
+
+        /* CFP SEEDS */
+        .cfp-summary-banner {
+            display: flex;
+            justify-content: space-between;
+            background: #0f172a;
+            padding: 0.4rem;
+            border: 1px solid #334155;
+            font-size: 0.5rem;
+        }
+
+        .seeds-pick-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.35rem;
+        }
+
+        .seed-slot-card {
+            background: #1e293b;
+            border: 1px dashed #475569;
+            padding: 0.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.46rem;
+            min-height: 28px;
+        }
+
+        .seed-slot-card.filled {
+            border-style: solid;
+            border-color: var(--retro-blue);
+            background: #0f2338;
+        }
+
+        .seed-slot-card.bye-slot {
+            border-color: var(--retro-yellow);
+        }
+
+        .seed-badge-indicator {
+            color: var(--retro-yellow);
+            font-weight: bold;
+            margin-right: 0.2rem;
+        }
+
+        .clear-seed-x {
+            color: var(--retro-red);
+            cursor: pointer;
+            font-weight: bold;
+            padding-left: 0.4rem;
+        }
+
+        .team-pool-box {
+            background: #000;
+            border: 1px solid #334155;
+            padding: 0.4rem;
+        }
+
+        .pool-title {
+            font-size: 0.44rem;
+            color: #94a3b8;
+            margin-bottom: 0.35rem;
+        }
+
+        .team-pool-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .pool-chip {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #fff;
+            font-family: var(--pixel-font);
+            font-size: 0.4rem;
+            padding: 0.3rem 0.4rem;
+            cursor: pointer;
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .pool-chip.selected {
+            opacity: 0.3;
+            pointer-events: none;
+            border-color: #334155;
+        }
+
+        @media (hover: hover) {
+            .pool-chip:hover {
+                border-color: var(--retro-yellow);
+            }
+        }
+
+        .pool-chip-odds {
+            color: var(--retro-yellow);
+        }
+
+        /* BRACKET SIMULATOR */
+        .bracket-tree-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            background: #000;
+            padding: 0.5rem;
+            border: 1px solid #334155;
+        }
+
+        .bracket-round-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .round-hdr {
+            font-size: 0.48rem;
+            color: var(--retro-yellow);
+            border-bottom: 1px dashed #334155;
+            padding-bottom: 0.2rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .matchup-node {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.35rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .team-slot-pick {
+            padding: 0.3rem;
+            background: #1e293b;
+            border: 1px solid #475569;
+            font-size: 0.45rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .team-slot-pick.winner {
+            background: #064e3b;
+            border-color: var(--retro-green);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .championship-col {
+            border-top: 2px dashed var(--retro-yellow);
+            padding-top: 0.5rem;
+        }
+
+        .natty-winner-showcase {
+            background: linear-gradient(135deg, #78350f, #000);
+            border: 2px solid var(--retro-yellow);
+            color: var(--retro-yellow);
+            text-align: center;
+            padding: 0.6rem;
+            font-size: 0.65rem;
+            font-weight: bold;
+        }
+
+        .lock-in-final-btn {
+            background: var(--retro-green);
+            color: #000;
+            border: 3px solid #fff;
+            padding: 0.75rem;
+            font-family: var(--pixel-font);
+            font-size: 0.62rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        .lock-in-final-btn:disabled {
+            background: #334155;
+            color: #94a3b8;
+            cursor: not-allowed;
+            border-color: #475569;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="ViewPicks.html" class="nav-link-btn">&lt; VIEW PICKS</a>
+        <a href="SamplePickemPage.html" class="nav-link-btn">MAKE PICKS</a>
+        <a href="ViewGames.html" class="nav-link-btn">LIVE GAMES &gt;</a>
+    </div>
+
+    <!-- NEWS TICKER -->
+    <div class="news-ticker-container">
+        <div class="ticker-title">BREAKING NEWS:</div>
+        <marquee id="analyst-news-ticker" behavior="scroll" direction="left" scrollamount="5">
+            FETCHING ANALYST HOT TAKES...
+        </marquee>
+    </div>
+
+    <!-- LIVE CFP SEEDINGS DRAWER -->
+    <div class="cfp-drawer">
+        <div class="cfp-header" onclick="toggleCFP()">
+            <span>🏈 PROJECTED CFP TOP 12</span>
+            <span id="cfp-toggle-arrow">▼</span>
+        </div>
+        <div class="cfp-list" id="cfp-teams-list" style="display: none;">
+            <div class="empty-slate" style="font-size:0.5rem; padding: 0.5rem;">FETCHING CFP SEEDINGS...</div>
+        </div>
+    </div>
+
+    <header>
+        <h1 class="title">STANDINGS</h1>
+    </header>
+
+    <div class="leaderboard-container" id="leaderboard-container">
+        <div class="empty-slate">CALCULATING STANDINGS...</div>
+    </div>
+
+    <!-- COACH RECAP MODAL -->
+    <div class="modal-overlay" id="user-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title" id="modal-user-name">COACH BREAKDOWN</span>
+                <button class="close-btn" onclick="closeModal()">X</button>
+            </div>
+
+            <div class="modal-conf-stats" id="modal-conf-stats"></div>
+
+            <div class="modal-week-controls">
+                <button class="modal-week-btn" onclick="changeModalWeek(-1)">&lt; PREV</button>
+                <span class="modal-week-display" id="modal-week-display">WEEK 01</span>
+                <button class="modal-week-btn" onclick="changeModalWeek(1)">NEXT &gt;</button>
+            </div>
+
+            <div class="modal-picks-list" id="modal-picks-list"></div>
+        </div>
+    </div>
+
+    <!-- ========================================================
+         MANDATORY GATEWAY MODAL: CFP EXPERT RESCUE INTERVENTION
+         ======================================================== -->
+    <div class="mandatory-overlay" id="expert-cfb-modal">
+        <div class="mandatory-card">
+            <div class="retro-banner-top">
+                <span class="blink-dot">●</span> COMMITTEE ALERT: FRAUDULENT RANKINGS EXPOSED <span class="blink-dot">●</span>
+            </div>
+
+            <div class="mandatory-content">
+                <div class="prompt-box">
+                    <p class="expert-quote">
+                        "The fans want your expert opinion. The first rankings came out and they were horrible. Based on your years of knowledge how will the teams be ranked at the end of the year?"
+                    </p>
+                    <div class="prompt-sub">
+                        LOCK IN YOUR COMEBACK PICKS. UNTIL YOU FIX THIS MESS, ACCESS TO THE LEADERBOARD IS RESTRICTED.
+                    </div>
+                </div>
+
+                <!-- STEP 1: RETENTION GUESS -->
+                <div class="bracket-sec">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 1</span> INITIAL RANKINGS SURVIVAL (+10 OR +5 WINS)
+                    </div>
+                    <div class="sec-help">
+                        The committee slotted these 12 initial teams: <em>Miami, Georgia, Utah, Indiana, Alabama, Kentucky, Texas, UCLA, BYU, Ole Miss, Notre Dame, Boise State</em>. 
+                        How many survive in the final 12-team bracket?
+                    </div>
+                    <div class="number-stepper">
+                        <button type="button" class="stepper-btn" onclick="stepRetention(-1)">-</button>
+                        <input type="number" id="expert-retention-input" min="0" max="12" value="8" readonly>
+                        <button type="button" class="stepper-btn" onclick="stepRetention(1)">+</button>
+                    </div>
+                    <div class="reward-pill-sub">EXACT: +10 WINS | CLOSEST (OR TIE): +5 WINS</div>
+                </div>
+
+                <!-- STEP 2: CONFERENCE CHAMPIONS -->
+                <div class="bracket-sec">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 2</span> CONFERENCE CHAMPIONS (ODDS MULTIPLIER)
+                    </div>
+                    <div class="sec-help">Longshots payout massive bonus wins if they steal the conference crown.</div>
+                    <div class="conf-grid" id="conf-selectors-zone"></div>
+                </div>
+
+                <!-- STEP 3: 12-TEAM CFP SEEDING SELECTION -->
+                <div class="bracket-sec">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 3</span> SEED THE FINAL 12 TEAMS (1 TO 12)
+                    </div>
+                    <div class="sec-help">
+                        Seeds #1-#4 receive 1st round byes. Pick seeds in order. Your accumulated multiplier score updates live!
+                    </div>
+                    
+                    <div class="cfp-summary-banner">
+                        <span>SEEDS SET: <strong id="seeds-filled-count" style="color:var(--retro-yellow);">0</strong>/12</span>
+                        <span>POTENTIAL WINS: <strong id="total-bracket-odds-pts" style="color:var(--retro-green);">0</strong> WINS</span>
+                    </div>
+
+                    <div class="seeds-pick-slots" id="bracket-seeds-slots"></div>
+
+                    <div class="team-pool-box">
+                        <div class="pool-title">TAP A TEAM TO ASSIGN NEXT SEED:</div>
+                        <div class="team-pool-chips" id="available-teams-pool"></div>
+                    </div>
+                </div>
+
+                <!-- STEP 4: PLAYOFF BRACKET SIMULATOR -->
+                <div class="bracket-sec" id="bracket-simulation-section" style="display:none;">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 4</span> PLAYOFF BRACKET KNOCKOUT
+                    </div>
+                    <div class="sec-help">Tap a team to advance them through each round to the National Championship!</div>
+                    
+                    <div class="bracket-tree-container">
+                        <div class="bracket-round-col">
+                            <div class="round-hdr">FIRST ROUND (ON CAMPUS)</div>
+                            <div class="matchup-node" id="node-r1-g1"></div>
+                            <div class="matchup-node" id="node-r1-g2"></div>
+                            <div class="matchup-node" id="node-r1-g3"></div>
+                            <div class="matchup-node" id="node-r1-g4"></div>
+                        </div>
+
+                        <div class="bracket-round-col">
+                            <div class="round-hdr">QUARTERFINALS (BYE TEAMS)</div>
+                            <div class="matchup-node" id="node-qf-g1"></div>
+                            <div class="matchup-node" id="node-qf-g2"></div>
+                            <div class="matchup-node" id="node-qf-g3"></div>
+                            <div class="matchup-node" id="node-qf-g4"></div>
+                        </div>
+
+                        <div class="bracket-round-col">
+                            <div class="round-hdr">SEMIFINALS</div>
+                            <div class="matchup-node" id="node-sf-g1"></div>
+                            <div class="matchup-node" id="node-sf-g2"></div>
+                        </div>
+
+                        <div class="bracket-round-col championship-col">
+                            <div class="round-hdr">🏆 NATIONAL TITLE</div>
+                            <div class="matchup-node" id="node-natty"></div>
+                            <div class="natty-winner-showcase" id="natty-winner-showcase">CHAMPION: ???</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="lock-in-final-btn" id="lock-in-picks-btn" onclick="submitExpertQuestionnaire()">
+                    LOCK IN EXPERT PICKS & ENTER LEADERBOARD
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalProfiles = [];
+        let globalSlates = [];
+        let globalPicks = [];
+        let globalGamesCache = {}; 
+        let globalGameConferenceMap = {}; 
+        let globalUserConfStats = {}; 
+
+        let activeUserUid = null;
+        let activeModalWeek = 1;
+
+        // ========================================================
+        // 1. DATA CONFIGURATION: CONFERENCE & CFP FUTURES ODDS
+        // ========================================================
+        const FIRST_RANKINGS_TOP_12 = [
+            "Miami", "Georgia", "Utah", "Indiana", 
+            "Alabama", "Kentucky", "Texas", "UCLA", 
+            "BYU", "Ole Miss", "Notre Dame", "Boise State"
+        ];
+
+        const EXPERT_CONF_ODDS = {
+            SEC: [
+                { team: "Georgia", odds: "+150" },
+                { team: "Alabama", odds: "+260" },
+                { team: "Texas", odds: "+350" },
+                { team: "Ole Miss", odds: "+600" },
+                { team: "Kentucky", odds: "+800" },
+                { team: "LSU", odds: "+1200" },
+                { team: "Tennessee", odds: "+1500" }
+            ],
+            BIG10: [
+                { team: "Indiana", odds: "+180" },
+                { team: "Ohio State", odds: "+220" },
+                { team: "UCLA", odds: "+320" },
+                { team: "USC", odds: "+900" },
+                { team: "Oregon", odds: "+1200" }
+            ],
+            BIG12: [
+                { team: "Utah", odds: "+125" },
+                { team: "BYU", odds: "+275" },
+                { team: "Texas Tech", odds: "+500" },
+                { team: "Houston", odds: "+900" }
+            ],
+            ACC: [
+                { team: "Miami", odds: "-180" },
+                { team: "Wake Forest", odds: "+450" },
+                { team: "SMU", odds: "+650" },
+                { team: "Clemson", odds: "+900" },
+                { team: "Louisville", odds: "+1000" }
+            ]
+        };
+
+        const EXPERT_PLAYOFF_POOL = [
+            { team: "Miami", odds: "-6000" },
+            { team: "Georgia", odds: "-6000" },
+            { team: "Indiana", odds: "-1000" },
+            { team: "Notre Dame", odds: "-400" },
+            { team: "Alabama", odds: "-320" },
+            { team: "Utah", odds: "-240" },
+            { team: "LSU", odds: "-186" },
+            { team: "Ole Miss", odds: "-175" },
+            { team: "UCLA", odds: "-170" },
+            { team: "Ohio State", odds: "-156" },
+            { team: "Texas", odds: "-150" },
+            { team: "Boise State", odds: "+100" },
+            { team: "Wake Forest", odds: "+110" },
+            { team: "Kentucky", odds: "+150" },
+            { team: "BYU", odds: "+170" },
+            { team: "Texas Tech", odds: "+250" },
+            { team: "Tennessee", odds: "+270" },
+            { team: "USC", odds: "+380" },
+            { team: "Iowa", odds: "+400" },
+            { team: "Houston", odds: "+700" },
+            { team: "South Carolina", odds: "+900" },
+            { team: "Oregon", odds: "+1000" }
+        ];
+
+        function getBonusMultiplier(oddsStr) {
+            if (oddsStr.startsWith('-')) return 1;
+            const num = parseInt(oddsStr.replace('+', ''), 10);
+            return Math.max(1, Math.round(1 + (num / 250)));
+        }
+
+        let assignedSeeds = new Array(12).fill(null);
+        let bracketPicks = {
+            r1: [null, null, null, null],
+            qf: [null, null, null, null],
+            sf: [null, null],
+            champion: null
+        };
+
+        // ========================================================
+        // 2. MANDATORY GATEWAY POPUP ENGINE
+        // ========================================================
+        async function verifyMandatoryQuestionnaire() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .select('id')
+                    .eq('device_uid', deviceUID)
+                    .maybeSingle();
+
+                if (!data) {
+                    document.body.style.overflow = "hidden";
+                    initExpertQuestionnaire();
+                    document.getElementById('expert-cfb-modal').classList.add('show-mandatory');
+                }
+            } catch (err) {
+                console.error("Gatekeeper verification error:", err);
+            }
+        }
+
+        function initExpertQuestionnaire() {
+            renderConfSelectors();
+            renderSeedsSlots();
+            renderPoolChips();
+        }
+
+        function stepRetention(delta) {
+            const el = document.getElementById('expert-retention-input');
+            let val = parseInt(el.value, 10) + delta;
+            if (val < 0) val = 0;
+            if (val > 12) val = 12;
+            el.value = val;
+        }
+
+        function renderConfSelectors() {
+            const container = document.getElementById('conf-selectors-zone');
+            container.innerHTML = '';
+            
+            Object.keys(EXPERT_CONF_ODDS).forEach(conf => {
+                const teams = EXPERT_CONF_ODDS[conf];
+                const options = teams.map(t => {
+                    const pts = getBonusMultiplier(t.odds);
+                    return `<option value="${t.team}">${t.team} (${t.odds} ➔ +${pts}W)</option>`;
+                }).join('');
+
+                container.innerHTML += `
+                    <div class="conf-row-select">
+                        <span style="color:var(--retro-yellow);">${conf} CHAMPION:</span>
+                        <select id="expert-conf-${conf}">${options}</select>
+                    </div>
+                `;
+            });
+        }
+
+        function renderSeedsSlots() {
+            const container = document.getElementById('bracket-seeds-slots');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 12; i++) {
+                const seedNum = i + 1;
+                const isBye = seedNum <= 4;
+                const currentTeam = assignedSeeds[i];
+                const byeTag = isBye ? ' <span style="color:var(--retro-yellow); font-size:0.4rem;">[BYE]</span>' : '';
+
+                const slot = document.createElement('div');
+                slot.className = `seed-slot-card ${isBye ? 'bye-slot' : ''} ${currentTeam ? 'filled' : ''}`;
+                
+                if (currentTeam) {
+                    slot.innerHTML = `
+                        <span><span class="seed-badge-indicator">#${seedNum}</span> ${currentTeam.team} (${currentTeam.odds})${byeTag}</span>
+                        <span class="clear-seed-x" onclick="removeSeed(${i})">X</span>
+                    `;
+                } else {
+                    slot.innerHTML = `
+                        <span style="color:#64748b;"><span class="seed-badge-indicator">#${seedNum}</span> [EMPTY]${byeTag}</span>
+                        <span></span>
+                    `;
+                }
+                container.appendChild(slot);
+            }
+
+            const filled = assignedSeeds.filter(Boolean).length;
+            document.getElementById('seeds-filled-count').innerText = filled;
+
+            let totalWinBonus = 0;
+            assignedSeeds.filter(Boolean).forEach(t => {
+                totalWinBonus += getBonusMultiplier(t.odds);
+            });
+            document.getElementById('total-bracket-odds-pts').innerText = totalWinBonus;
+
+            if (filled === 12) {
+                document.getElementById('bracket-simulation-section').style.display = 'flex';
+                buildPlayoffBracket();
+            } else {
+                document.getElementById('bracket-simulation-section').style.display = 'none';
+            }
+        }
+
+        function renderPoolChips() {
+            const poolCont = document.getElementById('available-teams-pool');
+            poolCont.innerHTML = '';
+
+            EXPERT_PLAYOFF_POOL.forEach(t => {
+                const isPicked = assignedSeeds.some(s => s && s.team === t.team);
+                const pts = getBonusMultiplier(t.odds);
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = `pool-chip ${isPicked ? 'selected' : ''}`;
+                chip.innerHTML = `<span>${t.team}</span><span class="pool-chip-odds">${t.odds} (+${pts}W)</span>`;
+                chip.onclick = () => assignNextAvailableSeed(t);
+                poolCont.appendChild(chip);
+            });
+        }
+
+        function assignNextAvailableSeed(teamObj) {
+            const firstEmpty = assignedSeeds.indexOf(null);
+            if (firstEmpty === -1) return;
+            assignedSeeds[firstEmpty] = teamObj;
+            renderSeedsSlots();
+            renderPoolChips();
+        }
+
+        function removeSeed(idx) {
+            assignedSeeds[idx] = null;
+            bracketPicks = { r1: [null, null, null, null], qf: [null, null, null, null], sf: [null, null], champion: null };
+            renderSeedsSlots();
+            renderPoolChips();
+        }
+
+        // Bracket Logic: 12-team simulation (5v12, 6v11, 7v10, 8v9)
+        function buildPlayoffBracket() {
+            const r1Matchups = [
+                { g: 0, t1: assignedSeeds[4], t2: assignedSeeds[11], seed1: 5, seed2: 12 },
+                { g: 1, t1: assignedSeeds[5], t2: assignedSeeds[10], seed1: 6, seed2: 11 },
+                { g: 2, t1: assignedSeeds[6], t2: assignedSeeds[9], seed1: 7, seed2: 10 },
+                { g: 3, t1: assignedSeeds[7], t2: assignedSeeds[8], seed1: 8, seed2: 9 }
+            ];
+
+            r1Matchups.forEach(m => {
+                const node = document.getElementById(`node-r1-g${m.g + 1}`);
+                node.innerHTML = `
+                    <div class="team-slot-pick ${bracketPicks.r1[m.g] === m.t1.team ? 'winner' : ''}" onclick="pickR1Winner(${m.g}, '${m.t1.team}')">
+                        <span>#${m.seed1} ${m.t1.team}</span>
+                    </div>
+                    <div class="team-slot-pick ${bracketPicks.r1[m.g] === m.t2.team ? 'winner' : ''}" onclick="pickR1Winner(${m.g}, '${m.t2.team}')">
+                        <span>#${m.seed2} ${m.t2.team}</span>
+                    </div>
+                `;
+            });
+
+            renderQuarterfinals();
+        }
+
+        function pickR1Winner(gameIdx, teamName) {
+            bracketPicks.r1[gameIdx] = teamName;
+            bracketPicks.qf[gameIdx] = null;
+            bracketPicks.sf = [null, null];
+            bracketPicks.champion = null;
+            buildPlayoffBracket();
+        }
+
+        function renderQuarterfinals() {
+            const qfSetup = [
+                { g: 0, bye: assignedSeeds[0], byeSeed: 1, opponent: bracketPicks.r1[3] },
+                { g: 1, bye: assignedSeeds[1], byeSeed: 2, opponent: bracketPicks.r1[2] },
+                { g: 2, bye: assignedSeeds[2], byeSeed: 3, opponent: bracketPicks.r1[1] },
+                { g: 3, bye: assignedSeeds[3], byeSeed: 4, opponent: bracketPicks.r1[0] }
+            ];
+
+            qfSetup.forEach(m => {
+                const node = document.getElementById(`node-qf-g${m.g + 1}`);
+                const oppHtml = m.opponent ? 
+                    `<div class="team-slot-pick ${bracketPicks.qf[m.g] === m.opponent ? 'winner' : ''}" onclick="pickQFWinner(${m.g}, '${m.opponent}')"><span>${m.opponent}</span></div>` :
+                    `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING R1...</span></div>`;
+
+                node.innerHTML = `
+                    <div class="team-slot-pick ${bracketPicks.qf[m.g] === m.bye.team ? 'winner' : ''}" onclick="pickQFWinner(${m.g}, '${m.bye.team}')">
+                        <span>#${m.byeSeed} ${m.bye.team}</span>
+                    </div>
+                    ${oppHtml}
+                `;
+            });
+
+            renderSemifinals();
+        }
+
+        function pickQFWinner(gameIdx, teamName) {
+            bracketPicks.qf[gameIdx] = teamName;
+            bracketPicks.sf = [null, null];
+            bracketPicks.champion = null;
+            renderQuarterfinals();
+        }
+
+        function renderSemifinals() {
+            const t1 = bracketPicks.qf[0];
+            const t2 = bracketPicks.qf[3];
+            const t3 = bracketPicks.qf[1];
+            const t4 = bracketPicks.qf[2];
+
+            const sf1Node = document.getElementById('node-sf-g1');
+            sf1Node.innerHTML = `
+                <div class="team-slot-pick ${bracketPicks.sf[0] === t1 && t1 ? 'winner' : ''}" onclick="${t1 ? `pickSFWinner(0, '${t1}')` : ''}"><span>${t1 || 'WAITING QF1...'}</span></div>
+                <div class="team-slot-pick ${bracketPicks.sf[0] === t2 && t2 ? 'winner' : ''}" onclick="${t2 ? `pickSFWinner(0, '${t2}')` : ''}"><span>${t2 || 'WAITING QF4...'}</span></div>
+            `;
+
+            const sf2Node = document.getElementById('node-sf-g2');
+            sf2Node.innerHTML = `
+                <div class="team-slot-pick ${bracketPicks.sf[1] === t3 && t3 ? 'winner' : ''}" onclick="${t3 ? `pickSFWinner(1, '${t3}')` : ''}"><span>${t3 || 'WAITING QF2...'}</span></div>
+                <div class="team-slot-pick ${bracketPicks.sf[1] === t4 && t4 ? 'winner' : ''}" onclick="${t4 ? `pickSFWinner(1, '${t4}')` : ''}"><span>${t4 || 'WAITING QF3...'}</span></div>
+            `;
+
+            renderNationalChampionship();
+        }
+
+        function pickSFWinner(sfIdx, teamName) {
+            bracketPicks.sf[sfIdx] = teamName;
+            bracketPicks.champion = null;
+            renderSemifinals();
+        }
+
+        function renderNationalChampionship() {
+            const c1 = bracketPicks.sf[0];
+            const c2 = bracketPicks.sf[1];
+            const nattyNode = document.getElementById('node-natty');
+
+            nattyNode.innerHTML = `
+                <div class="team-slot-pick ${bracketPicks.champion === c1 && c1 ? 'winner' : ''}" onclick="${c1 ? `pickChampion('${c1}')` : ''}"><span>${c1 || 'WAITING SF1...'}</span></div>
+                <div class="team-slot-pick ${bracketPicks.champion === c2 && c2 ? 'winner' : ''}" onclick="${c2 ? `pickChampion('${c2}')` : ''}"><span>${c2 || 'WAITING SF2...'}</span></div>
+            `;
+
+            const showcase = document.getElementById('natty-winner-showcase');
+            if (bracketPicks.champion) {
+                showcase.innerText = `👑 CHAMPION: ${bracketPicks.champion.toUpperCase()}`;
+            } else {
+                showcase.innerText = 'CHAMPION: ???';
+            }
+        }
+
+        function pickChampion(teamName) {
+            bracketPicks.champion = teamName;
+            renderNationalChampionship();
+        }
+
+        async function submitExpertQuestionnaire() {
+            if (assignedSeeds.some(s => s === null)) {
+                alert("Please assign all 12 Playoff Seeds!");
+                return;
+            }
+            if (!bracketPicks.champion) {
+                alert("Complete the full bracket by picking the National Champion!");
+                return;
+            }
+
+            const retentionGuess = parseInt(document.getElementById('expert-retention-input').value, 10);
+            const confChamps = {};
+            Object.keys(EXPERT_CONF_ODDS).forEach(conf => {
+                confChamps[conf] = document.getElementById(`expert-conf-${conf}`).value;
+            });
+
+            let totalBracketPts = 0;
+            assignedSeeds.forEach(s => totalBracketPts += getBonusMultiplier(s.odds));
+
+            const payload = {
+                device_uid: deviceUID,
+                initial_retention_guess: retentionGuess,
+                conf_champs: confChamps,
+                cfp_seeds: assignedSeeds,
+                bracket_winners: bracketPicks,
+                total_bracket_potential_pts: totalBracketPts,
+                updated_at: new Date().toISOString()
+            };
+
+            const submitBtn = document.getElementById('lock-in-picks-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "SAVING TO SYSTEM...";
+
+            try {
+                const { error } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .upsert(payload, { onConflict: 'device_uid' });
+
+                if (error) throw error;
+
+                alert("PICKS SUBMITTED! Welcome to the Leaderboard, Coach.");
+                document.body.style.overflow = "auto";
+                document.getElementById('expert-cfb-modal').classList.remove('show-mandatory');
+            } catch (err) {
+                alert("Submission failed: " + err.message);
+                submitBtn.disabled = false;
+                submitBtn.innerText = "LOCK IN EXPERT PICKS & ENTER LEADERBOARD";
+            }
+        }
+
+        // ========================================================
+        // 3. CFP SEEDING WIDGET (DRAWER)
+        // ========================================================
+        async function fetchCFPPlayoffTeams() {
+            const listEl = document.getElementById('cfp-teams-list');
+            try {
+                const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings');
+                const data = await res.json();
+                
+                const poll = data.rankings.find(r => r.name.toLowerCase().includes('playoff')) || data.rankings[0];
+                if (!poll || !poll.ranks) return;
+
+                const top12 = poll.ranks.slice(0, 12);
+                listEl.innerHTML = top12.map(item => `
+                    <div class="cfp-team-pill">
+                        <span class="cfp-seed">#${item.current}</span>
+                        <span style="color:#fff;">${item.team.abbreviation || item.team.shortDisplayName}</span>
+                        <span style="color:#64748b; font-size:0.4rem; margin-left:auto;">${item.recordSummary}</span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                listEl.innerHTML = `<div style="color:#ef4444; font-size:0.45rem; padding:0.5rem;">FAILED TO LOAD CFP SEEDS</div>`;
+            }
+        }
+
+        function toggleCFP() {
+            const listEl = document.getElementById('cfp-teams-list');
+            const arrow = document.getElementById('cfp-toggle-arrow');
+            const isOpen = listEl.style.display === 'grid';
+            listEl.style.display = isOpen ? 'none' : 'grid';
+            arrow.innerText = isOpen ? '▼' : '▲';
+        }
+
+        // ========================================================
+        // 4. LEADERBOARD COMPUTATION & ANALYST LOGIC
+        // ========================================================
+        function getRepScoreColor(pct) {
+            const p = Math.max(0.0, Math.min(100.0, parseFloat(pct) || 0));
+            if (p < 50.0) {
+                const ratio = p / 50.0;
+                const r = Math.round(153 + (250 - 153) * ratio);
+                const g = Math.round(27 + (204 - 27) * ratio);
+                const b = Math.round(21 + (128 - 21) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (p < 75.0) {
+                const ratio = (p - 50.0) / 25.0;
+                const r = Math.round(250 + (74 - 250) * ratio);
+                const g = Math.round(204 + (222 - 204) * ratio);
+                const b = Math.round(21 + (128 - 21) * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                return `#4ade80`;
+            }
+        }
+
+        function getAnalystRoastBadge(rank, totalUsers, winPct, totalGames) {
+            if (totalGames === 0) {
+                return { title: "BENCHWARMER", color: "#64748b", borderColor: "#475569" };
+            }
+            if (rank === 1) {
+                return { title: "THE PROPHET 👑", color: "#facc15", borderColor: "#facc15" };
+            }
+            if (rank === 2) {
+                return { title: "FIRST LOSER 🥈", color: "#38bdf8", borderColor: "#38bdf8" };
+            }
+            if (rank === totalUsers && totalUsers > 2) {
+                return { title: "DOORMAT 🤡", color: "#ef4444", borderColor: "#ef4444" };
+            }
+            if (winPct >= 65.0) {
+                return { title: "LUCKY GUESSER 🍀", color: "#4ade80", borderColor: "#4ade80" };
+            } else if (winPct >= 55.0) {
+                return { title: "STAT FRAUD 📊", color: "#38bdf8", borderColor: "#38bdf8" };
+            } else if (winPct >= 45.0) {
+                return { title: "MID CLOWN 🎪", color: "#c084fc", borderColor: "#c084fc" };
+            } else {
+                return { title: "TV FRAUD 📺💀", color: "#ef4444", borderColor: "#ef4444" };
+            }
+        }
+
+        async function fetchAllPicks() {
+            let all = [];
+            let from = 0;
+            const pageSize = 1000;
+            let hasMore = true;
+
+            while (hasMore) {
+                const { data, error } = await supabaseClient
+                    .from('picks')
+                    .select('id, device_uid, week_number, card_id, chosen_team, espn_game_id, created_at')
+                    .order('id', { ascending: true })
+                    .range(from, from + pageSize - 1);
+
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    all = all.concat(data);
+                    from += pageSize;
+                    if (data.length < pageSize) hasMore = false;
+                } else {
+                    hasMore = false;
+                }
+            }
+            return all;
+        }
+
+        function findUserPickForGame(userPicks, weekNum, espnGameId, cardIndex, homeName, awayName) {
+            const cardIdStr = `card-${cardIndex}`;
+            const targetId = String(espnGameId);
+
+            const byGameId = userPicks.filter(p => {
+                if (p.week_number !== weekNum) return false;
+                return String(p.espn_game_id) === targetId || String(p.card_id) === targetId;
+            });
+
+            if (byGameId.length > 0) {
+                return byGameId[byGameId.length - 1];
+            }
+
+            const byCard = userPicks.filter(p => {
+                if (p.week_number !== weekNum) return false;
+                const cId = String(p.card_id || '');
+                if (cId === cardIdStr || cId === String(cardIndex)) {
+                    return p.chosen_team === homeName || p.chosen_team === awayName;
+                }
+                return false;
+            });
+
+            if (byCard.length > 0) {
+                return byCard[byCard.length - 1];
+            }
+
+            return null;
+        }
+
+        async function generateAnalystTicker() {
+            const tickerEl = document.getElementById('analyst-news-ticker');
+            if (!tickerEl) return;
+
+            try {
+                const headlines = [];
+                const wrongRoasts = [
+                    (w, name, team) => `📺 WEEK ${w}: ${name} SWORE ${team} WAS A LOCK AND GOT UTTERLY EMBARRASSED!`,
+                    (w, name, team) => `🤡 WEEK ${w}: "PRAY FOR ${name}," WHO INSISTED ${team} COULDN'T LOSE!`,
+                    (w, name, team) => `🚨 RECAP: ${name}'S WEEK ${w} FAITH IN ${team} BACKFIRED IN HISTORIC FASHION!`,
+                    (w, name, team) => `📉 WEEK ${w}: ${name} BOUGHT THE ${team} HYPE AND IT COST THEM DEARLY!`
+                ];
+
+                const rightFlexes = [
+                    (w, name, team) => `🔥 WEEK ${w}: ${name} PREDICTED A ${team} VICTORY AND NAILED IT!`,
+                    (w, name, team) => `🎓 WEEK ${w}: ${name} LOOKED LIKE A GENIUS CALLING THE ${team} WIN!`,
+                    (w, name, team) => `📈 RECAP: ${name} MASTERCLASS IN WEEK ${w} TAKING ${team} TO THE BANK!`
+                ];
+
+                const loneWolfFlexes = [
+                    (w, name, team) => `👑 WEEK ${w} HERO: ${name} WAS THE ONLY PERSON TO BELIEVE IN ${team} AND CRUSHED!`,
+                    (w, name, team) => `🐐 WEEK ${w}: NOBODY BELIEVED IN ${team} EXCEPT ${name}. ABSOLUTE LEGEND!`
+                ];
+
+                const fanRoasts = [
+                    (name) => `📞 CALLER FROM TIFTON: "SOMEONE TAKE AWAY ${name}'S ANALYST CARD IMMEDIATELY!"`,
+                    (name) => `💬 FAN POLL: 92% OF VIEWERS AGREE THAT ${name} CANNOT READ A STAT SHEET.`,
+                    (name) => `📰 SPORTS MAILBAG: 'IS ${name} THE MOST FRAUDULENT ANALYST ON TELEVISION?'`,
+                    (name) => `📻 CALLER FROM ATLANTA: "${name} COST ME MY PARLAY AND MY SANITY!"`
+                ];
+
+                const leagueNews = [
+                    `🚨 BREAKING: CFP COMMITTEE STANDINGS UNDER FIRE BY COACHES ACROSS THE NATION!`,
+                    `📊 ANALYST DESK ALERT: STAT FRAUDS EXPOSED AFTER DISASTROUS SLATE RESULTS!`,
+                    `🔥 SOURCES: EXPERT CFP HAIL MARY PICKS SHAKING UP SEASON REPUTATION SCORES!`,
+                    `🏈 LEAGUE HEADLINES: DRAMA MOUNTS ON LIVE AIR AT THE LEAGUE ANALYST DESK!`
+                ];
+
+                const evaluatedPicks = [];
+
+                Object.keys(globalGamesCache).forEach(weekNum => {
+                    const events = globalGamesCache[weekNum] || [];
+                    const weekSlates = globalSlates.filter(s => s.week_number === parseInt(weekNum));
+
+                    weekSlates.forEach((slate, idx) => {
+                        const gameId = String(slate.espn_game_id);
+                        const event = events.find(e => String(e.id) === gameId);
+
+                        if (event && event.status.type.state === 'post') {
+                            const comp = event.competitions[0];
+                            const home = comp.competitors.find(c => c.homeAway === 'home');
+                            const away = comp.competitors.find(c => c.homeAway === 'away');
+
+                            const homeName = home.team.abbreviation || home.team.shortDisplayName;
+                            const awayName = away.team.abbreviation || away.team.shortDisplayName;
+                            const homeScore = parseInt(home.score || '0');
+                            const awayScore = parseInt(away.score || '0');
+
+                            let winnerObj = null;
+                            if (homeScore > awayScore) winnerObj = home;
+                            else if (awayScore > homeScore) winnerObj = away;
+
+                            if (winnerObj) {
+                                const winnerNames = new Set([
+                                    (winnerObj.team.abbreviation || '').toUpperCase(),
+                                    (winnerObj.team.shortDisplayName || '').toUpperCase(),
+                                    (winnerObj.team.name || '').toUpperCase(),
+                                    (winnerObj.team.displayName || '').toUpperCase()
+                                ]);
+
+                                const gamePicks = [];
+                                globalProfiles.forEach(prof => {
+                                    const userAllPicks = globalPicks.filter(p => p.device_uid === prof.device_uid);
+                                    const pick = findUserPickForGame(userAllPicks, parseInt(weekNum), gameId, idx + 1, homeName, awayName);
+                                    if (pick && pick.chosen_team) {
+                                        gamePicks.push(pick);
+                                    }
+                                });
+
+                                gamePicks.forEach(p => {
+                                    const chosen = (p.chosen_team || '').trim().toUpperCase();
+                                    const isCorrect = winnerNames.has(chosen);
+
+                                    const pickedSameTeam = gamePicks.filter(gp => (gp.chosen_team || '').trim().toUpperCase() === chosen);
+                                    const isLoneWolf = isCorrect && (pickedSameTeam.length === 1) && (gamePicks.length > 2);
+
+                                    const foundUser = globalProfiles.find(u => u.device_uid === p.device_uid);
+                                    const userName = foundUser ? (foundUser.coach_name || foundUser.player_name || 'ANALYST').toUpperCase() : 'ANALYST';
+
+                                    evaluatedPicks.push({
+                                        week: weekNum,
+                                        userName,
+                                        team: p.chosen_team,
+                                        isCorrect,
+                                        isLoneWolf
+                                    });
+                                });
+                            }
+                        }
+                    });
+                });
+
+                if (evaluatedPicks.length > 0) {
+                    const userPicksGroup = {};
+                    evaluatedPicks.forEach(ep => {
+                        if (!userPicksGroup[ep.userName]) userPicksGroup[ep.userName] = [];
+                        userPicksGroup[ep.userName].push(ep);
+                    });
+
+                    Object.keys(userPicksGroup).forEach(userName => {
+                        const userPicks = userPicksGroup[userName];
+                        const lonePicks = userPicks.filter(p => p.isLoneWolf);
+                        const wrongPicks = userPicks.filter(p => !p.isCorrect);
+                        const rightPicks = userPicks.filter(p => p.isCorrect);
+
+                        if (lonePicks.length > 0) {
+                            const pick = lonePicks[Math.floor(Math.random() * lonePicks.length)];
+                            const tmpl = loneWolfFlexes[Math.floor(Math.random() * loneWolfFlexes.length)];
+                            headlines.push(tmpl(pick.week, userName, pick.team));
+                        } else if (wrongPicks.length > 0 && Math.random() < 0.7) {
+                            const pick = wrongPicks[Math.floor(Math.random() * wrongPicks.length)];
+                            const tmpl = wrongRoasts[Math.floor(Math.random() * wrongRoasts.length)];
+                            headlines.push(tmpl(pick.week, userName, pick.team));
+                        } else if (rightPicks.length > 0) {
+                            const pick = rightPicks[Math.floor(Math.random() * rightPicks.length)];
+                            const tmpl = rightFlexes[Math.floor(Math.random() * rightFlexes.length)];
+                            headlines.push(tmpl(pick.week, userName, pick.team));
+                        }
+
+                        if (Math.random() < 0.4) {
+                            const roastTmpl = fanRoasts[Math.floor(Math.random() * fanRoasts.length)];
+                            headlines.push(roastTmpl(userName));
+                        }
+                    });
+                }
+
+                headlines.push(...leagueNews);
+
+                for (let i = headlines.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [headlines[i], headlines[j]] = [headlines[j], headlines[i]];
+                }
+
+                tickerEl.innerText = headlines.join('   ---   ');
+            } catch (err) {
+                console.error("Failed to generate analyst ticker:", err);
+            }
+        }
+
+        async function loadLeaderboard() {
+            const container = document.getElementById('leaderboard-container');
+
+            try {
+                // 1. Fetch Users
+                const { data: profiles, error: profErr } = await supabaseClient
+                    .from('profiles')
+                    .select('device_uid, coach_name, player_name');
+                if (profErr) throw profErr;
+                globalProfiles = profiles || [];
+
+                // 2. Fetch Weekly Slates
+                const { data: slates, error: slateErr } = await supabaseClient
+                    .from('weekly_slates')
+                    .select('id, week_number, espn_game_id')
+                    .order('id', { ascending: true });
+                if (slateErr) throw slateErr;
+                globalSlates = slates || [];
+
+                // 3. Fetch all picks
+                globalPicks = await fetchAllPicks();
+
+                // 4. Fetch ESPN scores
+                const weeks = [...new Set(globalSlates.map(s => s.week_number))];
+                const gameEventMap = new Map();
+                globalGameConferenceMap = {};
+
+                for (const week of weeks) {
+                    try {
+                        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&week=${week}`);
+                        const espnData = await res.json();
+                        globalGamesCache[week] = espnData.events || [];
+
+                        (espnData.events || []).forEach(event => {
+                            const eventId = String(event.id);
+                            gameEventMap.set(eventId, event);
+
+                            const comp = event.competitions[0];
+                            let confName = 'OTHER';
+
+                            if (comp.groups && comp.groups.shortName) {
+                                confName = comp.groups.shortName.toUpperCase();
+                            } else if (comp.competitors && comp.competitors[0] && comp.competitors[0].team.conferenceId) {
+                                const cId = String(comp.competitors[0].team.conferenceId);
+                                if (cId === '8') confName = 'SEC';
+                                else if (cId === '4') confName = 'BIG10';
+                                else if (cId === '1') confName = 'ACC';
+                                else if (cId === '12') confName = 'BIG12';
+                                else if (cId === '9') confName = 'PAC12';
+                            }
+
+                            if (confName.includes('SEC')) confName = 'SEC';
+                            else if (confName.includes('BIG TEN') || confName.includes('B1G') || confName.includes('BIG10')) confName = 'BIG10';
+                            else if (confName.includes('ACC')) confName = 'ACC';
+                            else if (confName.includes('BIG 12') || confName.includes('BIG12')) confName = 'BIG12';
+                            else if (confName.includes('PAC')) confName = 'PAC12';
+
+                            globalGameConferenceMap[eventId] = confName;
+                        });
+                    } catch (e) {
+                        console.error(`Failed to fetch ESPN data for week ${week}:`, e);
+                    }
+                }
+
+                // 5. Evaluate standings
+                globalUserConfStats = {};
+                const now = new Date();
+
+                const weekSlateGroups = {};
+                globalSlates.forEach(s => {
+                    if (!weekSlateGroups[s.week_number]) weekSlateGroups[s.week_number] = [];
+                    weekSlateGroups[s.week_number].push(s);
+                });
+                Object.keys(weekSlateGroups).forEach(w => {
+                    weekSlateGroups[w].sort((a, b) => a.id - b.id);
+                });
+
+                const userScores = globalProfiles.map(p => {
+                    const uid = p.device_uid;
+                    const userName = p.coach_name || p.player_name || 'ANALYST (' + uid.slice(0, 4) + ')';
+                    const userAllPicks = globalPicks.filter(pick => pick.device_uid === uid);
+
+                    let wins = 0;
+                    let losses = 0;
+
+                    globalUserConfStats[uid] = {};
+
+                    Object.keys(weekSlateGroups).forEach(weekStr => {
+                        const wNum = parseInt(weekStr);
+                        const slatesForWeek = weekSlateGroups[wNum];
+
+                        slatesForWeek.forEach((slate, idx) => {
+                            const gameId = String(slate.espn_game_id);
+                            const event = gameEventMap.get(gameId);
+                            if (!event) return;
+
+                            const comp = event.competitions[0];
+                            const home = comp.competitors.find(c => c.homeAway === 'home');
+                            const away = comp.competitors.find(c => c.homeAway === 'away');
+
+                            const homeName = home.team.abbreviation || home.team.shortDisplayName;
+                            const awayName = away.team.abbreviation || away.team.shortDisplayName;
+
+                            const gameDate = new Date(event.date);
+                            const state = event.status.type.state;
+                            const isLocked = (now >= gameDate || state !== 'pre');
+                            const conf = globalGameConferenceMap[gameId] || 'OTHER';
+
+                            if (!globalUserConfStats[uid][conf]) {
+                                globalUserConfStats[uid][conf] = { wins: 0, losses: 0 };
+                            }
+
+                            const pick = findUserPickForGame(userAllPicks, wNum, gameId, idx + 1, homeName, awayName);
+
+                            if (state === 'post') {
+                                const homeScore = parseInt(home.score || '0');
+                                const awayScore = parseInt(away.score || '0');
+                                let winnerNames = new Set();
+
+                                if (homeScore > awayScore) {
+                                    winnerNames = new Set([
+                                        (home.team.abbreviation || '').toUpperCase(),
+                                        (home.team.shortDisplayName || '').toUpperCase(),
+                                        (home.team.name || '').toUpperCase(),
+                                        (home.team.displayName || '').toUpperCase()
+                                    ]);
+                                } else if (awayScore > homeScore) {
+                                    winnerNames = new Set([
+                                        (away.team.abbreviation || '').toUpperCase(),
+                                        (away.team.shortDisplayName || '').toUpperCase(),
+                                        (away.team.name || '').toUpperCase(),
+                                        (away.team.displayName || '').toUpperCase()
+                                    ]);
+                                }
+
+                                if (pick && pick.chosen_team) {
+                                    const chosen = (pick.chosen_team || '').trim().toUpperCase();
+                                    if (winnerNames.has(chosen)) {
+                                        wins++;
+                                        globalUserConfStats[uid][conf].wins += 1;
+                                    } else {
+                                        losses++;
+                                        globalUserConfStats[uid][conf].losses += 1;
+                                    }
+                                } else {
+                                    losses++;
+                                    globalUserConfStats[uid][conf].losses += 1;
+                                }
+                            } else if (isLocked && (!pick || !pick.chosen_team)) {
+                                losses++;
+                                globalUserConfStats[uid][conf].losses += 1;
+                            }
+                        });
+                    });
+
+                    const totalGames = wins + losses;
+                    const winPct = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : "0.0";
+
+                    return {
+                        device_uid: uid,
+                        userName,
+                        wins,
+                        losses,
+                        totalGames,
+                        winPct: parseFloat(winPct)
+                    };
+                });
+
+                userScores.sort((a, b) => b.winPct - a.winPct || b.wins - a.wins);
+
+                // 6. Conference Kings
+                const confLeaders = {};
+                ['SEC', 'BIG10', 'ACC', 'BIG12', 'PAC12'].forEach(conf => {
+                    let bestPct = -1.0;
+                    let topCandidates = [];
+
+                    Object.keys(globalUserConfStats).forEach(uid => {
+                        const cStat = globalUserConfStats[uid][conf];
+                        if (cStat) {
+                            const cTotal = cStat.wins + cStat.losses;
+                            if (cTotal >= 2) {
+                                const cPct = (cStat.wins / cTotal) * 100.0;
+                                if (cPct > bestPct) {
+                                    bestPct = cPct;
+                                    topCandidates = [uid];
+                                } else if (cPct === bestPct) {
+                                    topCandidates.push(uid);
+                                }
+                            }
+                        }
+                    });
+
+                    if (topCandidates.length === 1 && bestPct >= 50.0) {
+                        confLeaders[conf] = topCandidates[0];
+                    }
+                });
+
+                // 7. Render Standings
+                container.innerHTML = '';
+                const totalUsersCount = userScores.length;
+                let currentRank = 1;
+
+                userScores.forEach((user, idx) => {
+                    if (idx > 0 && user.winPct !== userScores[idx - 1].winPct) {
+                        currentRank = idx + 1;
+                    }
+
+                    const badge = getAnalystRoastBadge(currentRank, totalUsersCount, user.winPct, user.totalGames);
+                    const repColor = getRepScoreColor(user.winPct);
+
+                    let confBadgeHTML = '';
+                    Object.keys(confLeaders).forEach(conf => {
+                        if (confLeaders[conf] === user.device_uid) {
+                            confBadgeHTML += `<span class="conf-badge">${conf} KING 👑</span>`;
+                        }
+                    });
+
+                    const card = document.createElement('div');
+                    card.className = `leaderboard-card ${currentRank === 1 ? 'rank-1' : ''}`;
+                    card.onclick = () => openUserModal(user.device_uid, user.userName);
+
+                    card.innerHTML = `
+                        <div class="rank-badge">${currentRank === 1 ? '👑 #1' : '#' + currentRank}</div>
+                        <div class="user-details">
+                            <div class="user-name-row">
+                                <span class="user-name">${user.userName}</span>
+                                <span class="rep-tier-badge" style="color: ${badge.color}; border-color: ${badge.borderColor};">${badge.title}</span>
+                                ${confBadgeHTML}
+                            </div>
+                            <span class="user-record">REC: ${user.wins}-${user.losses}</span>
+                        </div>
+                        <div class="rep-score-box">
+                            <div class="rep-label">REP SCORE</div>
+                            <div class="rep-value" style="color: ${repColor};">${user.winPct}%</div>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+
+                generateAnalystTicker();
+
+            } catch (err) {
+                console.error("Error generating leaderboard:", err);
+                container.innerHTML = `<div class="empty-slate">ERROR LOADING LEADERBOARD</div>`;
+            }
+        }
+
+        function openUserModal(uid, userName) {
+            activeUserUid = uid;
+            activeModalWeek = 1;
+            document.getElementById('modal-user-name').innerText = userName.toUpperCase();
+            
+            const confContainer = document.getElementById('modal-conf-stats');
+            confContainer.innerHTML = '';
+
+            const userConfs = globalUserConfStats[uid] || {};
+            const keys = Object.keys(userConfs);
+
+            if (keys.length === 0) {
+                confContainer.innerHTML = `<div style="color:#64748b; margin:0 auto;">NO CONFERENCE DATA</div>`;
+            } else {
+                keys.forEach(c => {
+                    const st = userConfs[c];
+                    const tot = st.wins + st.losses;
+                    const pct = tot > 0 ? Math.round((st.wins / tot) * 100) : 0;
+                    confContainer.innerHTML += `
+                        <div class="conf-stat-item">
+                            <span style="color:var(--retro-yellow);">${c}</span>
+                            <span style="color:#fff;">${st.wins}-${st.losses} (${pct}%)</span>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('user-modal').classList.add('active');
+            renderModalWeek();
+        }
+
+        function closeModal() {
+            document.getElementById('user-modal').classList.remove('active');
+        }
+
+        function changeModalWeek(dir) {
+            activeModalWeek += dir;
+            if (activeModalWeek < 1) activeModalWeek = 1;
+            renderModalWeek();
+        }
+
+        function renderModalWeek() {
+            document.getElementById('modal-week-display').innerText = `WEEK ${String(activeModalWeek).padStart(2, '0')}`;
+            const container = document.getElementById('modal-picks-list');
+            container.innerHTML = '';
+
+            const weekSlates = globalSlates.filter(s => s.week_number === activeModalWeek);
+            if (!weekSlates || weekSlates.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#64748b; padding:1rem;">NO SLATE FOR WEEK ${activeModalWeek}</div>`;
+                return;
+            }
+
+            weekSlates.sort((a, b) => a.id - b.id);
+
+            const weekEvents = globalGamesCache[activeModalWeek] || [];
+            const eventMap = new Map();
+            weekEvents.forEach(e => eventMap.set(String(e.id), e));
+
+            const userAllPicks = globalPicks.filter(p => p.device_uid === activeUserUid);
+            const now = new Date();
+            const isSelf = (activeUserUid === deviceUID);
+
+            weekSlates.forEach((slate, idx) => {
+                const gameId = String(slate.espn_game_id);
+                const gameEvent = eventMap.get(gameId);
+
+                if (!gameEvent) {
+                    container.innerHTML += `
+                        <div class="modal-pick-card">
+                            <div class="modal-matchup-row"><span>MATCHUP ${idx+1}</span><span>N/A</span></div>
+                            <div class="modal-pick-result"><span>PICK: UNKNOWN</span><span class="result-badge pending">UNSCHEDULED</span></div>
+                        </div>`;
+                    return;
+                }
+
+                const comp = gameEvent.competitions[0];
+                const home = comp.competitors.find(c => c.homeAway === 'home');
+                const away = comp.competitors.find(c => c.homeAway === 'away');
+
+                const homeName = home.team.abbreviation || home.team.shortDisplayName;
+                const awayName = away.team.abbreviation || away.team.shortDisplayName;
+                const homeScore = home.score || '0';
+                const awayScore = away.score || '0';
+
+                const gameDate = new Date(gameEvent.date);
+                const state = gameEvent.status.type.state;
+
+                const isGameLocked = now >= gameDate || state !== 'pre';
+                const canRevealPick = isSelf || isGameLocked;
+
+                const userPick = findUserPickForGame(userAllPicks, activeModalWeek, gameId, idx + 1, homeName, awayName);
+                const hasPick = userPick && userPick.chosen_team;
+                const chosenTeam = hasPick ? userPick.chosen_team : 'NO PICK';
+
+                let statusClass = '';
+                let resultText = '';
+                let displayPick = '';
+
+                if (!canRevealPick) {
+                    displayPick = hasPick ? '🔒 [HIDDEN]' : 'NO PICK';
+                    resultText = hasPick ? 'PICKED ✓' : 'WAITING';
+                    statusClass = 'pending';
+                } else if (!hasPick && isGameLocked) {
+                    displayPick = 'NO PICK';
+                    statusClass = 'incorrect';
+                    resultText = '✗ WRONG';
+                } else if (state === 'post') {
+                    displayPick = chosenTeam;
+                    const homeInt = parseInt(homeScore);
+                    const awayInt = parseInt(awayScore);
+                    let winningTeam = null;
+
+                    if (homeInt > awayInt) winningTeam = homeName;
+                    else if (awayInt > homeInt) winningTeam = awayName;
+
+                    const chosenUpper = (chosenTeam || '').trim().toUpperCase();
+                    const winUpper = (winningTeam || '').trim().toUpperCase();
+
+                    if (hasPick && chosenUpper === winUpper) {
+                        statusClass = 'correct';
+                        resultText = '✓ CORRECT';
+                    } else {
+                        statusClass = 'incorrect';
+                        resultText = '✗ WRONG';
+                    }
+                } else if (state === 'in') {
+                    displayPick = chosenTeam;
+                    resultText = 'LIVE GAME';
+                    statusClass = 'pending';
+                } else {
+                    displayPick = chosenTeam;
+                    resultText = 'SCHEDULED';
+                    statusClass = 'pending';
+                }
+
+                const cardEl = document.createElement('div');
+                cardEl.className = `modal-pick-card ${statusClass}`;
+                cardEl.innerHTML = `
+                    <div class="modal-matchup-row">
+                        <span>${awayName} ${awayScore} @ ${homeName} ${homeScore}</span>
+                        <span style="color:var(--retro-yellow);">${gameEvent.status.type.shortDetail}</span>
+                    </div>
+                    <div class="modal-pick-result">
+                        <span>PICK: <strong style="color:#fff;">${displayPick}</strong></span>
+                        <span class="result-badge ${statusClass || 'pending'}">${resultText}</span>
+                    </div>
+                `;
+
+                container.appendChild(cardEl);
+            });
+        }
+
+        // ========================================================
+        // 5. BOOTSTRAP INITIALIZATION
+        // ========================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            verifyMandatoryQuestionnaire();
+            loadLeaderboard();
+            fetchCFPPlayoffTeams();
+        });
+    </script>
+</body>
+</html>
