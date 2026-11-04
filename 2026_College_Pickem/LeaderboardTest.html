@@ -874,7 +874,7 @@
     <!-- LIVE CFP SEEDINGS DRAWER -->
     <div class="cfp-drawer">
         <div class="cfp-header" onclick="toggleCFP()">
-            <span>🏈 Current CFP TOP 12</span>
+            <span>🏈 PROJECTED CFP TOP 12</span>
             <span id="cfp-toggle-arrow">▼</span>
         </div>
         <div class="cfp-list" id="cfp-teams-list" style="display: none;">
@@ -1281,31 +1281,46 @@
         };
 
         // ========================================================
-        // 2. MANDATORY GATEWAY POPUP ENGINE (ONE-TIME ONLY)
+        // 2. MANDATORY GATEWAY POPUP ENGINE (100% DATABASE-DRIVEN)
         // ========================================================
         async function verifyMandatoryQuestionnaire() {
-            if (localStorage.getItem(`expert_bracket_locked_${deviceUID}`) === 'true') {
-                return;
-            }
+            const modal = document.getElementById('expert-cfb-modal');
+            if (!modal) return;
 
             try {
                 const { data, error } = await supabaseClient
                     .from('user_expert_cfb_bracket')
-                    .select('id')
+                    .select('id, needs_reentry')
                     .eq('device_uid', deviceUID)
                     .maybeSingle();
 
-                if (data && data.id) {
-                    localStorage.setItem(`expert_bracket_locked_${deviceUID}`, 'true');
+                if (error) {
+                    console.error("Database check error:", error.message);
+                    launchMandatoryModal();
                     return;
                 }
 
-                document.body.style.overflow = "hidden";
-                initExpertQuestionnaire();
-                document.getElementById('expert-cfb-modal').classList.add('show-mandatory');
+                // 1. If NO record exists in database, OR admin flagged needs_reentry == true
+                if (!data || data.needs_reentry === true) {
+                    launchMandatoryModal();
+                } else {
+                    // Valid active submission exists in database -> keep page unlocked
+                    modal.classList.remove('show-mandatory');
+                    document.body.style.overflow = "auto";
+                }
             } catch (err) {
                 console.error("Gatekeeper verification error:", err);
+                launchMandatoryModal();
             }
+        }
+
+        function launchMandatoryModal() {
+            const modal = document.getElementById('expert-cfb-modal');
+            if (!modal) return;
+            
+            document.body.style.overflow = "hidden";
+            initExpertQuestionnaire();
+            modal.classList.add('show-mandatory');
         }
 
         function initExpertQuestionnaire() {
@@ -1686,14 +1701,12 @@
                 "🚨 FINAL WARNING - READ CAREFULLY 🚨\n\n" +
                 "Once you lock in your Expert Picks, they are 100% PERMANENT!\n" +
                 "• You cannot change or edit any picks.\n" +
-                "• This questionnaire will NEVER appear again.\n" +
+                "• This questionnaire will NEVER appear again unless reset by the admin.\n" +
                 "• All accumulated bracket and Natty Jackpot points will decide your final standing.\n\n" +
                 "Are you completely confident in your selections?"
             );
 
-            if (!warningConfirmed) {
-                return;
-            }
+            if (!warningConfirmed) return;
 
             const retentionGuess = parseInt(document.getElementById('expert-retention-input').value, 10);
             const confChamps = {};
@@ -1712,7 +1725,7 @@
                 cfp_seeds: assignedSeeds,
                 bracket_winners: bracketPicks,
                 total_bracket_potential_pts: bk.total,
-                bracket_breakdown: bk,
+                needs_reentry: false,
                 created_at: new Date().toISOString()
             };
 
@@ -1723,18 +1736,16 @@
             try {
                 const { error } = await supabaseClient
                     .from('user_expert_cfb_bracket')
-                    .insert([payload]);
+                    .upsert(payload, { onConflict: 'device_uid' });
 
                 if (error) throw error;
 
-                localStorage.setItem(`expert_bracket_locked_${deviceUID}`, 'true');
-
                 alert("✓ PICKS PERMANENTLY LOCKED IN!\nWelcome to the Leaderboard, Coach.");
-                document.body.style.overflow = "auto";
-                document.getElementById('expert-cfb-modal').classList.remove('show-mandatory');
                 
+                document.body.style.overflow = "auto";
                 const modal = document.getElementById('expert-cfb-modal');
-                if (modal) modal.remove();
+                if (modal) modal.classList.remove('show-mandatory');
+                
             } catch (err) {
                 alert("Submission failed: " + err.message);
                 submitBtn.disabled = false;
