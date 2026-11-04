@@ -455,7 +455,7 @@
             left: 0; 
             width: 100vw; 
             height: 100vh;
-            height: 100dvh; /* Dynamic viewport units ignore Safari URL bars */
+            height: 100dvh;
             background: rgba(4, 6, 17, 0.98);
             z-index: 99999;
             display: none;
@@ -499,7 +499,6 @@
         .blink-dot { animation: blinker 1s linear infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
 
-        /* Main Scrollable Viewport with iOS momentum */
         .mandatory-content {
             flex: 1;
             overflow-y: auto;
@@ -508,7 +507,6 @@
             display: flex;
             flex-direction: column;
             gap: 0.85rem;
-            /* Generous padding at bottom ensures button clears iOS bar */
             padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
         }
 
@@ -797,7 +795,7 @@
         }
 
         .championship-col {
-            min-width: 200px;
+            min-width: 220px;
         }
 
         .natty-winner-showcase {
@@ -805,10 +803,22 @@
             border: 2px solid var(--retro-yellow);
             color: var(--retro-yellow);
             text-align: center;
-            padding: 0.5rem;
+            padding: 0.55rem;
             font-size: 0.55rem;
             font-weight: bold;
             line-height: 1.4;
+        }
+
+        .jackpot-breakdown-sub {
+            margin-top: 0.35rem;
+            padding-top: 0.35rem;
+            border-top: 1px dashed #92400e;
+            font-size: 0.42rem;
+            color: #fde047;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            text-align: left;
         }
 
         /* COMPLETION CALLOUT & SUBMIT BUTTON */
@@ -951,12 +961,12 @@
                         <span class="step-num">STEP 3</span> SEED THE FINAL 12 TEAMS (1 TO 12)
                     </div>
                     <div class="sec-help">
-                        Seeds #1-#4 receive 1st round byes. Pick seeds in order. Every team picked earns bonus wins based on their playoff odds!
+                        Seeds #1-#4 receive 1st round byes. Pick seeds in order. Every correct seed earned accumulates towards your season bank!
                     </div>
                     
                     <div class="cfp-summary-banner">
                         <span>SEEDS: <strong id="seeds-filled-count" style="color:var(--retro-yellow);">0</strong>/12</span>
-                        <span>BRACKET VALUE: <strong id="total-bracket-odds-pts" style="color:var(--retro-green);">0</strong> WINS</span>
+                        <span>ACCUMULATED VALUE: <strong id="total-bracket-odds-pts" style="color:var(--retro-green);">0</strong> WINS</span>
                     </div>
 
                     <div class="seeds-pick-slots" id="bracket-seeds-slots"></div>
@@ -972,12 +982,12 @@
                     </div>
                 </div>
 
-                <!-- STEP 4: PLAYOFF BRACKET SIMULATOR -->
+                <!-- STEP 4: PLAYOFF BRACKET SIMULATOR & NATTY JACKPOT -->
                 <div class="bracket-sec" id="bracket-simulation-section" style="display:none;">
                     <div class="bracket-sec-hdr">
-                        <span class="step-num">STEP 4</span> PLAYOFF BRACKET KNOCKOUT (WIN ACCUMULATOR)
+                        <span class="step-num">STEP 4</span> PLAYOFF BRACKET KNOCKOUT & NATTY JACKPOT
                     </div>
-                    <div class="sec-help">Swipe horizontally to view rounds! Tap teams to advance them to the National Title!</div>
+                    <div class="sec-help">Swipe horizontally to view rounds! Every game won adds wins. The Natty Winner unlocks the accumulated Jackpot!</div>
                     
                     <div class="bracket-tree-container">
                         <div class="bracket-round-col">
@@ -1219,17 +1229,46 @@
             "Arizona State": "+125000", "TCU": "+125000", "Purdue": "+125000", "North Dakota State": "+125000"
         };
 
+        // ========================================================
+        // HIGH-YIELD UNDERDOG PAYOUT SCALE
+        // ========================================================
         function getBonusMultiplier(oddsStr) {
             if (!oddsStr) return 1;
             if (oddsStr.startsWith('-')) return 1;
             const num = parseInt(oddsStr.replace('+', ''), 10);
-            return Math.max(1, Math.round(1 + (num / 250)));
+            if (isNaN(num)) return 1;
+
+            if (num <= 200) return 2;
+            if (num <= 350) return 3;
+            if (num <= 500) return 5;
+            if (num <= 800) return 7;
+            if (num <= 1200) return 10;
+            if (num <= 1700) return 13;
+            if (num <= 2500) return 18;
+            if (num <= 4000) return 26;
+            if (num <= 6000) return 38;
+            if (num <= 10000) return 55;
+            if (num <= 20000) return 75;
+            if (num <= 40000) return 110;
+            return Math.min(300, Math.round(110 + (num - 40000) / 500));
         }
 
+        // Expanded Natty Title Bonus based on Championship lines
         function getNattyBonusWins(teamName) {
             const oddsStr = NATIONAL_CHAMP_ODDS[teamName] || "+5000";
             const num = parseInt(oddsStr.replace('+', ''), 10);
-            return Math.max(2, Math.round(2 + (num / 1500)));
+            if (isNaN(num)) return 5;
+
+            if (num <= 500) return 5;
+            if (num <= 1000) return 8;
+            if (num <= 1500) return 12;
+            if (num <= 3500) return 20;
+            if (num <= 6500) return 35;
+            if (num <= 10000) return 50;
+            if (num <= 25000) return 80;
+            if (num <= 50000) return 130;
+            if (num <= 75000) return 180;
+            return Math.min(350, Math.round(180 + (num - 75000) / 400));
         }
 
         let assignedSeeds = new Array(12).fill(null);
@@ -1261,7 +1300,6 @@
                     return;
                 }
 
-                // Prevent body scrolling underneath
                 document.body.style.overflow = "hidden";
                 initExpertQuestionnaire();
                 document.getElementById('expert-cfb-modal').classList.add('show-mandatory');
@@ -1315,25 +1353,40 @@
             renderPoolChips();
         }
 
-        function calculateTotalBracketScore() {
-            let total = 0;
-            assignedSeeds.filter(Boolean).forEach(t => total += getBonusMultiplier(t.odds));
+        function getBracketBreakdown() {
+            let seedBank = 0;
+            let matchBank = 0;
+            let nattyBonus = 0;
+
+            assignedSeeds.filter(Boolean).forEach(t => {
+                seedBank += getBonusMultiplier(t.odds);
+            });
+
             bracketPicks.r1.filter(Boolean).forEach(tName => {
                 const teamObj = assignedSeeds.find(s => s && s.team === tName);
-                if (teamObj) total += getBonusMultiplier(teamObj.odds);
+                if (teamObj) matchBank += getBonusMultiplier(teamObj.odds);
             });
+
             bracketPicks.qf.filter(Boolean).forEach(tName => {
                 const teamObj = assignedSeeds.find(s => s && s.team === tName);
-                if (teamObj) total += getBonusMultiplier(teamObj.odds);
+                if (teamObj) matchBank += getBonusMultiplier(teamObj.odds);
             });
+
             bracketPicks.sf.filter(Boolean).forEach(tName => {
                 const teamObj = assignedSeeds.find(s => s && s.team === tName);
-                if (teamObj) total += getBonusMultiplier(teamObj.odds);
+                if (teamObj) matchBank += getBonusMultiplier(teamObj.odds);
             });
+
             if (bracketPicks.champion) {
-                total += getNattyBonusWins(bracketPicks.champion);
+                nattyBonus = getNattyBonusWins(bracketPicks.champion);
             }
-            return total;
+
+            return {
+                seedBank,
+                matchBank,
+                nattyBonus,
+                total: seedBank + matchBank + nattyBonus
+            };
         }
 
         function checkFormCompletion() {
@@ -1379,7 +1432,6 @@
                 return;
             }
 
-            // COMPLETE
             statusMsg.style.display = 'none';
             submitBtn.style.display = 'block';
         }
@@ -1414,7 +1466,9 @@
 
             const filled = assignedSeeds.filter(Boolean).length;
             document.getElementById('seeds-filled-count').innerText = filled;
-            document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
+            
+            const bk = getBracketBreakdown();
+            document.getElementById('total-bracket-odds-pts').innerText = bk.total;
 
             if (filled === 12) {
                 document.getElementById('bracket-simulation-section').style.display = 'flex';
@@ -1488,7 +1542,8 @@
             });
 
             renderQuarterfinals();
-            document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
+            const bk = getBracketBreakdown();
+            document.getElementById('total-bracket-odds-pts').innerText = bk.total;
             checkFormCompletion();
         }
 
@@ -1583,11 +1638,10 @@
             const getNattySlotHtml = (team) => {
                 if (!team) return `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING SF...</span></div>`;
                 const nattyOdds = NATIONAL_CHAMP_ODDS[team] || '+5000';
-                const bonus = getNattyBonusWins(team);
                 return `
                     <div class="team-slot-pick ${bracketPicks.champion === team ? 'winner' : ''}" onclick="pickChampion('${team}')">
                         <span>${team} (${nattyOdds})</span>
-                        <span style="color:var(--retro-yellow); font-weight:bold;">👑 +${bonus}W</span>
+                        <span style="color:var(--retro-yellow); font-weight:bold;">👑 PICK NATTY</span>
                     </div>
                 `;
             };
@@ -1595,14 +1649,30 @@
             nattyNode.innerHTML = getNattySlotHtml(c1) + getNattySlotHtml(c2);
 
             const showcase = document.getElementById('natty-winner-showcase');
+            const bk = getBracketBreakdown();
+
             if (bracketPicks.champion) {
-                const nattyBonus = getNattyBonusWins(bracketPicks.champion);
-                showcase.innerHTML = `👑 CHAMPION: ${bracketPicks.champion.toUpperCase()}<br><span style="font-size:0.48rem; color:var(--retro-green);">NATTY JACKPOT: +${nattyBonus} BONUS WINS</span>`;
+                showcase.innerHTML = `
+                    👑 CHAMPION: ${bracketPicks.champion.toUpperCase()}
+                    <div class="jackpot-breakdown-sub">
+                        <span>• SEEDING ACCUMULATION: +${bk.seedBank} WINS</span>
+                        <span>• MATCHUPS WON RUN: +${bk.matchBank} WINS</span>
+                        <span>• NATTY TITLE JACKPOT: +${bk.nattyBonus} WINS</span>
+                        <span style="color:var(--retro-green); font-weight:bold; border-top:1px solid #475569; padding-top:2px;">
+                          TOTAL POTENTIAL WINS: +${bk.total} WINS
+                        </span>
+                    </div>
+                `;
             } else {
-                showcase.innerText = 'CHAMPION: ???';
+                showcase.innerHTML = `
+                    CHAMPION: ???
+                    <div style="font-size:0.42rem; color:#94a3b8; margin-top:0.25rem;">
+                        SELECT A TEAM ABOVE TO UNLOCK THE NATTY JACKPOT ACCUMULATOR
+                    </div>
+                `;
             }
 
-            document.getElementById('total-bracket-odds-pts').innerText = calculateTotalBracketScore();
+            document.getElementById('total-bracket-odds-pts').innerText = bk.total;
             checkFormCompletion();
         }
 
@@ -1612,13 +1682,12 @@
         }
 
         async function submitExpertQuestionnaire() {
-            // PERMANENT WARNING CONFIRMATION
             const warningConfirmed = confirm(
                 "🚨 FINAL WARNING - READ CAREFULLY 🚨\n\n" +
                 "Once you lock in your Expert Picks, they are 100% PERMANENT!\n" +
                 "• You cannot change or edit any picks.\n" +
                 "• This questionnaire will NEVER appear again.\n" +
-                "• These picks will decide your end-of-season bonus wins.\n\n" +
+                "• All accumulated bracket and Natty Jackpot points will decide your final standing.\n\n" +
                 "Are you completely confident in your selections?"
             );
 
@@ -1634,7 +1703,7 @@
                 if (el) confChamps[conf] = el.value;
             });
 
-            const totalBracketPts = calculateTotalBracketScore();
+            const bk = getBracketBreakdown();
 
             const payload = {
                 device_uid: deviceUID,
@@ -1642,7 +1711,8 @@
                 conf_champs: confChamps,
                 cfp_seeds: assignedSeeds,
                 bracket_winners: bracketPicks,
-                total_bracket_potential_pts: totalBracketPts,
+                total_bracket_potential_pts: bk.total,
+                bracket_breakdown: bk,
                 created_at: new Date().toISOString()
             };
 
@@ -1657,7 +1727,6 @@
 
                 if (error) throw error;
 
-                // Stamp device locally so it never executes or appears again
                 localStorage.setItem(`expert_bracket_locked_${deviceUID}`, 'true');
 
                 alert("✓ PICKS PERMANENTLY LOCKED IN!\nWelcome to the Leaderboard, Coach.");
