@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Retro Leaderboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Retro Leaderboard & CFP Expert Central</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
     <!-- SUPABASE CLIENT INTEGRATION -->
@@ -38,6 +38,7 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         html, body {
@@ -46,13 +47,15 @@
             color: #ffffff;
             font-family: Arial, sans-serif;
             min-height: 100vh;
+            min-height: 100dvh;
         }
 
         body {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 1rem;
+            padding: 0.75rem;
+            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
         }
 
         .top-nav {
@@ -110,6 +113,52 @@
 
         #analyst-news-ticker {
             color: #ffffff;
+        }
+
+        /* CFP TRACKER DRAWER */
+        .cfp-drawer {
+            width: 100%;
+            max-width: 480px;
+            background: #000;
+            border: 2px solid #334155;
+            margin-bottom: 0.75rem;
+            font-family: var(--pixel-font);
+            box-shadow: 3px 3px 0px #000;
+        }
+
+        .cfp-header {
+            padding: 0.55rem 0.75rem;
+            font-size: 0.55rem;
+            color: var(--retro-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: #0f172a;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .cfp-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.4rem;
+            padding: 0.5rem;
+            background: #000;
+        }
+
+        .cfp-team-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 0.35rem;
+            font-size: 0.48rem;
+        }
+
+        .cfp-seed {
+            color: var(--retro-yellow);
+            font-weight: bold;
         }
 
         header {
@@ -242,18 +291,20 @@
             border: 3px solid #000000;
         }
 
+        /* COACH BREAKDOWN MODAL */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
             background: rgba(0, 0, 0, 0.85);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            padding: 1rem;
+            padding: 0.5rem;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.2s ease;
@@ -270,10 +321,11 @@
             box-shadow: 6px 6px 0px #000000;
             width: 100%;
             max-width: 440px;
-            max-height: 85vh;
+            max-height: 88vh;
+            max-height: 88dvh;
             display: flex;
             flex-direction: column;
-            padding: 1rem;
+            padding: 0.75rem;
             font-family: var(--pixel-font);
         }
 
@@ -282,12 +334,12 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px dashed #475569;
-            padding-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
             margin-bottom: 0.5rem;
         }
 
         .modal-title {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--retro-yellow);
             white-space: nowrap;
             overflow: hidden;
@@ -356,6 +408,7 @@
             overflow-y: auto;
             max-height: 45vh;
             padding-right: 0.25rem;
+            -webkit-overflow-scrolling: touch;
         }
 
         .modal-pick-card {
@@ -368,13 +421,8 @@
             font-size: 0.55rem;
         }
 
-        .modal-pick-card.correct {
-            border-color: var(--retro-green);
-        }
-
-        .modal-pick-card.incorrect {
-            border-color: var(--retro-red);
-        }
+        .modal-pick-card.correct { border-color: var(--retro-green); }
+        .modal-pick-card.incorrect { border-color: var(--retro-red); }
 
         .modal-matchup-row {
             display: flex;
@@ -394,17 +442,418 @@
             padding: 0.15rem 0.3rem;
             border-radius: 2px;
         }
+        .result-badge.correct { color: var(--retro-green); }
+        .result-badge.incorrect { color: var(--retro-red); }
+        .result-badge.pending { color: var(--retro-yellow); }
 
-        .result-badge.correct {
-            color: var(--retro-green);
+        /* ========================================================
+           MANDATORY GATEWAY POPUP (IPHONE / MOBILE SAFE)
+           ======================================================== */
+        .mandatory-overlay {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            height: 100dvh;
+            background: rgba(4, 6, 17, 0.98);
+            z-index: 99999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 0.4rem;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
-        .result-badge.incorrect {
-            color: var(--retro-red);
+        .mandatory-overlay.show-mandatory {
+            display: flex !important;
         }
 
-        .result-badge.pending {
+        .mandatory-card {
+            background: #0b1120;
+            border: 3px solid var(--retro-red);
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.4), 4px 4px 0px #000;
+            width: 100%;
+            max-width: 520px;
+            height: 96vh;
+            height: 96dvh;
+            display: flex;
+            flex-direction: column;
+            font-family: var(--pixel-font);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .retro-banner-top {
+            background: var(--retro-red);
+            color: #fff;
+            padding: 0.4rem;
+            font-size: 0.5rem;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .blink-dot { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        .mandatory-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0.6rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+        }
+
+        .prompt-box {
+            background: #020617;
+            border: 2px dashed var(--retro-yellow);
+            padding: 0.6rem;
+        }
+
+        .expert-quote {
+            color: #fff;
+            font-size: 0.52rem;
+            line-height: 1.5;
+            margin-bottom: 0.4rem;
+            font-style: italic;
+        }
+
+        .prompt-sub {
+            font-size: 0.42rem;
             color: var(--retro-yellow);
+            line-height: 1.3;
+        }
+
+        .bracket-sec {
+            background: #020617;
+            border: 2px solid #334155;
+            padding: 0.6rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .bracket-sec-hdr {
+            font-size: 0.5rem;
+            color: var(--retro-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .step-num {
+            background: var(--retro-blue);
+            color: #000;
+            padding: 0.15rem 0.3rem;
+            font-weight: bold;
+        }
+
+        .sec-help {
+            font-size: 0.42rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        .number-stepper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.2rem;
+        }
+
+        .stepper-btn {
+            background: var(--bg-card);
+            border: 2px solid #fff;
+            color: #fff;
+            font-family: var(--pixel-font);
+            font-size: 0.9rem;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+        }
+
+        #expert-retention-input {
+            width: 60px;
+            height: 38px;
+            background: #000;
+            border: 2px solid var(--retro-yellow);
+            color: var(--retro-yellow);
+            font-family: var(--pixel-font);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        .reward-pill-sub {
+            font-size: 0.4rem;
+            color: var(--retro-green);
+            text-align: center;
+        }
+
+        /* CONF SELECTORS */
+        .conf-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.45rem;
+        }
+
+        .conf-row-select {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            font-size: 0.45rem;
+        }
+
+        .conf-row-select select {
+            background: #1e293b;
+            border: 1px solid var(--retro-yellow);
+            color: #fff;
+            font-family: var(--pixel-font);
+            font-size: 0.45rem;
+            padding: 0.45rem 0.35rem;
+            border-radius: 0;
+        }
+
+        /* CFP SEEDS */
+        .cfp-summary-banner {
+            display: flex;
+            justify-content: space-between;
+            background: #0f172a;
+            padding: 0.4rem;
+            border: 1px solid #334155;
+            font-size: 0.46rem;
+        }
+
+        .seeds-pick-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.3rem;
+        }
+
+        .seed-slot-card {
+            background: #1e293b;
+            border: 1px dashed #475569;
+            padding: 0.35rem 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.4rem;
+            min-height: 32px;
+        }
+
+        .seed-slot-card.filled {
+            border-style: solid;
+            border-color: var(--retro-blue);
+            background: #0f2338;
+        }
+
+        .seed-slot-card.bye-slot {
+            border-color: var(--retro-yellow);
+        }
+
+        .seed-badge-indicator {
+            color: var(--retro-yellow);
+            font-weight: bold;
+            margin-right: 0.15rem;
+        }
+
+        .clear-seed-x {
+            color: var(--retro-red);
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0.2rem 0.35rem;
+            font-size: 0.5rem;
+        }
+
+        .team-pool-box {
+            background: #000;
+            border: 1px solid #334155;
+            padding: 0.4rem;
+        }
+
+        .pool-filters {
+            display: flex;
+            gap: 0.3rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .pool-filter-btn {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #475569;
+            font-family: var(--pixel-font);
+            font-size: 0.38rem;
+            padding: 0.3rem 0.4rem;
+            cursor: pointer;
+        }
+
+        .pool-filter-btn.active {
+            background: var(--retro-blue);
+            color: #000;
+            border-color: #fff;
+            font-weight: bold;
+        }
+
+        .pool-title {
+            font-size: 0.42rem;
+            color: #94a3b8;
+            margin-bottom: 0.35rem;
+        }
+
+        .team-pool-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            max-height: 140px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .pool-chip {
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #fff;
+            font-family: var(--pixel-font);
+            font-size: 0.38rem;
+            padding: 0.35rem 0.4rem;
+            cursor: pointer;
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+        }
+
+        .pool-chip.selected {
+            opacity: 0.25;
+            pointer-events: none;
+            border-color: #334155;
+            text-decoration: line-through;
+        }
+
+        .pool-chip-odds {
+            color: var(--retro-yellow);
+        }
+
+        /* BRACKET SIMULATOR (MOBILE SAFE HORIZONTAL SCROLLER) */
+        .bracket-tree-container {
+            display: flex;
+            gap: 0.6rem;
+            background: #000;
+            padding: 0.5rem;
+            border: 1px solid #334155;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .bracket-round-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            min-width: 175px;
+            flex-shrink: 0;
+        }
+
+        .round-hdr {
+            font-size: 0.44rem;
+            color: var(--retro-yellow);
+            border-bottom: 1px dashed #334155;
+            padding-bottom: 0.25rem;
+            margin-bottom: 0.15rem;
+            text-align: center;
+        }
+
+        .matchup-node {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 0.35rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .team-slot-pick {
+            padding: 0.4rem 0.3rem;
+            background: #1e293b;
+            border: 1px solid #475569;
+            font-size: 0.42rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .team-slot-pick.winner {
+            background: #064e3b;
+            border-color: var(--retro-green);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* COMPACT CHAMPIONSHIP COLUMN FOR MOBILE PHONES */
+        .championship-col {
+            min-width: 170px;
+            max-width: 190px;
+        }
+
+        .natty-winner-showcase {
+            background: linear-gradient(135deg, #78350f, #000);
+            border: 2px solid var(--retro-yellow);
+            color: var(--retro-yellow);
+            text-align: center;
+            padding: 0.4rem 0.3rem;
+            font-size: 0.46rem;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+
+        .jackpot-breakdown-sub {
+            margin-top: 0.25rem;
+            padding-top: 0.25rem;
+            border-top: 1px dashed #92400e;
+            font-size: 0.38rem;
+            color: #fde047;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            text-align: left;
+        }
+
+        /* COMPLETION CALLOUT & SUBMIT BUTTON */
+        .completion-status-box {
+            background: #020617;
+            border: 2px dashed #475569;
+            padding: 0.6rem;
+            text-align: center;
+            font-size: 0.45rem;
+            color: var(--retro-yellow);
+            line-height: 1.4;
+        }
+
+        .lock-in-final-btn {
+            background: var(--retro-green);
+            color: #000;
+            border: 3px solid #fff;
+            padding: 0.9rem 0.5rem;
+            font-family: var(--pixel-font);
+            font-size: 0.6rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            display: none;
+            width: 100%;
+            margin-top: 0.5rem;
+            animation: pulse-glow 1.5s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px var(--retro-green), 3px 3px 0 #000; }
+            50% { box-shadow: 0 0 16px var(--retro-green), 3px 3px 0 #000; }
+            100% { box-shadow: 0 0 5px var(--retro-green), 3px 3px 0 #000; }
         }
     </style>
 </head>
@@ -416,11 +865,23 @@
         <a href="ViewGames.html" class="nav-link-btn">LIVE GAMES &gt;</a>
     </div>
 
+    <!-- NEWS TICKER -->
     <div class="news-ticker-container">
         <div class="ticker-title">BREAKING NEWS:</div>
         <marquee id="analyst-news-ticker" behavior="scroll" direction="left" scrollamount="5">
             FETCHING ANALYST HOT TAKES...
         </marquee>
+    </div>
+
+    <!-- LIVE CFP SEEDINGS DRAWER -->
+    <div class="cfp-drawer">
+        <div class="cfp-header" onclick="toggleCFP()">
+            <span>🏈 PROJECTED CFP TOP 12</span>
+            <span id="cfp-toggle-arrow">▼</span>
+        </div>
+        <div class="cfp-list" id="cfp-teams-list" style="display: none;">
+            <div class="empty-slate" style="font-size:0.5rem; padding: 0.5rem;">FETCHING CFP SEEDS...</div>
+        </div>
     </div>
 
     <header>
@@ -431,6 +892,7 @@
         <div class="empty-slate">CALCULATING STANDINGS...</div>
     </div>
 
+    <!-- COACH RECAP MODAL -->
     <div class="modal-overlay" id="user-modal">
         <div class="modal-card">
             <div class="modal-header">
@@ -450,6 +912,129 @@
         </div>
     </div>
 
+    <!-- ========================================================
+         MANDATORY GATEWAY MODAL: CFP EXPERT RESCUE INTERVENTION
+         ======================================================== -->
+    <div class="mandatory-overlay" id="expert-cfb-modal">
+        <div class="mandatory-card">
+            <div class="retro-banner-top">
+                <span class="blink-dot">●</span> COMMITTEE ALERT: FRAUDULENT RANKINGS EXPOSED <span class="blink-dot">●</span>
+            </div>
+
+            <div class="mandatory-content">
+                <div class="prompt-box">
+                    <p class="expert-quote">
+                        "The fans want your expert opinion. The first rankings came out and they were horrible. Based on your years of knowledge how will the teams be ranked at the end of the year?"
+                    </p>
+                    <div class="prompt-sub">
+                        LOCK IN YOUR COMEBACK PICKS. UNTIL YOU COMPLETE EVERYTHING, ACCESS TO THE LEADERBOARD IS RESTRICTED.
+                    </div>
+                </div>
+
+                <!-- STEP 1: RETENTION GUESS -->
+                <div class="bracket-sec">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 1</span> INITIAL RANKINGS SURVIVAL (+10 OR +5 WINS)
+                    </div>
+                    <div class="sec-help">
+                        The committee slotted these 12 initial teams: <em>Miami, Georgia, Utah, Indiana, Alabama, Kentucky, Texas, UCLA, BYU, Ole Miss, Notre Dame, Boise State</em>. 
+                        How many survive in the final 12-team bracket?
+                    </div>
+                    <div class="number-stepper">
+                        <button type="button" class="stepper-btn" onclick="stepRetention(-1)">-</button>
+                        <input type="number" id="expert-retention-input" min="0" max="12" value="8" readonly>
+                        <button type="button" class="stepper-btn" onclick="stepRetention(1)">+</button>
+                    </div>
+                    <div class="reward-pill-sub">EXACT: +10 WINS | CLOSEST (OR TIE): +5 WINS</div>
+                </div>
+
+                <!-- STEP 2: CONFERENCE CHAMPIONS (EXACT SPORTSBOOK ODDS) -->
+                <div class="bracket-sec">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 2</span> ALL CONFERENCE CHAMPIONS (ODDS MULTIPLIER)
+                    </div>
+                    <div class="sec-help">Pick the champion for each conference. High underdog odds yield huge bonus wins!</div>
+                    <div class="conf-grid" id="conf-selectors-zone"></div>
+                </div>
+
+                <!-- STEP 3: 12-TEAM CFP SEEDING SELECTION -->
+                <div class="bracket-sec">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 3</span> SEED THE FINAL 12 TEAMS (1 TO 12)
+                    </div>
+                    <div class="sec-help">
+                        Seeds #1-#4 get 1st round byes. Pick in order! Each team in the final field gets its win value, plus an <strong>exact position bonus (+3W each)</strong>!
+                    </div>
+                    
+                    <div class="cfp-summary-banner">
+                        <span>SEEDS: <strong id="seeds-filled-count" style="color:var(--retro-yellow);">0</strong>/12</span>
+                        <span>MAX POSSIBLE: <strong id="total-bracket-odds-pts" style="color:var(--retro-green);">0</strong> WINS</span>
+                    </div>
+
+                    <div class="seeds-pick-slots" id="bracket-seeds-slots"></div>
+
+                    <div class="team-pool-box">
+                        <div class="pool-title">FILTER & TAP A TEAM TO ASSIGN NEXT SEED:</div>
+                        <div class="pool-filters">
+                            <button type="button" class="pool-filter-btn active" onclick="filterPool('ALL')">ALL</button>
+                            <button type="button" class="pool-filter-btn" onclick="filterPool('POWER')">POWER 4 / IND</button>
+                            <button type="button" class="pool-filter-btn" onclick="filterPool('G5')">GROUP OF 5</button>
+                        </div>
+                        <div class="team-pool-chips" id="available-teams-pool"></div>
+                    </div>
+                </div>
+
+                <!-- STEP 4: PLAYOFF BRACKET SIMULATOR & NATTY JACKPOT -->
+                <div class="bracket-sec" id="bracket-simulation-section" style="display:none;">
+                    <div class="bracket-sec-hdr">
+                        <span class="step-num">STEP 4</span> PLAYOFF BRACKET KNOCKOUT & NATTY JACKPOT
+                    </div>
+                    <div class="sec-help">Every correct game winner earns <strong>+5 wins PLUS the team's odds value</strong>! Sweep every round to trigger the <strong>+20W Perfection Bonus</strong>!</div>
+                    
+                    <div class="bracket-tree-container">
+                        <div class="bracket-round-col">
+                            <div class="round-hdr">ROUND 1 (ON CAMPUS)</div>
+                            <div class="matchup-node" id="node-r1-g1"></div>
+                            <div class="matchup-node" id="node-r1-g2"></div>
+                            <div class="matchup-node" id="node-r1-g3"></div>
+                            <div class="matchup-node" id="node-r1-g4"></div>
+                        </div>
+
+                        <div class="bracket-round-col">
+                            <div class="round-hdr">QUARTERFINALS</div>
+                            <div class="matchup-node" id="node-qf-g1"></div>
+                            <div class="matchup-node" id="node-qf-g2"></div>
+                            <div class="matchup-node" id="node-qf-g3"></div>
+                            <div class="matchup-node" id="node-qf-g4"></div>
+                        </div>
+
+                        <div class="bracket-round-col">
+                            <div class="round-hdr">SEMIFINALS</div>
+                            <div class="matchup-node" id="node-sf-g1"></div>
+                            <div class="matchup-node" id="node-sf-g2"></div>
+                        </div>
+
+                        <div class="bracket-round-col championship-col">
+                            <div class="round-hdr">🏆 TITLE GAME</div>
+                            <div class="matchup-node" id="node-natty"></div>
+                            <div class="natty-winner-showcase" id="natty-winner-showcase">CHAMPION: ???</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROGRESS CHECKER CALLOUT -->
+                <div class="completion-status-box" id="completion-status-msg">
+                    ⚠️ INCOMPLETE: ASSIGN ALL 12 PLAYOFF SEEDS TO UNLOCK THE BRACKET
+                </div>
+
+                <!-- SUBMIT BUTTON (ONLY SHOWN ON COMPLETE VALIDATION) -->
+                <button type="button" class="lock-in-final-btn" id="lock-in-picks-btn" onclick="submitExpertQuestionnaire()">
+                    ✓ LOCK IN EXPERT PICKS & ENTER LEADERBOARD
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let globalProfiles = [];
         let globalSlates = [];
@@ -461,6 +1046,764 @@
         let activeUserUid = null;
         let activeModalWeek = 1;
 
+        // ========================================================
+        // 1. DATA CONFIGURATION: EXACT ODDS & WIN FORMULAS
+        // ========================================================
+        const FIRST_RANKINGS_TOP_12 = [
+            "Miami", "Georgia", "Utah", "Indiana", 
+            "Alabama", "Kentucky", "Texas", "UCLA", 
+            "BYU", "Ole Miss", "Notre Dame", "Boise State"
+        ];
+
+        const EXPERT_CONF_ODDS = {
+            "ACC": [
+                { team: "Miami", odds: "-320" },
+                { team: "Wake Forest", odds: "+350" },
+                { team: "SMU", odds: "+2000" },
+                { team: "Louisville", odds: "+3500" },
+                { team: "Duke", odds: "+6000" },
+                { team: "Virginia Tech", odds: "+10000" },
+                { team: "Clemson", odds: "+10000" },
+                { team: "Pittsburgh", odds: "+40000" },
+                { team: "North Carolina", odds: "+40000" }
+            ],
+            "BIG TEN": [
+                { team: "Indiana", odds: "+120" },
+                { team: "Ohio State", odds: "+240" },
+                { team: "UCLA", odds: "+430" },
+                { team: "USC", odds: "+1200" },
+                { team: "Oregon", odds: "+2000" },
+                { team: "Wisconsin", odds: "+4000" },
+                { team: "Northwestern", odds: "+4500" },
+                { team: "Iowa", odds: "+5500" },
+                { team: "Minnesota", odds: "+8000" },
+                { team: "Illinois", odds: "+40000" },
+                { team: "Michigan", odds: "+40000" }
+            ],
+            "BIG 12": [
+                { team: "Utah", odds: "+125" },
+                { team: "BYU", odds: "+310" },
+                { team: "Texas Tech", odds: "+410" },
+                { team: "Houston", odds: "+1000" },
+                { team: "Arizona", odds: "+1500" },
+                { team: "Oklahoma State", odds: "+1700" },
+                { team: "Baylor", odds: "+2700" },
+                { team: "TCU", odds: "+30000" },
+                { team: "West Virginia", odds: "+40000" },
+                { team: "Cincinnati", odds: "+40000" },
+                { team: "Arizona State", odds: "+40000" },
+                { team: "UCF", odds: "+40000" },
+                { team: "Iowa State", odds: "+40000" }
+            ],
+            "PAC-12": [
+                { team: "Boise State", odds: "-150" },
+                { team: "Oregon State", odds: "+230" },
+                { team: "Texas State", odds: "+950" },
+                { team: "Fresno State", odds: "+1200" },
+                { team: "Utah State", odds: "+3300" },
+                { team: "San Diego State", odds: "+4500" },
+                { team: "Colorado State", odds: "+40000" }
+            ],
+            "SEC": [
+                { team: "Georgia", odds: "-105" },
+                { team: "LSU", odds: "+600" },
+                { team: "Ole Miss", odds: "+650" },
+                { team: "Alabama", odds: "+850" },
+                { team: "Texas", odds: "+1200" },
+                { team: "Kentucky", odds: "+1200" },
+                { team: "Tennessee", odds: "+2200" },
+                { team: "Missouri", odds: "+2500" },
+                { team: "Florida", odds: "+6000" },
+                { team: "Oklahoma", odds: "+15000" },
+                { team: "South Carolina", odds: "+20000" }
+            ],
+            "AMERICAN (AAC)": [
+                { team: "UTSA", odds: "+165" },
+                { team: "North Texas", odds: "+180" },
+                { team: "Memphis", odds: "+270" },
+                { team: "Army", odds: "+2500" },
+                { team: "South Florida", odds: "+2500" },
+                { team: "Florida Atlantic", odds: "+5000" },
+                { team: "East Carolina", odds: "+7500" },
+                { team: "UAB", odds: "+12500" },
+                { team: "Tulane", odds: "+12500" },
+                { team: "Tulsa", odds: "+40000" }
+            ],
+            "CONFERENCE USA": [
+                { team: "Liberty", odds: "-370" },
+                { team: "Jacksonville State", odds: "+430" },
+                { team: "Delaware", odds: "+1700" },
+                { team: "Western Kentucky", odds: "+5000" },
+                { team: "Missouri State", odds: "+7500" },
+                { team: "New Mexico State", odds: "+10000" },
+                { team: "Middle Tennessee", odds: "+10000" },
+                { team: "FIU", odds: "+20000" },
+                { team: "Kennesaw State", odds: "+40000" }
+            ],
+            "MAC": [
+                { team: "Toledo", odds: "+115" },
+                { team: "Western Michigan", odds: "+210" },
+                { team: "Ohio", odds: "+370" },
+                { team: "Buffalo", odds: "+1000" },
+                { team: "Miami (OH)", odds: "+2700" },
+                { team: "Eastern Michigan", odds: "+17500" },
+                { team: "Ball State", odds: "+25000" }
+            ],
+            "SUN BELT": [
+                { team: "Louisiana Tech", odds: "+135" },
+                { team: "James Madison", odds: "+240" },
+                { team: "Georgia Southern", odds: "+350" },
+                { team: "App State", odds: "+1600" },
+                { team: "Arkansas State", odds: "+2500" },
+                { team: "Troy", odds: "+3000" },
+                { team: "Louisiana", odds: "+3000" },
+                { team: "Coastal Carolina", odds: "+5500" },
+                { team: "Marshall", odds: "+7000" },
+                { team: "Southern Miss", odds: "+10000" },
+                { team: "South Alabama", odds: "+12500" },
+                { team: "Georgia State", odds: "+22500" }
+            ]
+        };
+
+        const EXPERT_PLAYOFF_POOL = [
+            { team: "Miami", odds: "-7000", type: "POWER" },
+            { team: "Georgia", odds: "-5000", type: "POWER" },
+            { team: "Indiana", odds: "-1100", type: "POWER" },
+            { team: "Alabama", odds: "-340", type: "POWER" },
+            { team: "Notre Dame", odds: "-320", type: "POWER" },
+            { team: "Utah", odds: "-260", type: "POWER" },
+            { team: "LSU", odds: "-200", type: "POWER" },
+            { team: "Ole Miss", odds: "-185", type: "POWER" },
+            { team: "UCLA", odds: "-160", type: "POWER" },
+            { team: "Ohio State", odds: "-140", type: "POWER" },
+            { team: "Texas", odds: "-135", type: "POWER" },
+            { team: "Boise State", odds: "-105", type: "G5" },
+            { team: "Wake Forest", odds: "+110", type: "POWER" },
+            { team: "Kentucky", odds: "+145", type: "POWER" },
+            { team: "BYU", odds: "+160", type: "POWER" },
+            { team: "Texas Tech", odds: "+240", type: "POWER" },
+            { team: "New Mexico", odds: "+240", type: "G5" },
+            { team: "Tennessee", odds: "+270", type: "POWER" },
+            { team: "Florida", odds: "+390", type: "POWER" },
+            { team: "USC", odds: "+420", type: "POWER" },
+            { team: "Missouri", odds: "+420", type: "POWER" },
+            { team: "UTSA", odds: "+440", type: "G5" },
+            { team: "Iowa", odds: "+500", type: "POWER" },
+            { team: "Houston", odds: "+600", type: "POWER" },
+            { team: "Northwestern", odds: "+650", type: "POWER" },
+            { team: "South Carolina", odds: "+700", type: "POWER" },
+            { team: "Arizona", odds: "+1000", type: "POWER" },
+            { team: "SMU", odds: "+1400", type: "POWER" },
+            { team: "Oregon", odds: "+1400", type: "POWER" },
+            { team: "Oklahoma State", odds: "+1500", type: "POWER" },
+            { team: "North Texas", odds: "+1500", type: "G5" },
+            { team: "Baylor", odds: "+2200", type: "POWER" },
+            { team: "Liberty", odds: "+2200", type: "G5" },
+            { team: "Louisville", odds: "+3000", type: "POWER" },
+            { team: "Wisconsin", odds: "+3500", type: "POWER" },
+            { team: "Duke", odds: "+5000", type: "POWER" },
+            { team: "Louisiana Tech", odds: "+5500", type: "G5" },
+            { team: "Michigan", odds: "+6000", type: "POWER" },
+            { team: "Virginia Tech", odds: "+8000", type: "POWER" },
+            { team: "Clemson", odds: "+8000", type: "POWER" },
+            { team: "Minnesota", odds: "+8000", type: "POWER" },
+            { team: "Memphis", odds: "+8000", type: "G5" },
+            { team: "Oklahoma", odds: "+15000", type: "POWER" },
+            { team: "Nebraska", odds: "+15000", type: "POWER" },
+            { team: "Oregon State", odds: "+17500", type: "G5" },
+            { team: "Air Force", odds: "+40000", type: "G5" }
+        ];
+
+        const NATIONAL_CHAMP_ODDS = {
+            "Georgia": "+330", "Notre Dame": "+550", "LSU": "+750", "Miami": "+750",
+            "Indiana": "+1000", "Alabama": "+1000", "Texas": "+1100", "Ohio State": "+1300",
+            "Ole Miss": "+1500", "Utah": "+3000", "UCLA": "+4500", "Tennessee": "+5000",
+            "Missouri": "+5500", "Kentucky": "+6000", "Wake Forest": "+6000", "USC": "+6500",
+            "BYU": "+7500", "Texas Tech": "+8000", "Florida": "+8000", "South Carolina": "+10000",
+            "Iowa": "+12500", "Northwestern": "+15000", "Oregon": "+17500", "Houston": "+22500",
+            "Boise State": "+30000", "SMU": "+40000", "Arizona": "+40000", "New Mexico": "+40000",
+            "Oklahoma State": "+50000", "Louisville": "+60000", "Wisconsin": "+75000", "Baylor": "+75000",
+            "Oklahoma": "+75000", "Michigan": "+75000", "Iowa State": "+125000", "West Virginia": "+125000",
+            "North Texas": "+125000", "Clemson": "+125000", "Louisiana Tech": "+125000", "Cincinnati": "+125000",
+            "South Florida": "+125000", "North Carolina": "+125000", "Oregon State": "+125000", "Virginia Tech": "+125000",
+            "Minnesota": "+125000", "Duke": "+125000", "Liberty": "+125000", "Memphis": "+125000",
+            "UCF": "+125000", "Nebraska": "+125000", "Pittsburgh": "+125000", "UTSA": "+125000",
+            "Arizona State": "+125000", "TCU": "+125000", "Purdue": "+125000", "North Dakota State": "+125000"
+        };
+
+        // ========================================================
+        // HIGH-YIELD UNDERDOG PAYOUT SCALE
+        // ========================================================
+        function getBonusMultiplier(oddsStr) {
+            if (!oddsStr) return 1;
+            if (oddsStr.startsWith('-')) return 1;
+            const num = parseInt(oddsStr.replace('+', ''), 10);
+            if (isNaN(num)) return 1;
+
+            if (num <= 200) return 2;
+            if (num <= 350) return 3;
+            if (num <= 500) return 5;
+            if (num <= 800) return 7;
+            if (num <= 1200) return 10;
+            if (num <= 1700) return 13;
+            if (num <= 2500) return 18;
+            if (num <= 4000) return 26;
+            if (num <= 6000) return 38;
+            if (num <= 10000) return 55;
+            if (num <= 20000) return 75;
+            if (num <= 40000) return 110;
+            return Math.min(300, Math.round(110 + (num - 40000) / 500));
+        }
+
+        function getNattyBonusWins(teamName) {
+            const oddsStr = NATIONAL_CHAMP_ODDS[teamName] || "+5000";
+            const num = parseInt(oddsStr.replace('+', ''), 10);
+            if (isNaN(num)) return 5;
+
+            if (num <= 500) return 5;
+            if (num <= 1000) return 8;
+            if (num <= 1500) return 12;
+            if (num <= 3500) return 20;
+            if (num <= 6500) return 35;
+            if (num <= 10000) return 50;
+            if (num <= 25000) return 80;
+            if (num <= 50000) return 130;
+            if (num <= 75000) return 180;
+            return Math.min(350, Math.round(180 + (num - 75000) / 400));
+        }
+
+        let assignedSeeds = new Array(12).fill(null);
+        let activePoolFilter = 'ALL';
+        let bracketPicks = {
+            r1: [null, null, null, null],
+            qf: [null, null, null, null],
+            sf: [null, null],
+            champion: null
+        };
+
+        // ========================================================
+        // 2. MANDATORY GATEWAY POPUP ENGINE (100% DATABASE-DRIVEN)
+        // ========================================================
+        async function verifyMandatoryQuestionnaire() {
+            const modal = document.getElementById('expert-cfb-modal');
+            if (!modal) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .select('id, needs_reentry')
+                    .eq('device_uid', deviceUID)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error("Database check error:", error.message);
+                    launchMandatoryModal();
+                    return;
+                }
+
+                if (!data || data.needs_reentry === true) {
+                    launchMandatoryModal();
+                } else {
+                    modal.classList.remove('show-mandatory');
+                    document.body.style.overflow = "auto";
+                }
+            } catch (err) {
+                console.error("Gatekeeper verification error:", err);
+                launchMandatoryModal();
+            }
+        }
+
+        function launchMandatoryModal() {
+            const modal = document.getElementById('expert-cfb-modal');
+            if (!modal) return;
+            
+            document.body.style.overflow = "hidden";
+            initExpertQuestionnaire();
+            modal.classList.add('show-mandatory');
+        }
+
+        function initExpertQuestionnaire() {
+            renderConfSelectors();
+            renderSeedsSlots();
+            renderPoolChips();
+            checkFormCompletion();
+        }
+
+        function stepRetention(delta) {
+            const el = document.getElementById('expert-retention-input');
+            let val = parseInt(el.value, 10) + delta;
+            if (val < 0) val = 0;
+            if (val > 12) val = 12;
+            el.value = val;
+            checkFormCompletion();
+        }
+
+        function renderConfSelectors() {
+            const container = document.getElementById('conf-selectors-zone');
+            container.innerHTML = '';
+            
+            Object.keys(EXPERT_CONF_ODDS).forEach(conf => {
+                const teams = EXPERT_CONF_ODDS[conf];
+                const options = teams.map(t => {
+                    const pts = getBonusMultiplier(t.odds);
+                    return `<option value="${t.team}">${t.team} (${t.odds} ➔ +${pts}W)</option>`;
+                }).join('');
+
+                container.innerHTML += `
+                    <div class="conf-row-select">
+                        <span style="color:var(--retro-yellow);">${conf} CHAMPION:</span>
+                        <select id="expert-conf-${conf.replace(/[^a-zA-Z0-9]/g, '_')}" onchange="checkFormCompletion()">${options}</select>
+                    </div>
+                `;
+            });
+        }
+
+        function filterPool(type) {
+            activePoolFilter = type;
+            document.querySelectorAll('.pool-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.innerText.includes(type)) btn.classList.add('active');
+            });
+            renderPoolChips();
+        }
+
+        // ========================================================
+        // DYNAMIC POTENTIAL WINS ENGINE (WITH REVISED RULES)
+        // ========================================================
+        function getBracketBreakdown() {
+            let fieldBaseBank = 0;
+            let exactPositionBonus = 0;
+            let matchBank = 0;
+            let nattyBonus = 0;
+            const perfectSweepBonus = 20;
+
+            // 1. Final Field Predictions: Base odds value + 3W exact rank bonus per slot
+            assignedSeeds.filter(Boolean).forEach(t => {
+                fieldBaseBank += getBonusMultiplier(t.odds);
+                exactPositionBonus += 3;
+            });
+
+            // 2. Knockout Matches: 5 wins base + team odds value per win
+            bracketPicks.r1.filter(Boolean).forEach(tName => {
+                const teamObj = assignedSeeds.find(s => s && s.team === tName);
+                matchBank += (5 + getBonusMultiplier(teamObj ? teamObj.odds : '+300'));
+            });
+
+            bracketPicks.qf.filter(Boolean).forEach(tName => {
+                const teamObj = assignedSeeds.find(s => s && s.team === tName);
+                matchBank += (5 + getBonusMultiplier(teamObj ? teamObj.odds : '+300'));
+            });
+
+            bracketPicks.sf.filter(Boolean).forEach(tName => {
+                const teamObj = assignedSeeds.find(s => s && s.team === tName);
+                matchBank += (5 + getBonusMultiplier(teamObj ? teamObj.odds : '+300'));
+            });
+
+            // 3. National Title Game Matchup & Champion Value
+            if (bracketPicks.champion) {
+                matchBank += (5 + getBonusMultiplier(assignedSeeds.find(s => s && s.team === bracketPicks.champion)?.odds || '+300'));
+                nattyBonus = getNattyBonusWins(bracketPicks.champion);
+            }
+
+            return {
+                fieldBaseBank,
+                exactPositionBonus,
+                seedTotal: fieldBaseBank + exactPositionBonus,
+                matchBank,
+                nattyBonus,
+                perfectSweepBonus,
+                total: fieldBaseBank + exactPositionBonus + matchBank + nattyBonus + perfectSweepBonus
+            };
+        }
+
+        function checkFormCompletion() {
+            const submitBtn = document.getElementById('lock-in-picks-btn');
+            const statusMsg = document.getElementById('completion-status-msg');
+
+            const seedsFilled = assignedSeeds.filter(Boolean).length;
+            if (seedsFilled < 12) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: SET ALL 12 SEEDS (${seedsFilled}/12 CURRENTLY)`;
+                return;
+            }
+
+            const r1Missing = bracketPicks.r1.filter(Boolean).length < 4;
+            if (r1Missing) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK ALL 4 ROUND 1 WINNERS`;
+                return;
+            }
+
+            const qfMissing = bracketPicks.qf.filter(Boolean).length < 4;
+            if (qfMissing) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK ALL 4 QUARTERFINAL WINNERS`;
+                return;
+            }
+
+            const sfMissing = bracketPicks.sf.filter(Boolean).length < 2;
+            if (sfMissing) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK BOTH SEMIFINAL WINNERS`;
+                return;
+            }
+
+            if (!bracketPicks.champion) {
+                submitBtn.style.display = 'none';
+                statusMsg.style.display = 'block';
+                statusMsg.innerText = `⚠️ INCOMPLETE: PICK YOUR NATIONAL TITLE WINNER`;
+                return;
+            }
+
+            statusMsg.style.display = 'none';
+            submitBtn.style.display = 'block';
+        }
+
+        function renderSeedsSlots() {
+            const container = document.getElementById('bracket-seeds-slots');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 12; i++) {
+                const seedNum = i + 1;
+                const isBye = seedNum <= 4;
+                const currentTeam = assignedSeeds[i];
+                const byeTag = isBye ? ' <span style="color:var(--retro-yellow); font-size:0.35rem;">[BYE]</span>' : '';
+
+                const slot = document.createElement('div');
+                slot.className = `seed-slot-card ${isBye ? 'bye-slot' : ''} ${currentTeam ? 'filled' : ''}`;
+                
+                if (currentTeam) {
+                    const pts = getBonusMultiplier(currentTeam.odds);
+                    slot.innerHTML = `
+                        <span><span class="seed-badge-indicator">#${seedNum}</span> ${currentTeam.team} <strong style="color:var(--retro-green);">(+${pts}W)</strong> <span style="color:var(--retro-yellow); font-size:0.35rem;">[+3W POS]</span>${byeTag}</span>
+                        <span class="clear-seed-x" onclick="removeSeed(${i})">X</span>
+                    `;
+                } else {
+                    slot.innerHTML = `
+                        <span style="color:#64748b;"><span class="seed-badge-indicator">#${seedNum}</span> [EMPTY]${byeTag}</span>
+                        <span></span>
+                    `;
+                }
+                container.appendChild(slot);
+            }
+
+            const filled = assignedSeeds.filter(Boolean).length;
+            document.getElementById('seeds-filled-count').innerText = filled;
+            
+            const bk = getBracketBreakdown();
+            document.getElementById('total-bracket-odds-pts').innerText = bk.total;
+
+            if (filled === 12) {
+                document.getElementById('bracket-simulation-section').style.display = 'flex';
+                buildPlayoffBracket();
+            } else {
+                document.getElementById('bracket-simulation-section').style.display = 'none';
+            }
+
+            checkFormCompletion();
+        }
+
+        function renderPoolChips() {
+            const poolCont = document.getElementById('available-teams-pool');
+            poolCont.innerHTML = '';
+
+            const filteredTeams = EXPERT_PLAYOFF_POOL.filter(t => {
+                if (activePoolFilter === 'ALL') return true;
+                return t.type === activePoolFilter;
+            });
+
+            filteredTeams.forEach(t => {
+                const isPicked = assignedSeeds.some(s => s && s.team === t.team);
+                const pts = getBonusMultiplier(t.odds);
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = `pool-chip ${isPicked ? 'selected' : ''}`;
+                chip.innerHTML = `<span>${t.team}</span><span class="pool-chip-odds">${t.odds} (+${pts}W)</span>`;
+                chip.onclick = () => assignNextAvailableSeed(t);
+                poolCont.appendChild(chip);
+            });
+        }
+
+        function assignNextAvailableSeed(teamObj) {
+            const firstEmpty = assignedSeeds.indexOf(null);
+            if (firstEmpty === -1) return;
+            assignedSeeds[firstEmpty] = teamObj;
+            renderSeedsSlots();
+            renderPoolChips();
+        }
+
+        function removeSeed(idx) {
+            assignedSeeds[idx] = null;
+            bracketPicks = { r1: [null, null, null, null], qf: [null, null, null, null], sf: [null, null], champion: null };
+            renderSeedsSlots();
+            renderPoolChips();
+        }
+
+        function buildPlayoffBracket() {
+            const r1Matchups = [
+                { g: 0, t1: assignedSeeds[4], t2: assignedSeeds[11], seed1: 5, seed2: 12 },
+                { g: 1, t1: assignedSeeds[5], t2: assignedSeeds[10], seed1: 6, seed2: 11 },
+                { g: 2, t1: assignedSeeds[6], t2: assignedSeeds[9], seed1: 7, seed2: 10 },
+                { g: 3, t1: assignedSeeds[7], t2: assignedSeeds[8], seed1: 8, seed2: 9 }
+            ];
+
+            r1Matchups.forEach(m => {
+                const node = document.getElementById(`node-r1-g${m.g + 1}`);
+                const winVal1 = 5 + getBonusMultiplier(m.t1.odds);
+                const winVal2 = 5 + getBonusMultiplier(m.t2.odds);
+
+                node.innerHTML = `
+                    <div class="team-slot-pick ${bracketPicks.r1[m.g] === m.t1.team ? 'winner' : ''}" onclick="pickR1Winner(${m.g}, '${m.t1.team}')">
+                        <span>#${m.seed1} ${m.t1.team}</span>
+                        <span style="color:var(--retro-green);">+${winVal1}W</span>
+                    </div>
+                    <div class="team-slot-pick ${bracketPicks.r1[m.g] === m.t2.team ? 'winner' : ''}" onclick="pickR1Winner(${m.g}, '${m.t2.team}')">
+                        <span>#${m.seed2} ${m.t2.team}</span>
+                        <span style="color:var(--retro-green);">+${winVal2}W</span>
+                    </div>
+                `;
+            });
+
+            renderQuarterfinals();
+            const bk = getBracketBreakdown();
+            document.getElementById('total-bracket-odds-pts').innerText = bk.total;
+            checkFormCompletion();
+        }
+
+        function pickR1Winner(gameIdx, teamName) {
+            bracketPicks.r1[gameIdx] = teamName;
+            bracketPicks.qf[gameIdx] = null;
+            bracketPicks.sf = [null, null];
+            bracketPicks.champion = null;
+            buildPlayoffBracket();
+        }
+
+        function renderQuarterfinals() {
+            const qfSetup = [
+                { g: 0, bye: assignedSeeds[0], byeSeed: 1, opponent: bracketPicks.r1[3] },
+                { g: 1, bye: assignedSeeds[1], byeSeed: 2, opponent: bracketPicks.r1[2] },
+                { g: 2, bye: assignedSeeds[2], byeSeed: 3, opponent: bracketPicks.r1[1] },
+                { g: 3, bye: assignedSeeds[3], byeSeed: 4, opponent: bracketPicks.r1[0] }
+            ];
+
+            qfSetup.forEach(m => {
+                const node = document.getElementById(`node-qf-g${m.g + 1}`);
+                const byePts = 5 + getBonusMultiplier(m.bye.odds);
+                
+                let oppHtml = `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING R1...</span></div>`;
+                if (m.opponent) {
+                    const oppTeamObj = assignedSeeds.find(s => s && s.team === m.opponent);
+                    const oppPts = 5 + getBonusMultiplier(oppTeamObj ? oppTeamObj.odds : '+300');
+                    oppHtml = `
+                        <div class="team-slot-pick ${bracketPicks.qf[m.g] === m.opponent ? 'winner' : ''}" onclick="pickQFWinner(${m.g}, '${m.opponent}')">
+                            <span>${m.opponent}</span>
+                            <span style="color:var(--retro-green);">+${oppPts}W</span>
+                        </div>`;
+                }
+
+                node.innerHTML = `
+                    <div class="team-slot-pick ${bracketPicks.qf[m.g] === m.bye.team ? 'winner' : ''}" onclick="pickQFWinner(${m.g}, '${m.bye.team}')">
+                        <span>#${m.byeSeed} ${m.bye.team}</span>
+                        <span style="color:var(--retro-green);">+${byePts}W</span>
+                    </div>
+                    ${oppHtml}
+                `;
+            });
+
+            renderSemifinals();
+        }
+
+        function pickQFWinner(gameIdx, teamName) {
+            bracketPicks.qf[gameIdx] = teamName;
+            bracketPicks.sf = [null, null];
+            bracketPicks.champion = null;
+            renderQuarterfinals();
+        }
+
+        function renderSemifinals() {
+            const t1 = bracketPicks.qf[0];
+            const t2 = bracketPicks.qf[3];
+            const t3 = bracketPicks.qf[1];
+            const t4 = bracketPicks.qf[2];
+
+            const sf1Node = document.getElementById('node-sf-g1');
+            const getTeamHtml = (t, sfIdx) => {
+                if (!t) return `<div class="team-slot-pick" style="color:#64748b; cursor:default;"><span>WAITING QF...</span></div>`;
+                const teamObj = assignedSeeds.find(s => s && s.team === t);
+                const pts = 5 + getBonusMultiplier(teamObj ? teamObj.odds : '+300');
+                return `
+                    <div class="team-slot-pick ${bracketPicks.sf[sfIdx] === t ? 'winner' : ''}" onclick="pickSFWinner(${sfIdx}, '${t}')">
+                        <span>${t}</span>
+                        <span style="color:var(--retro-green);">+${pts}W</span>
+                    </div>
+                `;
+            };
+
+            sf1Node.innerHTML = getTeamHtml(t1, 0) + getTeamHtml(t2, 0);
+
+            const sf2Node = document.getElementById('node-sf-g2');
+            sf2Node.innerHTML = getTeamHtml(t3, 1) + getTeamHtml(t4, 1);
+
+            renderNationalChampionship();
+        }
+
+        function pickSFWinner(sfIdx, teamName) {
+            bracketPicks.sf[sfIdx] = teamName;
+            bracketPicks.champion = null;
+            renderSemifinals();
+        }
+
+        function renderNationalChampionship() {
+            const c1 = bracketPicks.sf[0];
+            const c2 = bracketPicks.sf[1];
+            const nattyNode = document.getElementById('node-natty');
+
+            const getNattySlotHtml = (team) => {
+                if (!team) return `<div class="team-slot-pick" style="color:#64748b; cursor:default; font-size:0.38rem; padding:0.3rem;"><span>WAITING SF...</span></div>`;
+                const nattyOdds = NATIONAL_CHAMP_ODDS[team] || '+5000';
+                return `
+                    <div class="team-slot-pick ${bracketPicks.champion === team ? 'winner' : ''}" style="padding:0.32rem 0.25rem; font-size:0.4rem;" onclick="pickChampion('${team}')">
+                        <span>${team}</span>
+                        <span style="color:var(--retro-yellow); font-size:0.35rem;">${nattyOdds}</span>
+                    </div>
+                `;
+            };
+
+            nattyNode.innerHTML = getNattySlotHtml(c1) + getNattySlotHtml(c2);
+
+            const showcase = document.getElementById('natty-winner-showcase');
+            const bk = getBracketBreakdown();
+
+            if (bracketPicks.champion) {
+                showcase.innerHTML = `
+                    👑 CHAMPION: ${bracketPicks.champion.toUpperCase()}
+                    <div class="jackpot-breakdown-sub">
+                        <span>• 12-TEAM FIELD VAL: +${bk.fieldBaseBank}W</span>
+                        <span>• EXACT SEED BONUS: +${bk.exactPositionBonus}W (+3W/per)</span>
+                        <span>• GAMES WON BANK: +${bk.matchBank}W (+5W+odds)</span>
+                        <span>• NATTY TITLE JACKPOT: +${bk.nattyBonus}W</span>
+                        <span>• ALL-CORRECT SWEEP: +${bk.perfectSweepBonus}W</span>
+                        <span style="color:var(--retro-green); font-weight:bold; border-top:1px dashed #ca8a04; padding-top:2px;">
+                          POTENTIAL TOTAL: +${bk.total} WINS
+                        </span>
+                    </div>
+                `;
+            } else {
+                showcase.innerHTML = `
+                    CHAMPION: ???
+                    <div style="font-size:0.38rem; color:#94a3b8; margin-top:0.2rem;">
+                        TAP A FINALIST TO CROWN YOUR CHAMPION
+                    </div>
+                `;
+            }
+
+            document.getElementById('total-bracket-odds-pts').innerText = bk.total;
+            checkFormCompletion();
+        }
+
+        function pickChampion(teamName) {
+            bracketPicks.champion = teamName;
+            renderNationalChampionship();
+        }
+
+        async function submitExpertQuestionnaire() {
+            const warningConfirmed = confirm(
+                "🚨 FINAL WARNING - READ CAREFULLY 🚨\n\n" +
+                "Once you lock in your Expert Picks, they are 100% PERMANENT!\n" +
+                "• Exact seed ranks earn bonus +3W.\n" +
+                "• Correct game picks earn +5W plus team odds value.\n" +
+                "• Predicting every game & winner correctly triggers the +20W Sweep Bonus!\n" +
+                "• You only earn points for predictions that end up correct.\n\n" +
+                "Lock in selections?"
+            );
+
+            if (!warningConfirmed) return;
+
+            const retentionGuess = parseInt(document.getElementById('expert-retention-input').value, 10);
+            const confChamps = {};
+            Object.keys(EXPERT_CONF_ODDS).forEach(conf => {
+                const elId = `expert-conf-${conf.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                const el = document.getElementById(elId);
+                if (el) confChamps[conf] = el.value;
+            });
+
+            const bk = getBracketBreakdown();
+
+            const payload = {
+                device_uid: deviceUID,
+                initial_retention_guess: retentionGuess,
+                conf_champs: confChamps,
+                cfp_seeds: assignedSeeds,
+                bracket_winners: bracketPicks,
+                total_bracket_potential_pts: bk.total,
+                needs_reentry: false,
+                created_at: new Date().toISOString()
+            };
+
+            const submitBtn = document.getElementById('lock-in-picks-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "PERMANENTLY LOCKING IN...";
+
+            try {
+                const { error } = await supabaseClient
+                    .from('user_expert_cfb_bracket')
+                    .upsert(payload, { onConflict: 'device_uid' });
+
+                if (error) throw error;
+
+                alert("✓ PICKS PERMANENTLY LOCKED IN!\nWelcome to the Leaderboard, Coach.");
+                
+                document.body.style.overflow = "auto";
+                const modal = document.getElementById('expert-cfb-modal');
+                if (modal) modal.classList.remove('show-mandatory');
+                
+            } catch (err) {
+                alert("Submission failed: " + err.message);
+                submitBtn.disabled = false;
+                submitBtn.innerText = "✓ LOCK IN EXPERT PICKS & ENTER LEADERBOARD";
+            }
+        }
+
+        // ========================================================
+        // 3. CFP SEEDING WIDGET (DRAWER)
+        // ========================================================
+        async function fetchCFPPlayoffTeams() {
+            const listEl = document.getElementById('cfp-teams-list');
+            try {
+                const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings');
+                const data = await res.json();
+                
+                const poll = data.rankings.find(r => r.name.toLowerCase().includes('playoff')) || data.rankings[0];
+                if (!poll || !poll.ranks) return;
+
+                const top12 = poll.ranks.slice(0, 12);
+                listEl.innerHTML = top12.map(item => `
+                    <div class="cfp-team-pill">
+                        <span class="cfp-seed">#${item.current}</span>
+                        <span style="color:#fff;">${item.team.abbreviation || item.team.shortDisplayName}</span>
+                        <span style="color:#64748b; font-size:0.4rem; margin-left:auto;">${item.recordSummary}</span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                listEl.innerHTML = `<div style="color:#ef4444; font-size:0.45rem; padding:0.5rem;">FAILED TO LOAD CFP SEEDS</div>`;
+            }
+        }
+
+        function toggleCFP() {
+            const listEl = document.getElementById('cfp-teams-list');
+            const arrow = document.getElementById('cfp-toggle-arrow');
+            const isOpen = listEl.style.display === 'grid';
+            listEl.style.display = isOpen ? 'none' : 'grid';
+            arrow.innerText = isOpen ? '▼' : '▲';
+        }
+
+        // ========================================================
+        // 4. LEADERBOARD COMPUTATION & ANALYST LOGIC
+        // ========================================================
         function getRepScoreColor(pct) {
             const p = Math.max(0.0, Math.min(100.0, parseFloat(pct) || 0));
             if (p < 50.0) {
@@ -504,7 +1847,6 @@
             }
         }
 
-        // Fetch all picks (bypasses Supabase 1,000-row limit)
         async function fetchAllPicks() {
             let all = [];
             let from = 0;
@@ -530,22 +1872,19 @@
             return all;
         }
 
-        // Matches by espn_game_id first to prevent any card-index shifts
         function findUserPickForGame(userPicks, weekNum, espnGameId, cardIndex, homeName, awayName) {
             const cardIdStr = `card-${cardIndex}`;
             const targetId = String(espnGameId);
 
-            // 1. Direct match on espn_game_id
             const byGameId = userPicks.filter(p => {
                 if (p.week_number !== weekNum) return false;
                 return String(p.espn_game_id) === targetId || String(p.card_id) === targetId;
             });
 
             if (byGameId.length > 0) {
-                return byGameId[byGameId.length - 1]; // latest by ID
+                return byGameId[byGameId.length - 1];
             }
 
-            // 2. Fallback to card index ONLY if chosen team is in this specific game
             const byCard = userPicks.filter(p => {
                 if (p.week_number !== weekNum) return false;
                 const cId = String(p.card_id || '');
@@ -594,9 +1933,9 @@
                 ];
 
                 const leagueNews = [
-                    `🚨 BREAKING: LEAGUE STANDINGS UNDER FIRE AS MID-TIER CLOWNS ACCUSE TOP DOG OF GETTING LUCKY!`,
+                    `🚨 BREAKING: CFP COMMITTEE STANDINGS UNDER FIRE BY COACHES ACROSS THE NATION!`,
                     `📊 ANALYST DESK ALERT: STAT FRAUDS EXPOSED AFTER DISASTROUS SLATE RESULTS!`,
-                    `🔥 SOURCES: ANONYMOUS COACH ACCUSES STANDINGS LEADER OF GUESSING AT RANDOM.`,
+                    `🔥 SOURCES: EXPERT CFP HAIL MARY PICKS SHAKING UP SEASON REPUTATION SCORES!`,
                     `🏈 LEAGUE HEADLINES: DRAMA MOUNTS ON LIVE AIR AT THE LEAGUE ANALYST DESK!`
                 ];
 
@@ -722,7 +2061,7 @@
                 if (profErr) throw profErr;
                 globalProfiles = profiles || [];
 
-                // 2. Fetch Weekly Slates ordered by ID
+                // 2. Fetch Weekly Slates
                 const { data: slates, error: slateErr } = await supabaseClient
                     .from('weekly_slates')
                     .select('id, week_number, espn_game_id')
@@ -730,7 +2069,7 @@
                 if (slateErr) throw slateErr;
                 globalSlates = slates || [];
 
-                // 3. Fetch all picks across all rows
+                // 3. Fetch all picks
                 globalPicks = await fetchAllPicks();
 
                 // 4. Fetch ESPN scores
@@ -1049,7 +2388,6 @@
                 const isGameLocked = now >= gameDate || state !== 'pre';
                 const canRevealPick = isSelf || isGameLocked;
 
-                // Accurately pairs pick with this specific ESPN game ID
                 const userPick = findUserPickForGame(userAllPicks, activeModalWeek, gameId, idx + 1, homeName, awayName);
                 const hasPick = userPick && userPick.chosen_team;
                 const chosenTeam = hasPick ? userPick.chosen_team : 'NO PICK';
@@ -1112,7 +2450,14 @@
             });
         }
 
-        window.addEventListener('DOMContentLoaded', loadLeaderboard);
+        // ========================================================
+        // 5. BOOTSTRAP INITIALIZATION
+        // ========================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            verifyMandatoryQuestionnaire();
+            loadLeaderboard();
+            fetchCFPPlayoffTeams();
+        });
     </script>
 </body>
 </html>
