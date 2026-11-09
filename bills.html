@@ -3,1345 +3,172 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Household Money Log & Bills</title>
-  
-  <!-- Tailwind CSS CDN -->
+  <title>Money Log</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase JS CDN (v2) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background-color: #cbd5e1;
-      border-radius: 9999px;
-    }
-  </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
-  <!-- ================= TOP NAVIGATION ================= -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        
-        <!-- Logo / Title -->
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-sm shadow-emerald-200">
-            <i data-lucide="wallet-cards" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h1 class="text-lg font-bold text-slate-900 leading-tight">HomeLedger</h1>
-            <p class="text-xs text-slate-500 font-medium">Shared Money & Bills</p>
-          </div>
+  <div class="max-w-md mx-auto p-4">
+    <!-- Tab Navigation -->
+    <nav class="flex rounded-xl bg-slate-200 p-1 mb-6 gap-1 font-semibold text-sm">
+      <button onclick="switchTab('husband')" id="tab-husband" class="flex-1 py-2 rounded-lg transition-colors">My Log</button>
+      <button onclick="switchTab('wife')" id="tab-wife" class="flex-1 py-2 rounded-lg transition-colors">Wife's Log</button>
+      <button onclick="switchTab('bills')" id="tab-bills" class="flex-1 py-2 rounded-lg transition-colors">Bills</button>
+    </nav>
+
+    <!-- 1. HUSBAND LOG (BLUE) -->
+    <section id="view-husband" class="space-y-4">
+      <form onsubmit="addExpense(event, 'husband')" class="bg-blue-600 text-white p-4 rounded-2xl shadow-sm space-y-3">
+        <h2 class="font-bold text-lg">Add My Expense</h2>
+        <input id="h-desc" type="text" placeholder="What did you buy?" required class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 outline-none">
+        <div class="flex gap-2">
+          <input id="h-amount" type="number" step="0.01" placeholder="Amount ($)" required class="w-1/2 px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 outline-none">
+          <input id="h-date" type="date" required class="w-1/2 px-3 py-2 rounded-lg text-slate-800 outline-none">
         </div>
+        <button type="submit" class="w-full bg-blue-900 hover:bg-blue-950 text-white font-semibold py-2 rounded-lg transition-colors">Save Expense</button>
+      </form>
+      <ul id="list-husband" class="space-y-2"></ul>
+    </section>
 
-        <!-- Desktop Navigation Tabs -->
-        <nav class="hidden md:flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
-          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="tab-btn px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-            <span>Overview</span>
-          </button>
-          <button onclick="switchTab('husband')" id="nav-husband" class="tab-btn px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-            <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
-            <span>My Log</span>
-          </button>
-          <button onclick="switchTab('wife')" id="nav-wife" class="tab-btn px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-            <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i>
-            <span>Wife's Log</span>
-          </button>
-          <button onclick="switchTab('bills')" id="nav-bills" class="tab-btn px-3 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
-            <i data-lucide="receipt" class="w-4 h-4 text-emerald-500"></i>
-            <span>Household Bills</span>
-          </button>
-        </nav>
-
-        <!-- Right Side: Active User Badge & Connection Button -->
-        <div class="flex items-center space-x-3">
-          <div id="connection-pill" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            <span id="connection-text">Demo Mode</span>
-          </div>
-
-          <button onclick="openConfigModal()" title="Supabase Settings (No Login Required)" class="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors border border-slate-200 shadow-xs flex items-center space-x-1 text-xs font-semibold">
-            <i data-lucide="settings" class="w-4 h-4"></i>
-            <span class="hidden sm:inline">Database</span>
-          </button>
+    <!-- 2. WIFE LOG -->
+    <section id="view-wife" class="space-y-4 hidden">
+      <form onsubmit="addExpense(event, 'wife')" class="bg-slate-800 text-white p-4 rounded-2xl shadow-sm space-y-3">
+        <h2 class="font-bold text-lg">Add Wife's Expense</h2>
+        <input id="w-desc" type="text" placeholder="What did you buy?" required class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 outline-none">
+        <div class="flex gap-2">
+          <input id="w-amount" type="number" step="0.01" placeholder="Amount ($)" required class="w-1/2 px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 outline-none">
+          <input id="w-date" type="date" required class="w-1/2 px-3 py-2 rounded-lg text-slate-800 outline-none">
         </div>
+        <button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-semibold py-2 rounded-lg transition-colors">Save Expense</button>
+      </form>
+      <ul id="list-wife" class="space-y-2"></ul>
+    </section>
 
-      </div>
-    </div>
-
-    <!-- Mobile Navigation Sub-bar -->
-    <div class="flex md:hidden border-t border-slate-100 overflow-x-auto px-3 py-2 space-x-2 bg-slate-50 custom-scrollbar">
-      <button onclick="switchTab('dashboard')" id="mobile-nav-dashboard" class="mobile-tab-btn flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200 flex items-center space-x-1">
-        <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
-        <span>Overview</span>
-      </button>
-      <button onclick="switchTab('husband')" id="mobile-nav-husband" class="mobile-tab-btn flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200 flex items-center space-x-1">
-        <i data-lucide="user" class="w-3.5 h-3.5 text-blue-600"></i>
-        <span>My Log</span>
-      </button>
-      <button onclick="switchTab('wife')" id="mobile-nav-wife" class="mobile-tab-btn flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200 flex items-center space-x-1">
-        <i data-lucide="heart" class="w-3.5 h-3.5 text-pink-500"></i>
-        <span>Wife's Log</span>
-      </button>
-      <button onclick="switchTab('bills')" id="mobile-nav-bills" class="mobile-tab-btn flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200 flex items-center space-x-1">
-        <i data-lucide="receipt" class="w-3.5 h-3.5 text-emerald-500"></i>
-        <span>Bills</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- ================= NOTICE BANNER (Demo Mode) ================= -->
-  <div id="demo-banner" class="bg-gradient-to-r from-blue-50 via-indigo-50 to-amber-50 border-b border-blue-200 text-blue-900 text-xs py-2 px-4 flex items-center justify-between">
-    <div class="max-w-7xl mx-auto flex items-center justify-between w-full">
-      <div class="flex items-center space-x-2">
-        <i data-lucide="info" class="w-4 h-4 text-blue-600 shrink-0"></i>
-        <span><strong>No sign-in needed!</strong> Connect your Supabase project in settings so both you and your wife stay synced across phones in real time.</span>
-      </div>
-      <button onclick="openConfigModal()" class="ml-3 underline font-semibold text-blue-800 hover:text-blue-950 shrink-0">Connect DB</button>
-    </div>
+    <!-- 3. BILLS LOG -->
+    <section id="view-bills" class="space-y-4 hidden">
+      <form onsubmit="addBill(event)" class="bg-emerald-700 text-white p-4 rounded-2xl shadow-sm space-y-3">
+        <h2 class="font-bold text-lg">Add Household Bill</h2>
+        <input id="b-title" type="text" placeholder="Bill Name (e.g. Electric)" required class="w-full px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 outline-none">
+        <div class="flex gap-2">
+          <input id="b-amount" type="number" step="0.01" placeholder="Amount ($)" required class="w-1/2 px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 outline-none">
+          <input id="b-day" type="number" min="1" max="31" placeholder="Due Day (1-31)" required class="w-1/2 px-3 py-2 rounded-lg text-slate-800 placeholder-slate-400 outline-none">
+        </div>
+        <button type="submit" class="w-full bg-emerald-900 hover:bg-emerald-950 text-white font-semibold py-2 rounded-lg transition-colors">Save Bill</button>
+      </form>
+      <ul id="list-bills" class="space-y-2"></ul>
+    </section>
   </div>
 
-  <!-- ================= MAIN CONTAINER ================= -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
-    
-    <!-- ================= VIEW 1: DASHBOARD / OVERVIEW ================= -->
-    <div id="view-dashboard" class="space-y-6">
-      
-      <!-- Quick Stats Banner -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <div class="flex items-center justify-between text-slate-500 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider">Household Total</span>
-            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <i data-lucide="piggy-bank" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-black text-slate-900" id="dash-total-household">$0.00</div>
-          <p class="text-xs text-slate-400 mt-1">This month (My Log + Wife + Bills)</p>
-        </div>
-
-        <div class="bg-blue-50/60 rounded-2xl p-5 border border-blue-200/80 shadow-xs">
-          <div class="flex items-center justify-between text-blue-600 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider">My Spending</span>
-            <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
-              <i data-lucide="user" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-black text-blue-700" id="dash-my-total">$0.00</div>
-          <p class="text-xs text-blue-500 mt-1" id="dash-my-count">0 items logged</p>
-        </div>
-
-        <div class="bg-pink-50/60 rounded-2xl p-5 border border-pink-200/80 shadow-xs">
-          <div class="flex items-center justify-between text-pink-600 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider">Wife's Spending</span>
-            <div class="w-8 h-8 rounded-lg bg-pink-500 text-white flex items-center justify-center shadow-xs">
-              <i data-lucide="heart" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-black text-pink-600" id="dash-wife-total">$0.00</div>
-          <p class="text-xs text-pink-500 mt-1" id="dash-wife-count">0 items logged</p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <div class="flex items-center justify-between text-slate-500 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider">Monthly Bills</span>
-            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <i data-lucide="receipt" class="w-4 h-4"></i>
-            </div>
-          </div>
-          <div class="text-2xl font-black text-slate-900" id="dash-bills-total">$0.00</div>
-          <p class="text-xs text-emerald-600 font-medium mt-1" id="dash-bills-status">0 pending</p>
-        </div>
-      </div>
-
-      <!-- Quick Action Buttons -->
-      <div class="flex flex-wrap gap-3">
-        <button onclick="switchTab('husband')" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors">
-          <i data-lucide="plus" class="w-4 h-4"></i>
-          <span>+ Log for Me</span>
-        </button>
-        <button onclick="switchTab('wife')" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-pink-600 hover:bg-pink-700 text-white font-medium text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors">
-          <i data-lucide="plus" class="w-4 h-4"></i>
-          <span>+ Log for Wife</span>
-        </button>
-        <button onclick="switchTab('bills')" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors">
-          <i data-lucide="receipt-text" class="w-4 h-4"></i>
-          <span>Manage Bills</span>
-        </button>
-      </div>
-
-      <!-- Split Ratio / Progress Bar -->
-      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Personal Spending Ratio</h2>
-          <span class="text-xs text-slate-500" id="ratio-label">50% Me / 50% Wife</span>
-        </div>
-        <div class="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden flex">
-          <div id="ratio-husband-bar" class="bg-blue-600 h-full transition-all duration-500" style="width: 50%"></div>
-          <div id="ratio-wife-bar" class="bg-pink-500 h-full transition-all duration-500" style="width: 50%"></div>
-        </div>
-        <div class="flex items-center justify-between text-xs text-slate-500 mt-2">
-          <div class="flex items-center space-x-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-            <span>Me: <strong id="ratio-husband-text" class="text-blue-700 font-bold">$0</strong></span>
-          </div>
-          <div class="flex items-center space-x-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
-            <span>Wife: <strong id="ratio-wife-text" class="text-pink-700 font-bold">$0</strong></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Combined Recent Activity -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="font-bold text-slate-900">Recent Household Activity</h3>
-          <span class="text-xs text-slate-400">All logs combined</span>
-        </div>
-        <div id="dash-recent-list" class="divide-y divide-slate-100">
-          <!-- Filled dynamically -->
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ================= VIEW 2: MY LOG (VIBRANT BLUE THEME) ================= -->
-    <div id="view-husband" class="hidden space-y-6">
-      
-      <!-- Blue Header Banner -->
-      <div class="bg-gradient-to-r from-blue-700 via-blue-600 to-sky-600 text-white rounded-2xl p-6 shadow-md shadow-blue-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold mb-2">
-            <i data-lucide="user" class="w-3.5 h-3.5"></i>
-            <span>Personal Ledger</span>
-          </div>
-          <h2 class="text-2xl sm:text-3xl font-black tracking-tight">My Log</h2>
-          <p class="text-blue-100 text-xs sm:text-sm mt-1">Track fuel, lunches, coffee, personal projects and expenses</p>
-        </div>
-        <div class="bg-white/15 backdrop-blur-md px-6 py-3.5 rounded-2xl border border-white/20 text-right">
-          <div class="text-xs font-bold text-blue-100 uppercase tracking-wider">This Month Total</div>
-          <div class="text-3xl font-black text-white" id="husband-month-total">$0.00</div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- New Expense Form (Blue Accent) -->
-        <div class="lg:col-span-1">
-          <div class="bg-white rounded-2xl p-6 border-2 border-blue-100 shadow-xs sticky top-24">
-            <h3 class="font-bold text-blue-900 text-base mb-4 flex items-center space-x-2">
-              <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-              </div>
-              <span>Add to My Log</span>
-            </h3>
-
-            <form id="form-husband" onsubmit="handleLogExpense(event, 'husband')" class="space-y-4">
-              <div>
-                <label class="block text-xs font-bold text-blue-900 uppercase mb-1">Amount ($)</label>
-                <div class="relative">
-                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400 font-bold">$</span>
-                  <input type="number" step="0.01" min="0.01" required placeholder="0.00" id="h-amount" class="w-full pl-8 pr-4 py-2.5 bg-blue-50/40 border border-blue-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900 text-base">
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description</label>
-                <input type="text" required placeholder="e.g. Lunch with team, Gas fill-up" id="h-description" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category</label>
-                  <select id="h-category" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
-                    <option value="Food & Dining">Food & Dining</option>
-                    <option value="Transportation / Fuel">Fuel & Auto</option>
-                    <option value="Personal / Hobby">Personal & Hobby</option>
-                    <option value="Groceries">Groceries</option>
-                    <option value="Health / Gym">Health & Gym</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
-                  <input type="date" required id="h-date" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium">
-                </div>
-              </div>
-
-              <button type="submit" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-200 flex items-center justify-center space-x-2 active:scale-95">
-                <i data-lucide="check" class="w-4 h-4"></i>
-                <span>Save Entry</span>
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Expense Table / List -->
-        <div class="lg:col-span-2">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <h3 class="font-bold text-slate-900 flex items-center space-x-2">
-                  <span>My Expenses</span>
-                  <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
-                </h3>
-                <p class="text-xs text-slate-500" id="husband-count-label">0 entries recorded</p>
-              </div>
-              <!-- Category Filter -->
-              <div class="flex items-center space-x-2 w-full sm:w-auto">
-                <select id="h-filter" onchange="renderExpenseTable('husband')" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium">
-                  <option value="all">All Categories</option>
-                  <option value="Food & Dining">Food & Dining</option>
-                  <option value="Transportation / Fuel">Fuel & Auto</option>
-                  <option value="Personal / Hobby">Personal & Hobby</option>
-                  <option value="Groceries">Groceries</option>
-                  <option value="Health / Gym">Health & Gym</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead class="bg-blue-50/50 text-blue-900 text-xs font-semibold uppercase tracking-wider border-b border-blue-100">
-                  <tr>
-                    <th class="py-3 px-4">Date</th>
-                    <th class="py-3 px-4">Description</th>
-                    <th class="py-3 px-4">Category</th>
-                    <th class="py-3 px-4 text-right">Amount</th>
-                    <th class="py-3 px-4 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="husband-table-body" class="divide-y divide-slate-100">
-                  <!-- Injected via JS -->
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= VIEW 3: WIFE'S LOG ================= -->
-    <div id="view-wife" class="hidden space-y-6">
-      
-      <!-- Header Banner -->
-      <div class="bg-gradient-to-r from-pink-900 via-pink-700 to-rose-600 text-white rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-md bg-white/10 text-pink-100 text-xs font-semibold mb-2">
-            <i data-lucide="heart" class="w-3.5 h-3.5"></i>
-            <span>Wife's Spending</span>
-          </div>
-          <h2 class="text-2xl font-black">Wife's Personal Log</h2>
-          <p class="text-pink-200 text-xs mt-1">Track shopping, personal care, errands, or individual expenses</p>
-        </div>
-        <div class="bg-white/10 backdrop-blur-md px-5 py-3 rounded-xl border border-white/10 text-right">
-          <div class="text-xs font-semibold text-pink-200 uppercase">This Month</div>
-          <div class="text-3xl font-black text-white" id="wife-month-total">$0.00</div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- New Expense Form -->
-        <div class="lg:col-span-1">
-          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs sticky top-24">
-            <h3 class="font-bold text-slate-900 text-base mb-4 flex items-center space-x-2">
-              <i data-lucide="plus-circle" class="w-5 h-5 text-pink-600"></i>
-              <span>Add Wife's Expense</span>
-            </h3>
-
-            <form id="form-wife" onsubmit="handleLogExpense(event, 'wife')" class="space-y-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount ($)</label>
-                <div class="relative">
-                  <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                  <input type="number" step="0.01" min="0.01" required placeholder="0.00" id="w-amount" class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 font-semibold text-slate-800">
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Description</label>
-                <input type="text" required placeholder="e.g. Target run, Skincare, Lunch" id="w-description" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm">
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
-                  <select id="w-category" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm font-medium">
-                    <option value="Shopping & Clothes">Shopping & Clothes</option>
-                    <option value="Beauty & Self Care">Beauty & Self Care</option>
-                    <option value="Food & Coffee">Food & Coffee</option>
-                    <option value="Home & Kids">Home & Kids</option>
-                    <option value="Groceries">Groceries</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
-                  <input type="date" required id="w-date" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm font-medium">
-                </div>
-              </div>
-
-              <button type="submit" class="w-full py-2.5 px-4 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl transition-colors shadow-xs flex items-center justify-center space-x-2">
-                <i data-lucide="check" class="w-4 h-4"></i>
-                <span>Save to Wife's Log</span>
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Expense Table / List -->
-        <div class="lg:col-span-2">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <h3 class="font-bold text-slate-900">Recorded Expenses</h3>
-                <p class="text-xs text-slate-500" id="wife-count-label">0 entries recorded</p>
-              </div>
-              <!-- Category Filter -->
-              <div class="flex items-center space-x-2 w-full sm:w-auto">
-                <select id="w-filter" onchange="renderExpenseTable('wife')" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-pink-500 font-medium">
-                  <option value="all">All Categories</option>
-                  <option value="Shopping & Clothes">Shopping & Clothes</option>
-                  <option value="Beauty & Self Care">Beauty & Self Care</option>
-                  <option value="Food & Coffee">Food & Coffee</option>
-                  <option value="Home & Kids">Home & Kids</option>
-                  <option value="Groceries">Groceries</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
-                  <tr>
-                    <th class="py-3 px-4">Date</th>
-                    <th class="py-3 px-4">Description</th>
-                    <th class="py-3 px-4">Category</th>
-                    <th class="py-3 px-4 text-right">Amount</th>
-                    <th class="py-3 px-4 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="wife-table-body" class="divide-y divide-slate-100">
-                  <!-- Injected via JS -->
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= VIEW 4: SHARED BILLS ================= -->
-    <div id="view-bills" class="hidden space-y-6">
-      
-      <!-- Header Banner -->
-      <div class="bg-gradient-to-r from-emerald-900 via-teal-800 to-emerald-700 text-white rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-md bg-white/10 text-emerald-100 text-xs font-semibold mb-2">
-            <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
-            <span>Household Fixed Expenses</span>
-          </div>
-          <h2 class="text-2xl font-black">Shared Household Bills</h2>
-          <p class="text-emerald-200 text-xs mt-1">Rent/Mortgage, Utilities, Internet, Subscriptions & Insurance</p>
-        </div>
-        <div class="flex items-center space-x-3">
-          <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 text-right">
-            <div class="text-xs font-semibold text-emerald-200 uppercase">Paid So Far</div>
-            <div class="text-xl font-bold text-emerald-300" id="bills-paid-sum">$0.00</div>
-          </div>
-          <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 text-right">
-            <div class="text-xs font-semibold text-emerald-200 uppercase">Total Monthly</div>
-            <div class="text-2xl font-black text-white" id="bills-total-sum">$0.00</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Add Bill Form -->
-        <div class="lg:col-span-1">
-          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs sticky top-24">
-            <h3 class="font-bold text-slate-900 text-base mb-4 flex items-center space-x-2">
-              <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i>
-              <span>Add Recurring Bill</span>
-            </h3>
-
-            <form id="form-bill" onsubmit="handleSaveBill(event)" class="space-y-4">
-              <div>
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Bill Name / Service</label>
-                <input type="text" required placeholder="e.g. Electric (Power Co), Netflix, Rent" id="b-title" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount ($)</label>
-                  <div class="relative">
-                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                    <input type="number" step="0.01" min="0.01" required placeholder="0.00" id="b-amount" class="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-semibold text-sm">
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Due Day</label>
-                  <input type="number" min="1" max="31" required placeholder="1 - 31" id="b-due-day" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
-                  <select id="b-category" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
-                    <option value="Housing">Housing / Rent</option>
-                    <option value="Utilities">Utilities (Water, Power)</option>
-                    <option value="Internet / Phone">Internet / Phone</option>
-                    <option value="Subscription">Streaming / Subs</option>
-                    <option value="Insurance">Insurance</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Assigned Payer</label>
-                  <select id="b-payer" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
-                    <option value="Split 50/50">Split 50/50</option>
-                    <option value="Husband">Husband</option>
-                    <option value="Wife">Wife</option>
-                    <option value="Joint Account">Joint Account</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="flex items-center space-x-2 pt-1">
-                <input type="checkbox" id="b-autopay" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
-                <label for="b-autopay" class="text-xs font-medium text-slate-600">On Auto-Pay with bank</label>
-              </div>
-
-              <button type="submit" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors shadow-xs flex items-center justify-center space-x-2">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>Add Bill</span>
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Bills List and Status Cards -->
-        <div class="lg:col-span-2 space-y-4">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-5">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <h3 class="font-bold text-slate-900">Current Bills Checklist</h3>
-                <p class="text-xs text-slate-500">Click the status button to mark as Paid or Unpaid for the month</p>
-              </div>
-              <button onclick="resetAllBillsToUnpaid()" class="text-xs font-medium text-slate-500 hover:text-slate-800 underline">
-                Reset all to unpaid
-              </button>
-            </div>
-
-            <div id="bills-list-container" class="space-y-2.5">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-  </main>
-
-  <!-- ================= SUPABASE CONFIG MODAL ================= -->
-  <div id="config-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 overflow-y-auto max-h-[90vh]">
-      
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-            <i data-lucide="database" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-900 text-base">Supabase Settings</h3>
-            <p class="text-xs text-slate-500">Sync data between your phone and your wife's phone</p>
-          </div>
-        </div>
-        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-4 py-4 text-sm">
-        <p class="text-xs text-slate-500">
-          Paste your Project URL & Anon Key from your Supabase dashboard (<strong>Project Settings &rarr; API</strong>). Keys are saved strictly in your device's browser localStorage.
-        </p>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Project URL</label>
-          <input type="url" id="cfg-url" placeholder="https://xyzcompany.supabase.co" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-mono">
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Anon Public Key</label>
-          <textarea id="cfg-key" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-mono"></textarea>
-        </div>
-
-        <!-- Test Status Feedback -->
-        <div id="cfg-status-box" class="hidden p-3 rounded-xl text-xs font-medium"></div>
-
-        <!-- Accordion for SQL instructions -->
-        <details class="group bg-slate-50 rounded-xl border border-slate-200 p-3 text-xs">
-          <summary class="font-bold text-slate-700 cursor-pointer flex items-center justify-between">
-            <span>SQL Schema (Run once in Supabase SQL Editor — No Auth / Sign-in required!)</span>
-            <i data-lucide="chevron-down" class="w-4 h-4 group-open:rotate-180 transition-transform"></i>
-          </summary>
-          <div class="mt-3 relative">
-            <pre class="bg-slate-900 text-slate-200 p-3.5 rounded-lg overflow-x-auto text-[11px] font-mono select-all">
--- 1. Create expenses table for husband and wife
-create table if not exists expenses (
-  id uuid primary key default gen_random_uuid(),
-  owner text not null check (owner in ('husband', 'wife')),
-  amount numeric(10, 2) not null,
-  category text not null,
-  description text not null,
-  spent_at date not null default current_date,
-  created_at timestamptz default now()
-);
-
--- 2. Create shared recurring household bills table
-create table if not exists bills (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  amount numeric(10, 2) not null,
-  due_day integer check (due_day between 1 and 31),
-  category text default 'Utilities',
-  payer text default 'Split 50/50',
-  is_autopay boolean default false,
-  status text default 'unpaid' check (status in ('unpaid', 'paid')),
-  created_at timestamptz default now()
-);
-
--- 3. Enable public anon access (NO LOGIN REQUIRED)
-alter table expenses enable row level security;
-alter table bills enable row level security;
-
-create policy "Public expenses access" on expenses for all to anon using (true) with check (true);
-create policy "Public bills access" on bills for all to anon using (true) with check (true);
-            </pre>
-          </div>
-        </details>
-      </div>
-
-      <div class="flex items-center justify-between pt-4 border-t border-slate-100">
-        <button onclick="clearSupabaseConfig()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold">
-          Reset to Local Demo
-        </button>
-        <div class="flex space-x-2">
-          <button onclick="closeConfigModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl">
-            Cancel
-          </button>
-          <button onclick="saveSupabaseConfig()" class="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs">
-            Save & Connect
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Notification Toast Container -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-lg border border-slate-700 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 pointer-events-none">
-    <i data-lucide="info" class="w-4 h-4 text-emerald-400"></i>
-    <span id="toast-message">Message</span>
-  </div>
-
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    // ----------------------------------------------------
-    // State & Storage
-    // ----------------------------------------------------
-    let supabaseClient = null;
-    let isLiveSupabase = false;
+    // --- 1. CONFIGURATION: PASTE YOUR SUPABASE DETAILS HERE ---
+    const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+    const SUPABASE_ANON_KEY = 
+    // ----------------------------------------------------------
 
-    // Default Seed Data for local experience before Supabase config
-    const DEFAULT_EXPENSES = [
-      { id: '1', owner: 'husband', amount: 45.50, category: 'Food & Dining', description: 'Work Team Lunch', spent_at: new Date().toISOString().split('T')[0] },
-      { id: '2', owner: 'husband', amount: 52.00, category: 'Transportation / Fuel', description: 'Gas station fill-up', spent_at: new Date().toISOString().split('T')[0] },
-      { id: '3', owner: 'wife', amount: 84.20, category: 'Groceries', description: 'Weekly groceries run', spent_at: new Date().toISOString().split('T')[0] },
-      { id: '4', owner: 'wife', amount: 32.00, category: 'Shopping & Clothes', description: 'Books and stationery', spent_at: new Date().toISOString().split('T')[0] },
-    ];
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('h-date').value = today;
+    document.getElementById('w-date').value = today;
 
-    const DEFAULT_BILLS = [
-      { id: 'b1', title: 'Home Internet (Fiber)', amount: 75.00, due_day: 5, category: 'Internet / Phone', payer: 'Split 50/50', is_autopay: true, status: 'paid' },
-      { id: 'b2', title: 'Electric & Power Co.', amount: 140.00, due_day: 15, category: 'Utilities', payer: 'Husband', is_autopay: false, status: 'unpaid' },
-      { id: 'b3', title: 'Water & Trash', amount: 65.00, due_day: 20, category: 'Utilities', payer: 'Wife', is_autopay: true, status: 'unpaid' },
-      { id: 'b4', title: 'Netflix & Spotify', amount: 28.00, due_day: 28, category: 'Subscription', payer: 'Split 50/50', is_autopay: true, status: 'paid' }
-    ];
+    let activeTab = 'husband';
 
-    let expenses = [];
-    let bills = [];
-
-    // ----------------------------------------------------
-    // Initialization
-    // ----------------------------------------------------
-    window.addEventListener('DOMContentLoaded', async () => {
-      // Set today's date into forms
-      const todayStr = new Date().toISOString().split('T')[0];
-      const hDate = document.getElementById('h-date');
-      const wDate = document.getElementById('w-date');
-      if (hDate) hDate.value = todayStr;
-      if (wDate) wDate.value = todayStr;
-
-      // Initialize Supabase if credentials are in localStorage
-      initSupabaseConnection();
-
-      // Load initial state
-      await refreshAllData();
-
-      // Default Tab
-      switchTab('dashboard');
-
-      // Initialize Lucide icons
-      lucide.createIcons();
-    });
-
-    // ----------------------------------------------------
-    // Supabase Connection Management
-    // ----------------------------------------------------
-    function initSupabaseConnection() {
-      const url = localStorage.getItem('hl_supabase_url');
-      const key = localStorage.getItem('hl_supabase_key');
-
-      if (url && key && window.supabase) {
-        try {
-          supabaseClient = window.supabase.createClient(url, key);
-          isLiveSupabase = true;
-          updateConnectionStatus(true);
-        } catch (err) {
-          console.error("Supabase init error:", err);
-          isLiveSupabase = false;
-          updateConnectionStatus(false);
+    function switchTab(tab) {
+      activeTab = tab;
+      ['husband', 'wife', 'bills'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.toggle('hidden', t !== tab);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) {
+          btn.className = t === 'husband' ? 'flex-1 py-2 rounded-lg bg-blue-600 text-white shadow-sm' : 'flex-1 py-2 rounded-lg bg-white text-slate-900 shadow-sm';
+        } else {
+          btn.className = 'flex-1 py-2 rounded-lg text-slate-600 hover:text-slate-900';
         }
+      });
+      loadData();
+    }
+
+    async function loadData() {
+      if (activeTab === 'bills') {
+        const { data } = await sb.from('bills').select('*').order('due_day', { ascending: true });
+        renderBills(data || []);
       } else {
-        isLiveSupabase = false;
-        updateConnectionStatus(false);
+        const { data } = await sb.from('expenses').select('*').eq('owner', activeTab).order('spent_at', { ascending: false });
+        renderExpenses(activeTab, data || []);
       }
     }
 
-    function updateConnectionStatus(isLive) {
-      const pill = document.getElementById('connection-pill');
-      const text = document.getElementById('connection-text');
-      const banner = document.getElementById('demo-banner');
-
-      if (isLive) {
-        pill.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200";
-        pill.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Supabase Synced</span>';
-        if (banner) banner.classList.add('hidden');
-      } else {
-        pill.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200";
-        pill.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span><span>Local Mode</span>';
-        if (banner) banner.classList.remove('hidden');
-      }
-    }
-
-    // ----------------------------------------------------
-    // Data Loading & Syncing
-    // ----------------------------------------------------
-    async function refreshAllData() {
-      if (isLiveSupabase && supabaseClient) {
-        try {
-          // Fetch expenses
-          const { data: expData, error: expErr } = await supabaseClient
-            .from('expenses')
-            .select('*')
-            .order('spent_at', { ascending: false });
-
-          if (!expErr && expData) {
-            expenses = expData;
-          }
-
-          // Fetch bills
-          const { data: billData, error: billErr } = await supabaseClient
-            .from('bills')
-            .select('*')
-            .order('due_day', { ascending: true });
-
-          if (!billErr && billData) {
-            bills = billData;
-          }
-        } catch (e) {
-          console.warn("Could not query Supabase tables, falling back to local:", e);
-          loadLocalStorageData();
-        }
-      } else {
-        loadLocalStorageData();
-      }
-
-      // Render all views with updated data
-      renderDashboard();
-      renderExpenseTable('husband');
-      renderExpenseTable('wife');
-      renderBillsList();
-      lucide.createIcons();
-    }
-
-    function loadLocalStorageData() {
-      const localExp = localStorage.getItem('hl_local_expenses');
-      expenses = localExp ? JSON.parse(localExp) : [...DEFAULT_EXPENSES];
-
-      const localBills = localStorage.getItem('hl_local_bills');
-      bills = localBills ? JSON.parse(localBills) : [...DEFAULT_BILLS];
-    }
-
-    function saveLocalFallback() {
-      localStorage.setItem('hl_local_expenses', JSON.stringify(expenses));
-      localStorage.setItem('hl_local_bills', JSON.stringify(bills));
-    }
-
-    // ----------------------------------------------------
-    // Expense Handling (Add / Delete)
-    // ----------------------------------------------------
-    async function handleLogExpense(e, owner) {
+    async function addExpense(e, owner) {
       e.preventDefault();
       const prefix = owner === 'husband' ? 'h' : 'w';
-
+      const description = document.getElementById(`${prefix}-desc`).value;
       const amount = parseFloat(document.getElementById(`${prefix}-amount`).value);
-      const description = document.getElementById(`${prefix}-description`).value.trim();
-      const category = document.getElementById(`${prefix}-category`).value;
-      const date = document.getElementById(`${prefix}-date`).value;
+      const spent_at = document.getElementById(`${prefix}-date`).value;
 
-      if (!amount || isNaN(amount) || !description) {
-        showToast("Please enter an amount and description.");
-        return;
-      }
-
-      const newRecord = {
-        owner,
-        amount: parseFloat(amount.toFixed(2)),
-        description,
-        category,
-        spent_at: date || new Date().toISOString().split('T')[0]
-      };
-
-      if (isLiveSupabase && supabaseClient) {
-        const { data, error } = await supabaseClient.from('expenses').insert([newRecord]).select();
-        if (error) {
-          showToast(`Error: ${error.message}`);
-          return;
-        }
-        if (data && data[0]) {
-          expenses.unshift(data[0]);
-        }
-      } else {
-        newRecord.id = 'exp_' + Date.now();
-        expenses.unshift(newRecord);
-        saveLocalFallback();
-      }
-
-      // Reset form fields
+      await sb.from('expenses').insert([{ owner, description, amount, spent_at }]);
+      document.getElementById(`${prefix}-desc`).value = '';
       document.getElementById(`${prefix}-amount`).value = '';
-      document.getElementById(`${prefix}-description`).value = '';
-
-      showToast(`Logged $${amount.toFixed(2)} to ${owner === 'husband' ? 'My Log' : "Wife's Log"}`);
-      await refreshAllData();
+      loadData();
     }
 
-    async function deleteExpense(id) {
-      if (isLiveSupabase && supabaseClient) {
-        const { error } = await supabaseClient.from('expenses').delete().eq('id', id);
-        if (error) {
-          showToast(`Failed to delete: ${error.message}`);
-          return;
-        }
-      }
-      expenses = expenses.filter(item => item.id !== id);
-      saveLocalFallback();
-      showToast("Expense removed");
-      await refreshAllData();
-    }
-
-    // ----------------------------------------------------
-    // Bills Handling (Add, Toggle Status, Delete)
-    // ----------------------------------------------------
-    async function handleSaveBill(e) {
+    async function addBill(e) {
       e.preventDefault();
-      const title = document.getElementById('b-title').value.trim();
+      const title = document.getElementById('b-title').value;
       const amount = parseFloat(document.getElementById('b-amount').value);
-      const due_day = parseInt(document.getElementById('b-due-day').value, 10);
-      const category = document.getElementById('b-category').value;
-      const payer = document.getElementById('b-payer').value;
-      const is_autopay = document.getElementById('b-autopay').checked;
+      const due_day = parseInt(document.getElementById('b-day').value);
 
-      if (!title || isNaN(amount) || isNaN(due_day)) {
-        showToast("Please fill all required bill fields.");
-        return;
-      }
-
-      const newBill = {
-        title,
-        amount: parseFloat(amount.toFixed(2)),
-        due_day,
-        category,
-        payer,
-        is_autopay,
-        status: 'unpaid'
-      };
-
-      if (isLiveSupabase && supabaseClient) {
-        const { data, error } = await supabaseClient.from('bills').insert([newBill]).select();
-        if (error) {
-          showToast(`Error saving bill: ${error.message}`);
-          return;
-        }
-        if (data && data[0]) bills.push(data[0]);
-      } else {
-        newBill.id = 'bill_' + Date.now();
-        bills.push(newBill);
-        saveLocalFallback();
-      }
-
+      await sb.from('bills').insert([{ title, amount, due_day, is_paid: false }]);
       document.getElementById('b-title').value = '';
       document.getElementById('b-amount').value = '';
-      document.getElementById('b-due-day').value = '';
-      document.getElementById('b-autopay').checked = false;
-
-      showToast(`Added bill: ${title}`);
-      await refreshAllData();
+      document.getElementById('b-day').value = '';
+      loadData();
     }
 
-    async function toggleBillStatus(id) {
-      const bill = bills.find(b => b.id === id);
-      if (!bill) return;
-
-      const updatedStatus = bill.status === 'paid' ? 'unpaid' : 'paid';
-
-      if (isLiveSupabase && supabaseClient) {
-        const { error } = await supabaseClient.from('bills').update({ status: updatedStatus }).eq('id', id);
-        if (error) {
-          showToast(`Status update failed: ${error.message}`);
-          return;
-        }
-      }
-
-      bill.status = updatedStatus;
-      saveLocalFallback();
-      showToast(`Bill marked as ${updatedStatus}`);
-      await refreshAllData();
+    async function toggleBill(id, status) {
+      await sb.from('bills').update({ is_paid: !status }).eq('id', id);
+      loadData();
     }
 
-    async function resetAllBillsToUnpaid() {
-      if (isLiveSupabase && supabaseClient) {
-        const { error } = await supabaseClient.from('bills').update({ status: 'unpaid' }).neq('status', 'unpaid');
-        if (error) {
-          showToast(`Reset error: ${error.message}`);
-          return;
-        }
-      }
-      bills.forEach(b => b.status = 'unpaid');
-      saveLocalFallback();
-      showToast("All bills reset to unpaid for the month");
-      await refreshAllData();
+    async function deleteItem(table, id) {
+      await sb.from(table).delete().eq('id', id);
+      loadData();
     }
 
-    async function deleteBill(id) {
-      if (isLiveSupabase && supabaseClient) {
-        const { error } = await supabaseClient.from('bills').delete().eq('id', id);
-        if (error) {
-          showToast(`Error deleting bill: ${error.message}`);
-          return;
-        }
-      }
-      bills = bills.filter(b => b.id !== id);
-      saveLocalFallback();
-      showToast("Bill removed");
-      await refreshAllData();
-    }
-
-    // ----------------------------------------------------
-    // Rendering Functions
-    // ----------------------------------------------------
-    function renderExpenseTable(owner) {
-      const tableBody = document.getElementById(`${owner}-table-body`);
-      const filterValue = document.getElementById(`${owner === 'husband' ? 'h' : 'w'}-filter`)?.value || 'all';
-      const countLabel = document.getElementById(`${owner}-count-label`);
-      const monthTotalEl = document.getElementById(`${owner}-month-total`);
-
-      if (!tableBody) return;
-
-      const ownerExpenses = expenses.filter(e => e.owner === owner);
-      
-      // Calculate current month's sum
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const monthSum = ownerExpenses
-        .filter(item => {
-          const d = new Date(item.spent_at);
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-        })
-        .reduce((sum, item) => sum + Number(item.amount), 0);
-
-      if (monthTotalEl) monthTotalEl.innerText = `$${monthSum.toFixed(2)}`;
-      if (countLabel) countLabel.innerText = `${ownerExpenses.length} entries recorded`;
-
-      // Filter for table
-      const filtered = filterValue === 'all' 
-        ? ownerExpenses 
-        : ownerExpenses.filter(e => e.category === filterValue);
-
-      if (filtered.length === 0) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="5" class="py-8 text-center text-slate-400 text-xs">
-              No entries found. Add your first expense on the left!
-            </td>
-          </tr>
-        `;
-        return;
-      }
-
-      tableBody.innerHTML = filtered.map(item => `
-        <tr class="hover:bg-slate-50 transition-colors">
-          <td class="py-3 px-4 font-mono text-xs text-slate-500 whitespace-nowrap">${escapeHTML(item.spent_at)}</td>
-          <td class="py-3 px-4 font-semibold text-slate-900">${escapeHTML(item.description)}</td>
-          <td class="py-3 px-4">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryBadgeStyle(item.category)}">
-              ${escapeHTML(item.category)}
-            </span>
-          </td>
-          <td class="py-3 px-4 text-right font-bold text-slate-900 font-mono">
-            $${Number(item.amount).toFixed(2)}
-          </td>
-          <td class="py-3 px-4 text-center">
-            <button onclick="deleteExpense('${item.id}')" title="Delete entry" class="text-slate-400 hover:text-rose-600 p-1 rounded-md transition-colors">
-              <i data-lucide="trash-2" class="w-4 h-4 inline"></i>
-            </button>
-          </td>
-        </tr>
+    function renderExpenses(owner, items) {
+      const list = document.getElementById(`list-${owner}`);
+      list.innerHTML = items.map(item => `
+        <li class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center">
+          <div>
+            <p class="font-medium text-slate-900">${item.description}</p>
+            <p class="text-xs text-slate-400">${item.spent_at}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold ${owner === 'husband' ? 'text-blue-600' : 'text-slate-800'}">$${Number(item.amount).toFixed(2)}</span>
+            <button onclick="deleteItem('expenses', '${item.id}')" class="text-xs text-red-500 hover:text-red-700">✕</button>
+          </div>
+        </li>
       `).join('');
     }
 
-    function renderBillsList() {
-      const container = document.getElementById('bills-list-container');
-      const paidSumEl = document.getElementById('bills-paid-sum');
-      const totalSumEl = document.getElementById('bills-total-sum');
-
-      if (!container) return;
-
-      const totalBillsAmount = bills.reduce((sum, b) => sum + Number(b.amount), 0);
-      const paidBillsAmount = bills.filter(b => b.status === 'paid').reduce((sum, b) => sum + Number(b.amount), 0);
-
-      if (totalSumEl) totalSumEl.innerText = `$${totalBillsAmount.toFixed(2)}`;
-      if (paidSumEl) paidSumEl.innerText = `$${paidBillsAmount.toFixed(2)}`;
-
-      if (bills.length === 0) {
-        container.innerHTML = `
-          <div class="py-8 text-center text-slate-400 text-xs">
-            No bills added yet. Add your rent, electricity, and subscriptions above.
-          </div>
-        `;
-        return;
-      }
-
-      const today = new Date().getDate();
-
-      container.innerHTML = bills.map(bill => {
-        const isPaid = bill.status === 'paid';
-        const isOverdue = !isPaid && bill.due_day < today;
-        const dueText = bill.due_day === today ? 'Due Today' : `Due on ${bill.due_day}${getOrdinal(bill.due_day)}`;
-
-        return `
-          <div class="p-3.5 rounded-xl border ${isPaid ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200 shadow-xs'} flex items-center justify-between gap-3 transition-all">
-            
-            <div class="flex items-center space-x-3 min-w-0">
-              <button onclick="toggleBillStatus('${bill.id}')" class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isPaid ? 'bg-emerald-500 text-white shadow-xs' : 'border-2 border-slate-300 text-transparent hover:border-emerald-500'}">
-                <i data-lucide="check" class="w-4 h-4"></i>
-              </button>
-
-              <div class="truncate">
-                <div class="flex items-center space-x-2">
-                  <span class="font-bold text-sm ${isPaid ? 'text-slate-400 line-through' : 'text-slate-900'} truncate">${escapeHTML(bill.title)}</span>
-                  ${bill.is_autopay ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-blue-700 font-semibold border border-blue-200">AutoPay</span>' : ''}
-                </div>
-                <div class="flex items-center space-x-2 text-xs text-slate-500 mt-0.5">
-                  <span class="${isOverdue ? 'text-rose-600 font-bold' : ''}">${dueText}</span>
-                  <span>&bull;</span>
-                  <span class="font-medium">${escapeHTML(bill.payer)}</span>
-                  <span>&bull;</span>
-                  <span>${escapeHTML(bill.category)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center space-x-3 shrink-0">
-              <div class="text-right">
-                <div class="font-bold font-mono text-base ${isPaid ? 'text-slate-400' : 'text-slate-900'}">
-                  $${Number(bill.amount).toFixed(2)}
-                </div>
-                <span class="text-[10px] uppercase font-bold tracking-wider ${isPaid ? 'text-emerald-600' : (isOverdue ? 'text-rose-600' : 'text-amber-600')}">
-                  ${isPaid ? 'Paid' : (isOverdue ? 'Past Due' : 'Unpaid')}
-                </span>
-              </div>
-
-              <button onclick="deleteBill('${bill.id}')" title="Delete bill" class="text-slate-300 hover:text-rose-600 p-1 rounded transition-colors">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-
-          </div>
-        `;
-      }).join('');
-    }
-
-    function renderDashboard() {
-      // Month filtered sums
-      const curMonth = new Date().getMonth();
-      const curYear = new Date().getFullYear();
-
-      const husbandItems = expenses.filter(e => {
-        const d = new Date(e.spent_at);
-        return e.owner === 'husband' && d.getMonth() === curMonth && d.getFullYear() === curYear;
-      });
-
-      const wifeItems = expenses.filter(e => {
-        const d = new Date(e.spent_at);
-        return e.owner === 'wife' && d.getMonth() === curMonth && d.getFullYear() === curYear;
-      });
-
-      const husbandSum = husbandItems.reduce((acc, curr) => acc + Number(curr.amount), 0);
-      const wifeSum = wifeItems.reduce((acc, curr) => acc + Number(curr.amount), 0);
-      const billsSum = bills.reduce((acc, curr) => acc + Number(curr.amount), 0);
-      const unpaidBills = bills.filter(b => b.status === 'unpaid').length;
-
-      const householdTotal = husbandSum + wifeSum + billsSum;
-
-      // Update Dashboard Metric Cards
-      document.getElementById('dash-total-household').innerText = `$${householdTotal.toFixed(2)}`;
-      document.getElementById('dash-my-total').innerText = `$${husbandSum.toFixed(2)}`;
-      document.getElementById('dash-my-count').innerText = `${husbandItems.length} expenses logged`;
-      document.getElementById('dash-wife-total').innerText = `$${wifeSum.toFixed(2)}`;
-      document.getElementById('dash-wife-count').innerText = `${wifeItems.length} expenses logged`;
-      document.getElementById('dash-bills-total').innerText = `$${billsSum.toFixed(2)}`;
-      document.getElementById('dash-bills-status').innerText = `${unpaidBills} unpaid remaining`;
-
-      // Update Personal Ratio Bar
-      const totalPersonal = husbandSum + wifeSum;
-      const husbandPct = totalPersonal > 0 ? Math.round((husbandSum / totalPersonal) * 100) : 50;
-      const wifePct = 100 - husbandPct;
-
-      const hBar = document.getElementById('ratio-husband-bar');
-      const wBar = document.getElementById('ratio-wife-bar');
-      if (hBar && wBar) {
-        hBar.style.width = `${husbandPct}%`;
-        wBar.style.width = `${wifePct}%`;
-      }
-      document.getElementById('ratio-label').innerText = `${husbandPct}% Husband / ${wifePct}% Wife`;
-      document.getElementById('ratio-husband-text').innerText = `$${husbandSum.toFixed(2)}`;
-      document.getElementById('ratio-wife-text').innerText = `$${wifeSum.toFixed(2)}`;
-
-      // Render Recent List on Dashboard
-      const recentList = document.getElementById('dash-recent-list');
-      if (!recentList) return;
-
-      const combinedRecent = [...expenses]
-        .sort((a, b) => new Date(b.spent_at) - new Date(a.spent_at))
-        .slice(0, 5);
-
-      if (combinedRecent.length === 0) {
-        recentList.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No household activity yet.</div>`;
-        return;
-      }
-
-      recentList.innerHTML = combinedRecent.map(item => {
-        const isHusband = item.owner === 'husband';
-        return `
-          <div class="px-6 py-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-full ${isHusband ? 'bg-blue-100 text-blue-700 font-bold' : 'bg-pink-100 text-pink-700 font-bold'} flex items-center justify-center text-xs shrink-0">
-                ${isHusband ? 'Me' : 'Wife'}
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-slate-800">${escapeHTML(item.description)}</p>
-                <p class="text-xs text-slate-400">${escapeHTML(item.spent_at)} &bull; ${escapeHTML(item.category)}</p>
-              </div>
-            </div>
-            <div class="text-right font-mono font-bold text-sm text-slate-900">
-              $${Number(item.amount).toFixed(2)}
+    function renderBills(items) {
+      const list = document.getElementById('list-bills');
+      list.innerHTML = items.map(item => `
+        <li class="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center ${item.is_paid ? 'opacity-60' : ''}">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" ${item.is_paid ? 'checked' : ''} onchange="toggleBill('${item.id}', ${item.is_paid})" class="w-5 h-5 accent-emerald-600 rounded cursor-pointer">
+            <div>
+              <p class="font-medium ${item.is_paid ? 'line-through text-slate-400' : 'text-slate-900'}">${item.title}</p>
+              <p class="text-xs text-slate-400">Due day ${item.due_day} of month</p>
             </div>
           </div>
-        `;
-      }).join('');
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-emerald-700">$${Number(item.amount).toFixed(2)}</span>
+            <button onclick="deleteItem('bills', '${item.id}')" class="text-xs text-red-500 hover:text-red-700">✕</button>
+          </div>
+        </li>
+      `).join('');
     }
 
-    // ----------------------------------------------------
-    // Tab Switching Navigation
-    // ----------------------------------------------------
-    function switchTab(target) {
-      const views = ['dashboard', 'husband', 'wife', 'bills'];
-
-      views.forEach(v => {
-        const viewEl = document.getElementById(`view-${v}`);
-        const navEl = document.getElementById(`nav-${v}`);
-        const mobNavEl = document.getElementById(`mobile-nav-${v}`);
-
-        if (v === target) {
-          viewEl.classList.remove('hidden');
-          if (navEl) {
-            navEl.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
-            navEl.classList.remove('text-slate-600');
-          }
-          if (mobNavEl) {
-            mobNavEl.classList.add('bg-slate-900', 'text-white');
-            mobNavEl.classList.remove('bg-white', 'text-slate-600');
-          }
-        } else {
-          viewEl.classList.add('hidden');
-          if (navEl) {
-            navEl.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
-            navEl.classList.add('text-slate-600');
-          }
-          if (mobNavEl) {
-            mobNavEl.classList.remove('bg-slate-900', 'text-white');
-            mobNavEl.classList.add('bg-white', 'text-slate-600');
-          }
-        }
-      });
-
-      // Refresh icons in tab
-      lucide.createIcons();
-    }
-
-    // ----------------------------------------------------
-    // Supabase Config Modal Helpers
-    // ----------------------------------------------------
-    function openConfigModal() {
-      document.getElementById('cfg-url').value = localStorage.getItem('hl_supabase_url') || '';
-      document.getElementById('cfg-key').value = localStorage.getItem('hl_supabase_key') || '';
-      document.getElementById('config-modal').classList.remove('hidden');
-      document.getElementById('cfg-status-box').classList.add('hidden');
-    }
-
-    function closeConfigModal() {
-      document.getElementById('config-modal').classList.add('hidden');
-    }
-
-    async function saveSupabaseConfig() {
-      const url = document.getElementById('cfg-url').value.trim();
-      const key = document.getElementById('cfg-key').value.trim();
-      const statusBox = document.getElementById('cfg-status-box');
-
-      if (!url || !key) {
-        statusBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200";
-        statusBox.innerText = "Please provide both the Project URL and Anon Public Key.";
-        statusBox.classList.remove('hidden');
-        return;
-      }
-
-      statusBox.className = "p-3 rounded-xl text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200";
-      statusBox.innerText = "Testing Supabase connection...";
-      statusBox.classList.remove('hidden');
-
-      try {
-        const client = window.supabase.createClient(url, key);
-        // Test query
-        const { error } = await client.from('expenses').select('id').limit(1);
-
-        if (error && error.code !== 'PGRST116') {
-          throw error;
-        }
-
-        // Save keys
-        localStorage.setItem('hl_supabase_url', url);
-        localStorage.setItem('hl_supabase_key', key);
-        supabaseClient = client;
-        isLiveSupabase = true;
-
-        updateConnectionStatus(true);
-        statusBox.className = "p-3 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
-        statusBox.innerText = "Successfully connected to Supabase!";
-
-        setTimeout(() => {
-          closeConfigModal();
-          refreshAllData();
-        }, 800);
-
-      } catch (err) {
-        statusBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200";
-        statusBox.innerText = `Connection test failed: ${err.message || 'Check URL/Key or verify SQL tables are created.'}`;
-      }
-    }
-
-    function clearSupabaseConfig() {
-      localStorage.removeItem('hl_supabase_url');
-      localStorage.removeItem('hl_supabase_key');
-      supabaseClient = null;
-      isLiveSupabase = false;
-      updateConnectionStatus(false);
-      closeConfigModal();
-      showToast("Reset to offline local storage");
-      refreshAllData();
-    }
-
-    // ----------------------------------------------------
-    // Helpers & Utilities
-    // ----------------------------------------------------
-    function getCategoryBadgeStyle(category) {
-      switch (category) {
-        case 'Food & Dining':
-        case 'Food & Coffee':
-          return 'bg-amber-100 text-amber-800';
-        case 'Transportation / Fuel':
-          return 'bg-blue-100 text-blue-800';
-        case 'Groceries':
-          return 'bg-emerald-100 text-emerald-800';
-        case 'Personal / Hobby':
-        case 'Shopping & Clothes':
-          return 'bg-purple-100 text-purple-800';
-        case 'Beauty & Self Care':
-        case 'Home & Kids':
-          return 'bg-pink-100 text-pink-800';
-        default:
-          return 'bg-slate-100 text-slate-700';
-      }
-    }
-
-    function getOrdinal(n) {
-      const s = ["th", "st", "nd", "rd"];
-      const v = n % 100;
-      return s[(v - 20) % 10] || s[v] || s[0];
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      const toastMsg = document.getElementById('toast-message');
-      toastMsg.innerText = msg;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
-
-      setTimeout(() => {
-        toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3000);
-    }
-
-    function escapeHTML(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
+    switchTab('husband');
   </script>
 </body>
 </html>
